@@ -120,7 +120,7 @@ bool SignalProcessing::checkSignal(const darray &t, const darray &U, uint channe
 }
 
 SignalProcessing::SignalProcessing(const darray &t_full, const darray &U_full, uint N_CHANNELS, const SignalProcessingParameters &parameters) : N_CHANNELS(N_CHANNELS),
-                                    signals(N_CHANNELS, 0), work_signal(N_CHANNELS, true), shifts(N_CHANNELS, 0.), UTintegrate_full(t_full.size()), t(t_full), UShift(t_full.size()), signal_box(3*N_CHANNELS)
+                                    signals(N_CHANNELS, 0), work_signal(N_CHANNELS, true), shifts(N_CHANNELS, 0.), UTintegrate_full(t_full.size()), t(t_full), UShift(t_full.size()), signal_box(3*N_CHANNELS), parameters(parameters)
 {
     tSize = t_full.size() / N_CHANNELS;
 

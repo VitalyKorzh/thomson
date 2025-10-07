@@ -8,20 +8,22 @@
 #include <dasarchive/TSignalC.h>
 #include <TGFileDialog.h>
 
-#include "SignalProcessing.h"
+#include "ThomsonDraw.h"
 
 ClassImp(ThomsonGUI)
 
 #define N_SPECTROMETERS 6
 #define N_CHANNELS 8
+#define N_WORK_CHANNELS 6
 #define N_TIME_LIST 11
 #define N_TIME_SIZE 1000
 #define UNUSEFULL 48
 
 #define KUST_NAME "tomson"
+#define CALIBRATION_NAME "thomson"
 #define CLASS_NAME "ThomsonGUI"
 
-bool ThomsonGUI::readFromArchive(const char *archive_name, const char *kust, const char *signal_name, int shot, darray &t, darray &U, int timePoint, int timeList, const uint N_INFORM, const uint N_UNUSEFULL) const
+bool ThomsonGUI::readDataFromArchive(const char *archive_name, const char *kust, const char *signal_name, int shot, darray &t, darray &U, int timePoint, int timeList, const uint N_INFORM, const uint N_UNUSEFULL) const
 {
     const uint N_POINT = N_INFORM+N_UNUSEFULL;
     OpenArchive(archive_name);
@@ -80,6 +82,83 @@ bool ThomsonGUI::readFromArchive(const char *archive_name, const char *kust, con
     CloseArchive();
 
     return true;
+}
+
+darray ThomsonGUI::readCalibration(const char *archive_name, const char *calibration_name, int shot) const
+{
+    darray calibration;
+
+    if (TFile *file=OpenArchive(archive_name)) 
+    {
+        
+        getShot(shot);
+
+        TString shot_string = TString::Format("%d", shot);
+        TString shot_name = file->GetDirectory(shot_string) != nullptr ? GetShotCalibration(shot) : shot_string;
+
+        std::cout << "shot_name: " << shot_name << "\n";
+
+        TSignalC *calibration_signal = nullptr;
+        calibration_signal = (TSignalC*) GetCalibration(calibration_name, shot_name);
+
+        if (calibration_signal != nullptr) 
+        {
+            uint size = calibration_signal->GetSize()/sizeof(double);
+
+            calibration.reserve(size);
+
+            double *cal = reinterpret_cast<double*> (calibration_signal->GetArray());
+
+            for (uint i  = 0; i < size; i++)
+                calibration.push_back(cal[i]);
+        }
+
+        delete calibration_signal; 
+
+    }
+
+    CloseArchive();
+
+    return calibration;
+}
+
+bool ThomsonGUI::processingSignalsData(const char *archive_name, int shot, const SignalProcessingParameters &parameters, bool clearSpArray)
+{
+    bool successReadArchive = true;
+    if (clearSpArray) this->clearSpArray();
+
+    spArray.reserve(spArray.size()+N_SPECTROMETERS*N_TIME_LIST);
+
+    for (uint sp = 0; sp < N_SPECTROMETERS; sp++)
+    {
+        for (uint it = 0; it < N_TIME_LIST; it++)
+        {
+            darray t;
+            darray U;
+            t.reserve(N_TIME_SIZE*N_CHANNELS);
+            U.reserve(N_TIME_SIZE*N_CHANNELS);
+            for (uint ch = 0; ch < N_CHANNELS; ch++)
+            {
+                TString signal_name = getSignalName(sp, ch);
+                if (!readDataFromArchive(archive_name, KUST_NAME, signal_name, shot, t, U, it, 0, N_TIME_SIZE*2, UNUSEFULL)) 
+                {
+                    successReadArchive = false;
+                    break;
+                }
+            }
+
+            spArray.push_back(new SignalProcessing(t, U, N_CHANNELS, parameters));
+        }
+    }
+    return successReadArchive;
+}
+
+SignalProcessing *ThomsonGUI::getSignalProcessing(uint it, uint sp) const
+{
+    if (it >= N_TIME_LIST || sp >= N_SPECTROMETERS)
+        return nullptr;
+    else
+        return spArray[it+sp*N_TIME_LIST];
 }
 
 void ThomsonGUI::clearSpArray()
@@ -169,40 +248,14 @@ void ThomsonGUI::ReadMainFile()
         std::getline(fin, srf_file_folder);
         std::getline(fin, convolution_file_folder);
         std::getline(fin, archive_name);
-
+        
         int shot;
-        fin >> shot;
-
         SignalProcessingParameters parameters;
-
-        fin >> parameters.step_from_start_zero_line >> parameters.step_from_end_zero_line >> parameters.signal_point_start >> 
+        
+        fin >> shot >> parameters.step_from_start_zero_line >> parameters.step_from_end_zero_line >> parameters.signal_point_start >> 
         parameters.signal_point_step >> parameters.threshold >> parameters.increase_point >> parameters.decrease_point;
 
-        bool successReadArchive = true;
-        clearSpArray();
-        for (uint sp = 0; sp < N_SPECTROMETERS; sp++)
-        {
-            for (uint it = 0; it < N_TIME_LIST; it++)
-            {
-                darray t;
-                darray U;
-                t.reserve(N_TIME_SIZE*N_CHANNELS);
-                U.reserve(N_TIME_SIZE*N_CHANNELS);
-                for (uint ch = 0; ch < N_CHANNELS; ch++)
-                {
-                    TString signal_name = getSignalName(sp, ch);
-                    if (!readFromArchive(archive_name.c_str(), KUST_NAME, signal_name, shot, t, U, it, 0, N_TIME_SIZE*2, UNUSEFULL)) 
-                    {
-                        successReadArchive = false;
-                        break;
-                    }
-                }
-
-                spArray.push_back(new SignalProcessing(t, U, N_CHANNELS, parameters));
-            }
-        }
-
-        if (fin.fail() || !successReadArchive) {
+        if (fin.fail() || !processingSignalsData(archive_name.c_str(), shot, parameters, true)) {
             readSuccess = false;
             std::cerr << "ошибка чтения файла!\n";
         }
@@ -243,18 +296,26 @@ void ThomsonGUI::DrawGraphs()
         return;
     }
 
-    uint nChannel = spectrometerNumber->GetNumber();
+    uint nSpectrometer = spectrometerNumber->GetNumber();
     uint nTimePage = timeListNumber->GetNumber();
 
-    std::cout << "nChannel: " << nChannel << " nTimePage: " << nTimePage << "\n";
+    std::cout << "nSpectrometer: " << nSpectrometer << " nTimePage: " << nTimePage << "\n";
 
     if (drawSignalsInChannels->IsDown()) 
     {
         std::cout << "drawSignalsInChannels()\n";
+        TString canvas_name = TString::Format("signal_nt_%u_sp_%u", nSpectrometer, nTimePage);
+        TCanvas *c = ThomsonDraw::createCanvas(canvas_name);
+        TMultiGraph *mg = ThomsonDraw::createMultiGraph("mg_"+canvas_name, "");
+        ThomsonDraw::thomson_signal_draw(c, mg, getSignalProcessing(nTimePage, nSpectrometer), 0, true, true, false, N_WORK_CHANNELS);
     }
     if (drawIntegralInChannels->IsDown())
     {
         std::cout << "drawIntegralInChannels()\n";
+        TString canvas_name = TString::Format("signal_integral_nt_%u_sp_%u", nSpectrometer, nTimePage);
+        TCanvas *c = ThomsonDraw::createCanvas(canvas_name);
+        TMultiGraph *mg = ThomsonDraw::createMultiGraph("mg_"+canvas_name, "");
+        ThomsonDraw::thomson_signal_draw(c, mg, getSignalProcessing(nTimePage, nSpectrometer), 1, true, true, false, N_WORK_CHANNELS);
     }
 
 }

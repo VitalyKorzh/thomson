@@ -49,6 +49,8 @@ private:
 
     darray signal_box;
 
+    SignalProcessingParameters parameters;
+
     bool checkSignal(const darray &t, const darray &U, uint channel, double signal, double threshold=0., int increase_point=0, int decrease_point=0); // проверить был ли импульс в канале
     void integrateSignal(const darray &t, const darray &U, uint channel, double UZero);    
     void shiftSignal(const darray &U, uint channel, double UZero);
@@ -67,6 +69,7 @@ public:
     const darray &getT() const { return t; }
     const darray &getUTintegrateSignal() const { return UTintegrate_full; }
     const darray &getSignalBox() const { return signal_box; }
+    const SignalProcessingParameters &getSignalProcessingParameters() const { return parameters; }
     uint getNChannels() const { return N_CHANNELS; }
     uint getTSize() const { return tSize; }
 };

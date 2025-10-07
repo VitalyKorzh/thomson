@@ -15,8 +15,7 @@
 #include <TQObject.h>
 #include <RQ_OBJECT.h>
 
-class SignalProcessing;
-typedef std::vector<double> darray;
+#include "SignalProcessing.h"
 
 class ThomsonGUI : public TGMainFrame
 {
@@ -37,11 +36,16 @@ private:
     std::string convolution_file_folder;
     std::string archive_name;
 
-    std::list <SignalProcessing*> spArray;
+    std::vector <SignalProcessing*> spArray;
 
     TString getSignalName(uint nSpectrometer, uint nChannel) const;
     int& getShot(int &shot) const;
-    bool readFromArchive(const char* archive_name, const char* kust, const char *signal_name, int shot, darray &t, darray &U, int timePoint=-1, int timeList=11, const uint N_INFORM=2000, const uint N_UNUSEFULL=48) const;
+    bool readDataFromArchive(const char* archive_name, const char* kust, const char *signal_name, int shot, darray &t, darray &U, int timePoint=-1, int timeList=11, const uint N_INFORM=2000, const uint N_UNUSEFULL=48) const;
+    darray readCalibration(const char *archive_name, const char *calibration_name, int shot) const;
+
+    bool processingSignalsData(const char *archive_name, int shot, const SignalProcessingParameters &parameters, bool clearSpArray=true);
+
+    SignalProcessing * getSignalProcessing(uint it, uint sp) const;
 
     void clearSpArray();
 
