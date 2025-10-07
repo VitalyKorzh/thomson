@@ -6,9 +6,6 @@ find_package(ROOT REQUIRED)
 
 set(CMAKE_BUILD_TYPE Debug)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
-#set(CMAKE_CXX_STANDARD 17)
-#set(CMAKE_CXX_STANDARD_REQUIRED ON)
-
 
 if(${CMAKE_SYSTEM} MATCHES "Linux")
     if (${CMAKE_SYSTEM} MATCHES "generic")
@@ -38,7 +35,6 @@ root_generate_dictionary(
     MODULE ${LIB_NAME} 
     LINKDEF ${LINK}
     OPTIONS "-p"
-    NO_INSTALL
 )
 
 add_library(${LIB_NAME} SHARED ${SRC} ${PROJECT_BINARY_DIR}/G_${LIB_NAME}.cxx)
