@@ -10,6 +10,7 @@
 #include <TGButton.h>
 #include <TGTextEntry.h>
 #include <TGWindow.h>
+#include <TGNumberEntry.h>
 
 #include "SignalProcessing.h"
 
@@ -19,7 +20,7 @@ private:
     TApplication *app;
 
     TGTextEntry *mainFileTextEntry;
-
+    TGNumberEntry *timeListNumber;
 
     bool readSuccess;
     std::string srf_file_folder;
@@ -39,7 +40,7 @@ public:
 
     void readMainFile();
     void openMainFileDialog();
-    void draw();
+    void drawGraphs();
 
     void run();
     ~ThomsonGUI();

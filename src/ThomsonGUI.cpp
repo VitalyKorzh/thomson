@@ -8,6 +8,8 @@
 #include <dasarchive/TSignalC.h>
 #include <TGFileDialog.h>
 
+ClassImp(ThomsonGUI)
+
 #define N_SPECTROMETERS 6
 #define N_CHANNELS 8
 #define N_TIME_LIST 11
@@ -15,7 +17,6 @@
 #define UNUSEFULL 48
 
 #define KUST_NAME "tomson"
-
 #define CLASS_NAME "ThomsonGUI"
 
 bool ThomsonGUI::readFromArchive(const char *archive_name, const char *kust, const char *signal_name, int shot, darray &t, darray &U, int timePoint, int timeList, const uint N_INFORM, const uint N_UNUSEFULL) const
@@ -109,10 +110,10 @@ ThomsonGUI::ThomsonGUI(const TGWindow *p, UInt_t width, UInt_t height, TApplicat
 
     TGButton *openMainFileDialogButton = new TGTextButton(hframe, "^");
     mainFileTextEntry = new TGTextEntry(hframe);
-    TGButton *readMainFileEntry = new TGTextButton(hframe, "read");
+    TGButton *readMainFileEntry = new TGTextButton(hframe, "Read");
 
-    readMainFileEntry->Connect("Clicked()", CLASS_NAME, this, "readMainFile()");
-    openMainFileDialogButton->Connect("Clicked()", CLASS_NAME, this, "openMainFileDialog()");
+    readMainFileEntry->Connect("Clicked()", "ThomsonGUI", this, "readMainFile()");
+    openMainFileDialogButton->Connect("Clicked()", "ThomsonGUI", this, "openMainFileDialog()");
 
     hframe->AddFrame(openMainFileDialogButton, new TGLayoutHints(kLHintsLeft, 5, 5, 5, 5));
     hframe->AddFrame(mainFileTextEntry, new TGLayoutHints(kLHintsExpandX, 5, 5, 5, 5));
@@ -122,9 +123,15 @@ ThomsonGUI::ThomsonGUI(const TGWindow *p, UInt_t width, UInt_t height, TApplicat
     TGHorizontalFrame *hframe_bottom = new TGHorizontalFrame(this, width, 80);
     this->AddFrame(hframe_bottom, new TGLayoutHints(kLHintsExpandX| kLHintsBottom, 5, 5, 5,  10));
 
-    TGButton *drawButton = new TGTextButton(hframe_bottom, "draw");
-    drawButton->Connect("Clicked()", CLASS_NAME, this, "draw()");
+    TGButton *drawButton = new TGTextButton(hframe_bottom, "Draw");
+    drawButton->Connect("Clicked()", "ThomsonGUI", this, "drawGraphs()");
+    
+    timeListNumber = new TGNumberEntry(hframe_bottom, 0, 4, -1, TGNumberFormat::kNESInteger,
+                                         TGNumberFormat::kNEANonNegative, TGNumberEntry::kNELLimitMinMax, 0, N_TIME_LIST-1);
+    
     hframe_bottom->AddFrame(drawButton, new TGLayoutHints(kLHintsLeft, 5, 5, 5, 5));
+    hframe_bottom->AddFrame(timeListNumber, new TGLayoutHints(kLHintsLeft, 5, 5, 5, 5));
+
 
     SetName("Thomson");
     SetWindowName("Thomson");
@@ -211,9 +218,9 @@ void ThomsonGUI::openMainFileDialog()
 
 }
 
-void ThomsonGUI::draw()
+void ThomsonGUI::drawGraphs()
 {
-    std::cout << "drawGraph()\n";
+    std::cout << "drawGraphs()\n";
 }
 
 void ThomsonGUI::run()
@@ -233,5 +240,3 @@ ThomsonGUI::~ThomsonGUI()
     app->Terminate();
     delete app;
 }
-
-ClassImp(ThomsonGUI)
