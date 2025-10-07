@@ -297,7 +297,7 @@ void ThomsonGUI::DrawGraphs()
 
     if (drawSignalsInChannels->IsDown()) 
     {
-        TString canvas_name = TString::Format("signal_nt_%u_sp_%u", nSpectrometer, nTimePage);
+        TString canvas_name = TString::Format("signal_tp_%u_sp_%u", nSpectrometer, nTimePage);
         TCanvas *c = ThomsonDraw::createCanvas(canvas_name);
         TMultiGraph *mg = ThomsonDraw::createMultiGraph("mg_"+canvas_name, "");
         ThomsonDraw::thomson_signal_draw(c, mg, getSignalProcessing(nTimePage, nSpectrometer), 0, true, true, false, N_WORK_CHANNELS);
