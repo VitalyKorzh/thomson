@@ -11,6 +11,7 @@
 #include <TGTextEntry.h>
 #include <TGWindow.h>
 #include <TGNumberEntry.h>
+#include <TQObject.h>
 
 #include "SignalProcessing.h"
 

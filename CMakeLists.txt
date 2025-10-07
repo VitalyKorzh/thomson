@@ -9,7 +9,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
 
 if(${CMAKE_SYSTEM} MATCHES "Linux")
     if (${CMAKE_SYSTEM} MATCHES "generic")
-        set(DAS_PATH "/home/user/Documents/VS code/TSignal/build/")
+        #set(DAS_PATH "/home/user/Documents/VS code/TSignal/build/")
     else()
         set(DAS_PATH /home/korzh/Work/lib/TSignal/lib/)
     endif()
@@ -47,6 +47,7 @@ target_link_libraries(${LIB_NAME} PUBLIC
     ROOT::Tree
     ROOT::Hist
     ROOT::Physics
+    ${ROOT_LIBRARIES}
     ${LIBS}
 )
 
