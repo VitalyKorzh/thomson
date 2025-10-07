@@ -14,8 +14,10 @@
 #include <TGWindow.h>
 #include <TQObject.h>
 #include <RQ_OBJECT.h>
+#include <TFile.h>
 
-#include "SignalProcessing.h"
+#include "thomsonCounter/SignalProcessing.h"
+#include "thomsonCounter/ThomsonCounter.h"
 
 class ThomsonGUI : public TGMainFrame
 {
@@ -37,17 +39,19 @@ private:
     std::string archive_name;
 
     std::vector <SignalProcessing*> spArray;
+    std::vector <ThomsonCounter *> counterArray;
 
     TString getSignalName(uint nSpectrometer, uint nChannel) const;
     int& getShot(int &shot) const;
     bool readDataFromArchive(const char* archive_name, const char* kust, const char *signal_name, int shot, darray &t, darray &U, int timePoint=-1, int timeList=11, const uint N_INFORM=2000, const uint N_UNUSEFULL=48) const;
     darray readCalibration(const char *archive_name, const char *calibration_name, int shot) const;
-
-    bool processingSignalsData(const char *archive_name, int shot, const SignalProcessingParameters &parameters, bool clearSpArray=true);
-
+    bool isCalibrationNew(TFile *f, const char *calibration_name) const;
+    bool writeCalibration(const char *archive_name, const char *calibration_name, darray &calibration) const;
+    bool processingSignalsData(const char *archive_name, int shot, const SignalProcessingParameters &parameters, bool clearArray=true);
     SignalProcessing * getSignalProcessing(uint it, uint sp) const;
 
     void clearSpArray();
+    void clearCounterArray();
 
 public:
     ThomsonGUI(const TGWindow *p, UInt_t width, UInt_t height, TApplication *app);

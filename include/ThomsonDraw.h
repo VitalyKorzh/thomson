@@ -1,6 +1,6 @@
 #ifndef __THOMSON_DRAW_H__
 
-#include "SignalProcessing.h"
+#include "thomsonCounter/SignalProcessing.h"
 #include <TCanvas.h>
 #include <TString.h>
 #include <TGraph.h>
@@ -12,9 +12,6 @@
 #include <TH1F.h>
 #include <THStack.h>
 
-#include <TList.h>
-#include <utility>
-
 class ThomsonDraw
 {
 private:
@@ -23,7 +20,7 @@ private:
     static TLegend *createLegend(const TMultiGraph * const mg, double x1=0.12, double y1=0.6, double x2=0.35, double y2=0.88, bool draw=true);
     static TGraph * createSignalBox(double t1, double t2, double U, uint color=6, uint lineStyle=1, uint lineWidth=1);
 
-    static void thomson_draw(TMultiGraph *mg, const SignalProcessing &sp, uint nPoints, const int integrate, bool draw=true, bool drawSigBox=false, const std::vector<TString> &gTitle={});
+    static void thomson_draw(TMultiGraph *mg, const SignalProcessing &sp, uint nPoints, const int integrate, bool draw=true, bool drawSigBox=false, bool drawFullLine=false, const std::vector<TString> &gTitle={});
 
 
 public:

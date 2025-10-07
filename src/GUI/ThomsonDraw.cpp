@@ -97,7 +97,7 @@ TGraph *ThomsonDraw::createSignalBox(double t1, double t2, double U, uint color,
     return createGraph(N_SIZE, x, y, color, lineStyle, lineWidth);
 }
 
-void ThomsonDraw::thomson_draw(TMultiGraph *mg, const SignalProcessing &sp, uint nPoints, const int integrate, bool draw, bool drawSigBox, const std::vector<TString> &gTitle)
+void ThomsonDraw::thomson_draw(TMultiGraph *mg, const SignalProcessing &sp, uint nPoints, const int integrate, bool draw, bool drawSigBox, bool drawFullLine, const std::vector<TString> &gTitle)
 {    
     uint color = 1;
 
@@ -128,11 +128,17 @@ void ThomsonDraw::thomson_draw(TMultiGraph *mg, const SignalProcessing &sp, uint
 
             if (sp.getWorkSignals()[p])
             {
-                uint start = p*N_SIGNAL+sp.getSignalProcessingParameters().signal_point_start;
-                uint end = std::min(start + sp.getSignalProcessingParameters().signal_point_step, p*N_SIGNAL+N_SIGNAL-1);
-                
-                if (start > end)
-                    start = end;
+                uint start = p*N_SIGNAL;
+                uint end = p*N_SIGNAL+N_SIGNAL-1;
+
+                if (!drawFullLine)
+                {
+                    start += sp.getSignalProcessingParameters().signal_point_start;
+                    end = std::min(start + sp.getSignalProcessingParameters().signal_point_step, end);
+                    if (start > end)
+                        start = end;
+                }
+
 
                 double x[] = {t[start], t[end]};
                 double y[] = {sp.getSignals()[p], sp.getSignals()[p]};
@@ -165,7 +171,7 @@ void ThomsonDraw::thomson_signal_draw(TCanvas *c, TMultiGraph *mg, SignalProcess
     for (uint i = 0; i < NChannels; i++)
         gTitle.push_back(TString::Format("ch%u", i+1));
 
-    thomson_draw(mg, *sp, NChannels, integrate, draw, drawSigBox, gTitle);
+    thomson_draw(mg, *sp, NChannels, integrate, draw, drawSigBox, true, gTitle);
     if (drawLegend)
         createLegend(mg, 0.12, 0.6, 0.35, 0.88);
 

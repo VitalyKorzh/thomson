@@ -19,6 +19,8 @@ ClassImp(ThomsonGUI)
 #define N_TIME_SIZE 1000
 #define UNUSEFULL 48
 
+#define LAMBDA_REFERENCE 1064.
+
 #define KUST_NAME "tomson"
 #define CALIBRATION_NAME "thomson"
 #define CLASS_NAME "ThomsonGUI"
@@ -122,10 +124,63 @@ darray ThomsonGUI::readCalibration(const char *archive_name, const char *calibra
     return calibration;
 }
 
-bool ThomsonGUI::processingSignalsData(const char *archive_name, int shot, const SignalProcessingParameters &parameters, bool clearSpArray)
+bool ThomsonGUI::isCalibrationNew(TFile *f, const char *calibration_name) const
+{
+    int shot = GetLastShot();
+
+    TDirectory *dir = f->GetDirectory(TString::Format("Calibration/%d", shot+1));
+
+    TSignal *obj = dir->Get<TSignal>(calibration_name);
+
+    return obj == nullptr;
+}
+
+bool ThomsonGUI::writeCalibration(const char *archive_name, const char *calibration_name, darray &calibration) const
+{
+    TFile *file = nullptr;
+    if (calibration.size() != 0 && (file=OpenArchive(archive_name, kTRUE)))
+    {
+        TSignal *sig_calibration = new TSignalC(calibration_name, "", 1., 0., 1., 0., calibration.size()*sizeof(double), reinterpret_cast<char*> (calibration.data()));
+
+        {
+            int shot = GetLastShot();
+
+            TDirectory *dir = file->GetDirectory(TString::Format("Calibration/%d", shot+1));
+            if (!dir) 
+            {
+                std::cout << "not dircetory found\n";
+                CreateCalibrationSet();
+                std::cout << "create calibration set\n";
+            }
+            else 
+            {
+                std::cout << "derectory found\n";
+            }
+        }
+
+        if (isCalibrationNew(file, calibration_name)) {
+            CreateCalibration(sig_calibration);
+        }
+        else
+        {
+            ReplaceCalibration(calibration_name, sig_calibration);
+        }
+
+        delete sig_calibration;
+    }
+    else
+        return false;
+    
+    CloseArchive();
+
+    return true;
+}
+
+bool ThomsonGUI::processingSignalsData(const char *archive_name, int shot, const SignalProcessingParameters &parameters, bool clearArray)
 {
     bool successReadArchive = true;
-    if (clearSpArray) this->clearSpArray();
+    if (clearArray) 
+        this->clearSpArray();
 
     spArray.reserve(spArray.size()+N_SPECTROMETERS*N_TIME_LIST);
 
@@ -167,6 +222,14 @@ void ThomsonGUI::clearSpArray()
         delete it;
 
     spArray.clear();
+}
+
+void ThomsonGUI::clearCounterArray()
+{
+    for (ThomsonCounter* it : counterArray)
+        delete it;
+
+    counterArray.clear();
 }
 
 TString ThomsonGUI::getSignalName(uint nSpectrometer, uint nChannel) const
@@ -268,6 +331,22 @@ void ThomsonGUI::ReadMainFile()
     if (readSuccess)
         std::cout << "данные прочитаны!\n";
 
+
+    clearCounterArray();
+    counterArray.reserve(counterArray.size()+N_SPECTROMETERS*N_TIME_LIST);
+    for (uint sp = 0; sp < N_SPECTROMETERS; sp++)
+    {
+        std::string srf_file_name = srf_file_folder+"SRF_Spectro-" + std::to_string(sp+1)+".dat";
+        std::string convolution_file_name = convolution_file_folder+"Convolution_Spectro-" + std::to_string(sp+1)+".dat";
+        for (uint it = 0; it < N_TIME_LIST; it++)
+        {
+            ThomsonCounter * counter = new ThomsonCounter(srf_file_name, convolution_file_name, *getSignalProcessing(it, sp), {}, M_PI, LAMBDA_REFERENCE);
+
+            counterArray.push_back(counter);
+        }
+    }
+        
+
     fin.close();
 }
 
@@ -306,7 +385,7 @@ void ThomsonGUI::DrawGraphs()
     }
     if (drawIntegralInChannels->IsDown())
     {
-        TString canvas_name = TString::Format("signal_integral_nt_%u_sp_%u", nSpectrometer, nTimePage);
+        TString canvas_name = TString::Format("signal_integral_tp_%u_sp_%u", nSpectrometer, nTimePage);
         TCanvas *c = ThomsonDraw::createCanvas(canvas_name);
         TMultiGraph *mg = ThomsonDraw::createMultiGraph("mg_"+canvas_name, "");
         ThomsonDraw::thomson_signal_draw(c, mg, getSignalProcessing(nTimePage, nSpectrometer), 1, true, true, false, N_WORK_CHANNELS);
@@ -327,6 +406,7 @@ ThomsonGUI::~ThomsonGUI()
     CloseWindow();
 
     clearSpArray();
+    clearCounterArray();
 
     app->Terminate();
     delete app;
