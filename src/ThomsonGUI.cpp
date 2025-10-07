@@ -112,8 +112,8 @@ ThomsonGUI::ThomsonGUI(const TGWindow *p, UInt_t width, UInt_t height, TApplicat
     mainFileTextEntry = new TGTextEntry(hframe);
     TGButton *readMainFileEntry = new TGTextButton(hframe, "Read");
 
-    readMainFileEntry->Connect("Clicked()", "ThomsonGUI", this, "readMainFile()");
-    openMainFileDialogButton->Connect("Clicked()", "ThomsonGUI", this, "openMainFileDialog()");
+    readMainFileEntry->Connect("Pressed()", CLASS_NAME, this, "ReadMainFile()");
+    openMainFileDialogButton->Connect("Pressed()", CLASS_NAME, this, "OpenMainFileDialog()");
 
     hframe->AddFrame(openMainFileDialogButton, new TGLayoutHints(kLHintsLeft, 5, 5, 5, 5));
     hframe->AddFrame(mainFileTextEntry, new TGLayoutHints(kLHintsExpandX, 5, 5, 5, 5));
@@ -124,8 +124,8 @@ ThomsonGUI::ThomsonGUI(const TGWindow *p, UInt_t width, UInt_t height, TApplicat
     this->AddFrame(hframe_bottom, new TGLayoutHints(kLHintsExpandX| kLHintsBottom, 5, 5, 5,  10));
 
     TGButton *drawButton = new TGTextButton(hframe_bottom, "Draw");
-    drawButton->Connect("Clicked()", "ThomsonGUI", this, "drawGraphs()");
-    
+    drawButton->Connect("Pressed()", CLASS_NAME, this, "DrawGraphs()");
+
     timeListNumber = new TGNumberEntry(hframe_bottom, 0, 4, -1, TGNumberFormat::kNESInteger,
                                          TGNumberFormat::kNEANonNegative, TGNumberEntry::kNELLimitMinMax, 0, N_TIME_LIST-1);
     
@@ -139,10 +139,10 @@ ThomsonGUI::ThomsonGUI(const TGWindow *p, UInt_t width, UInt_t height, TApplicat
     SetWMSizeHints(width, height, width, height, width, height);
 }
 
-void ThomsonGUI::readMainFile()
+void ThomsonGUI::ReadMainFile()
 {
     readSuccess = true;
-    std::cout << "readMainFile()\n";
+    std::cout << "ReadMainFile()\n";
 
     TString fileName = mainFileTextEntry->GetText();
 
@@ -200,9 +200,9 @@ void ThomsonGUI::readMainFile()
     fin.close();
 }
 
-void ThomsonGUI::openMainFileDialog()
+void ThomsonGUI::OpenMainFileDialog()
 {
-    std::cout << "openMainFileDialog()\n";
+    std::cout << "OpenMainFileDialog()\n";
 
     static const char *fileTypes[] = { "setting file", "*.txt" };
     static const char initDir[] = "";
@@ -218,9 +218,9 @@ void ThomsonGUI::openMainFileDialog()
 
 }
 
-void ThomsonGUI::drawGraphs()
+void ThomsonGUI::DrawGraphs()
 {
-    std::cout << "drawGraphs()\n";
+    std::cout << "DrawGraphs()\n";
 }
 
 void ThomsonGUI::run()

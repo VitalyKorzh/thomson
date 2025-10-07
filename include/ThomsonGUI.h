@@ -12,11 +12,14 @@
 #include <TGWindow.h>
 #include <TGNumberEntry.h>
 #include <TQObject.h>
+#include <RQ_OBJECT.h>
 
 #include "SignalProcessing.h"
 
 class ThomsonGUI : public TGMainFrame
 {
+    RQ_OBJECT("ThomsonGUI")
+
 private:
     TApplication *app;
 
@@ -39,9 +42,9 @@ private:
 public:
     ThomsonGUI(const TGWindow *p, UInt_t width, UInt_t height, TApplication *app);
 
-    void readMainFile();
-    void openMainFileDialog();
-    void drawGraphs();
+    void ReadMainFile();
+    void OpenMainFileDialog();
+    void DrawGraphs();
 
     void run();
     ~ThomsonGUI();

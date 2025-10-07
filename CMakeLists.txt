@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.27.4 FATAL_ERROR)
 
 project(thomson)
 
-find_package(ROOT REQUIRED)
+find_package(ROOT REQUIRED COMPONENTS RIO Net Gui)
 
 set(CMAKE_BUILD_TYPE Debug)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
@@ -24,9 +24,7 @@ file(GLOB LIBS ${DAS_PATH}/*.so)
 include(${ROOT_USE_FILE})
 set(GUI_HEADERS ${PROJECT_SOURCE_DIR}/include/ThomsonGUI.h)
 set(LINK ${PROJECT_SOURCE_DIR}/LinkDef/LinkDef.h)
-
 set(LIB_NAME ${PROJECT_NAME}GUI)
-
 file(GLOB SRC ${PROJECT_SOURCE_DIR}/src/*.cpp)
 
 root_generate_dictionary(
