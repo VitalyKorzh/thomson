@@ -235,8 +235,6 @@ ThomsonGUI::ThomsonGUI(const TGWindow *p, UInt_t width, UInt_t height, TApplicat
 
 void ThomsonGUI::ReadMainFile()
 {
-    std::cout << "ReadMainFile()\n";
-
     TString fileName = mainFileTextEntry->GetText();
 
     std::ifstream fin;
@@ -265,13 +263,14 @@ void ThomsonGUI::ReadMainFile()
         readSuccess = false;
     }
 
+    if (readSuccess)
+        std::cout << "данные прочитаны!\n";
+
     fin.close();
 }
 
 void ThomsonGUI::OpenMainFileDialog()
 {
-    std::cout << "OpenMainFileDialog()\n";
-
     static const char *fileTypes[] = { "setting file", "*.txt" };
     static const char initDir[] = "";
     TGFileInfo fi;
@@ -283,27 +282,21 @@ void ThomsonGUI::OpenMainFileDialog()
 
     mainFileTextEntry->Clear();
     mainFileTextEntry->AppendText(fi.fFilename);
-
 }
 
 void ThomsonGUI::DrawGraphs()
 {
-    std::cout << "DrawGraphs()\n";
-
     if (!readSuccess)
     {
-        std::cout << "не прочитаны данные!\n";
+        std::cout << "нет прочитаных данных!\n";
         return;
     }
 
     uint nSpectrometer = spectrometerNumber->GetNumber();
     uint nTimePage = timeListNumber->GetNumber();
 
-    std::cout << "nSpectrometer: " << nSpectrometer << " nTimePage: " << nTimePage << "\n";
-
     if (drawSignalsInChannels->IsDown()) 
     {
-        std::cout << "drawSignalsInChannels()\n";
         TString canvas_name = TString::Format("signal_nt_%u_sp_%u", nSpectrometer, nTimePage);
         TCanvas *c = ThomsonDraw::createCanvas(canvas_name);
         TMultiGraph *mg = ThomsonDraw::createMultiGraph("mg_"+canvas_name, "");
@@ -311,7 +304,6 @@ void ThomsonGUI::DrawGraphs()
     }
     if (drawIntegralInChannels->IsDown())
     {
-        std::cout << "drawIntegralInChannels()\n";
         TString canvas_name = TString::Format("signal_integral_nt_%u_sp_%u", nSpectrometer, nTimePage);
         TCanvas *c = ThomsonDraw::createCanvas(canvas_name);
         TMultiGraph *mg = ThomsonDraw::createMultiGraph("mg_"+canvas_name, "");
