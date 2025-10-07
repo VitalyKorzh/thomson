@@ -103,7 +103,7 @@ int &ThomsonGUI::getShot(int &shot) const
 }
 
 ThomsonGUI::ThomsonGUI(const TGWindow *p, UInt_t width, UInt_t height, TApplication *app) : TGMainFrame(p, width, height),
-                                                                                            app(app)
+                                                                                            app(app), readSuccess(false)
 {
     SetCleanup(kDeepCleanup);
 
@@ -121,19 +121,32 @@ ThomsonGUI::ThomsonGUI(const TGWindow *p, UInt_t width, UInt_t height, TApplicat
     hframe->AddFrame(mainFileTextEntry, new TGLayoutHints(kLHintsExpandX, 5, 5, 5, 5));
     hframe->AddFrame(readMainFileEntry, new TGLayoutHints(kLHintsRight, 5, 5, 5, 5));
 
+    TGVerticalFrame *vframe = new TGVerticalFrame(this, 20, 40);
+    this->AddFrame(vframe, new TGLayoutHints(kLHintsTop, 5, 5, 5, 5));
+
+    drawSignalsInChannels = new TGCheckButton(vframe, "draw signals in channels");
+    drawIntegralInChannels = new TGCheckButton(vframe, "draw integral of signal in channels");
+
+    vframe->AddFrame(drawSignalsInChannels, new TGLayoutHints(kLHintsLeft, 1, 1, 2, 2));
+    vframe->AddFrame(drawIntegralInChannels, new TGLayoutHints(kLHintsLeft, 1, 1, 2, 2));
 
     TGHorizontalFrame *hframe_bottom = new TGHorizontalFrame(this, width, 80);
     this->AddFrame(hframe_bottom, new TGLayoutHints(kLHintsExpandX| kLHintsBottom, 5, 5, 5,  10));
-
     TGButton *drawButton = new TGTextButton(hframe_bottom, "Draw");
     drawButton->Connect("Pressed()", CLASS_NAME, this, "DrawGraphs()");
 
     timeListNumber = new TGNumberEntry(hframe_bottom, 0, 4, -1, TGNumberFormat::kNESInteger,
                                          TGNumberFormat::kNEANonNegative, TGNumberEntry::kNELLimitMinMax, 0, N_TIME_LIST-1);
+    spectrometerNumber = new TGNumberEntry(hframe_bottom, 0, 4, -1, TGNumberFormat::kNESInteger,
+                                         TGNumberFormat::kNEANonNegative, TGNumberEntry::kNELLimitMinMax, 0, N_SPECTROMETERS-1);
+
+    drawButton->SetToolTipText("draw selected graphs");
+    timeListNumber->GetNumberEntry()->SetToolTipText("time page number");
+    spectrometerNumber->GetNumberEntry()->SetToolTipText("spectrometer number");
     
     hframe_bottom->AddFrame(drawButton, new TGLayoutHints(kLHintsLeft, 5, 5, 5, 5));
     hframe_bottom->AddFrame(timeListNumber, new TGLayoutHints(kLHintsLeft, 5, 5, 5, 5));
-
+    hframe_bottom->AddFrame(spectrometerNumber, new TGLayoutHints(kLHintsLeft, 5, 5, 5, 5));
 
     SetName("Thomson");
     SetWindowName("Thomson");
@@ -143,7 +156,6 @@ ThomsonGUI::ThomsonGUI(const TGWindow *p, UInt_t width, UInt_t height, TApplicat
 
 void ThomsonGUI::ReadMainFile()
 {
-    readSuccess = true;
     std::cout << "ReadMainFile()\n";
 
     TString fileName = mainFileTextEntry->GetText();
@@ -153,6 +165,7 @@ void ThomsonGUI::ReadMainFile()
 
     if (fin.is_open())
     {
+        readSuccess = true;
         std::getline(fin, srf_file_folder);
         std::getline(fin, convolution_file_folder);
         std::getline(fin, archive_name);
@@ -165,7 +178,7 @@ void ThomsonGUI::ReadMainFile()
         fin >> parameters.step_from_start_zero_line >> parameters.step_from_end_zero_line >> parameters.signal_point_start >> 
         parameters.signal_point_step >> parameters.threshold >> parameters.increase_point >> parameters.decrease_point;
 
-        bool successRead = true;
+        bool successReadArchive = true;
         clearSpArray();
         for (uint sp = 0; sp < N_SPECTROMETERS; sp++)
         {
@@ -180,7 +193,7 @@ void ThomsonGUI::ReadMainFile()
                     TString signal_name = getSignalName(sp, ch);
                     if (!readFromArchive(archive_name.c_str(), KUST_NAME, signal_name, shot, t, U, it, 0, N_TIME_SIZE*2, UNUSEFULL)) 
                     {
-                        successRead = false;
+                        successReadArchive = false;
                         break;
                     }
                 }
@@ -189,7 +202,7 @@ void ThomsonGUI::ReadMainFile()
             }
         }
 
-        if (fin.fail() || !successRead) {
+        if (fin.fail() || !successReadArchive) {
             readSuccess = false;
             std::cerr << "ошибка чтения файла!\n";
         }
@@ -223,6 +236,27 @@ void ThomsonGUI::OpenMainFileDialog()
 void ThomsonGUI::DrawGraphs()
 {
     std::cout << "DrawGraphs()\n";
+
+    if (!readSuccess)
+    {
+        std::cout << "не прочитаны данные!\n";
+        return;
+    }
+
+    uint nChannel = spectrometerNumber->GetNumber();
+    uint nTimePage = timeListNumber->GetNumber();
+
+    std::cout << "nChannel: " << nChannel << " nTimePage: " << nTimePage << "\n";
+
+    if (drawSignalsInChannels->IsDown()) 
+    {
+        std::cout << "drawSignalsInChannels()\n";
+    }
+    if (drawIntegralInChannels->IsDown())
+    {
+        std::cout << "drawIntegralInChannels()\n";
+    }
+
 }
 
 void ThomsonGUI::run()

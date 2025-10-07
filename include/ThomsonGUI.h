@@ -10,8 +10,8 @@
 #include <TGFrame.h>
 #include <TGButton.h>
 #include <TGTextEntry.h>
-#include <TGWindow.h>
 #include <TGNumberEntry.h>
+#include <TGWindow.h>
 #include <TQObject.h>
 #include <RQ_OBJECT.h>
 
@@ -27,6 +27,10 @@ private:
 
     TGTextEntry *mainFileTextEntry;
     TGNumberEntry *timeListNumber;
+    TGNumberEntry *spectrometerNumber;
+
+    TGCheckButton *drawSignalsInChannels;
+    TGCheckButton *drawIntegralInChannels;
 
     bool readSuccess;
     std::string srf_file_folder;
