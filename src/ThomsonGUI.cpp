@@ -191,14 +191,16 @@ ThomsonGUI::ThomsonGUI(const TGWindow *p, UInt_t width, UInt_t height, TApplicat
 
     TGButton *openMainFileDialogButton = new TGTextButton(hframe, "^");
     mainFileTextEntry = new TGTextEntry(hframe);
-    TGButton *readMainFileEntry = new TGTextButton(hframe, "Read");
+    TGButton *readMainFileButton = new TGTextButton(hframe, "Read");
 
-    readMainFileEntry->Connect("Pressed()", CLASS_NAME, this, "ReadMainFile()");
+    readMainFileButton->SetToolTipText("read file until draw graphs");
+
+    readMainFileButton->Connect("Pressed()", CLASS_NAME, this, "ReadMainFile()");
     openMainFileDialogButton->Connect("Pressed()", CLASS_NAME, this, "OpenMainFileDialog()");
 
     hframe->AddFrame(openMainFileDialogButton, new TGLayoutHints(kLHintsLeft, 5, 5, 5, 5));
     hframe->AddFrame(mainFileTextEntry, new TGLayoutHints(kLHintsExpandX, 5, 5, 5, 5));
-    hframe->AddFrame(readMainFileEntry, new TGLayoutHints(kLHintsRight, 5, 5, 5, 5));
+    hframe->AddFrame(readMainFileButton, new TGLayoutHints(kLHintsRight, 5, 5, 5, 5));
 
     TGVerticalFrame *vframe = new TGVerticalFrame(this, 20, 40);
     this->AddFrame(vframe, new TGLayoutHints(kLHintsTop, 5, 5, 5, 5));
