@@ -8,6 +8,8 @@
 #include <dasarchive/TSignalC.h>
 #include <TGFileDialog.h>
 
+#include "SignalProcessing.h"
+
 ClassImp(ThomsonGUI)
 
 #define N_SPECTROMETERS 6

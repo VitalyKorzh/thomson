@@ -3,6 +3,7 @@
 
 #include <string>
 #include <list>
+#include <vector>
 
 #include <TString.h>
 #include <TApplication.h>
@@ -14,7 +15,8 @@
 #include <TQObject.h>
 #include <RQ_OBJECT.h>
 
-#include "SignalProcessing.h"
+class SignalProcessing;
+typedef std::vector<double> darray;
 
 class ThomsonGUI : public TGMainFrame
 {
