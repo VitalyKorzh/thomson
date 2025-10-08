@@ -272,7 +272,7 @@ barray ThomsonGUI::createWorkMask(const std::string &work_mask_string) const
 {
     barray work_mask(N_CHANNELS, false);
 
-    for (int i = 0; i < std::min((int) work_mask_string.size(), N_CHANNELS); i++)
+    for (int i = 0; i < std::min((int) work_mask_string.size(), N_WORK_CHANNELS); i++)
         work_mask[i] = work_mask_string[i] == '+' ? true : false;
 
     return work_mask;
