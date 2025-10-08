@@ -81,7 +81,7 @@ private:
     int findRatioNumber(uint ch1, uint ch2) const;
 
     const double * const getSRFch(uint ch) const { return SRF.data()+ch*N_LAMBDA; }
-    inline double getSCount(uint it, uint ch) const { return SCount[it*N_CHANNELS+ch]; }
+    inline double getSCount(uint it, uint ch) const { return SCount[it+ch*N_TEMPERATURE]; }
  
 public:
     ThomsonCounter(const std::string &srf_file_name, const std::string &convolution_file_name, const darray &signal, const darray & signal_error, double theta, const barray &channel_work={}, double lambda_reference=W_REFERENCE);

@@ -20,7 +20,7 @@ private:
     static TLegend *createLegend(const TMultiGraph * const mg, double x1=0.12, double y1=0.6, double x2=0.35, double y2=0.88, bool draw=true);
     static TGraph * createSignalBox(double t1, double t2, double U, uint color=6, uint lineStyle=1, uint lineWidth=1);
 
-    static void thomson_draw(TMultiGraph *mg, const SignalProcessing &sp, uint nPoints, const int integrate, bool draw=true, bool drawSigBox=false, bool drawFullLine=false, const std::vector<TString> &gTitle={});
+    static void thomson_draw(TMultiGraph *mg, const SignalProcessing &sp, uint nPoints, const int integrate, bool draw=true, bool drawSigBox=false, bool drawFullLine=false, const std::vector<TString> &gTitle={}, const barray &work_mask={});
 
 
 public:
@@ -28,7 +28,7 @@ public:
     static TMultiGraph *createMultiGraph(const char *mg_name, const char *mg_title);
     static void srf_draw(TCanvas *c, TMultiGraph *mg, const darray &SRF, uint N_CHANNELS, double lMin, double lMax, uint N_LAMBDA, double lambda_reference=1064., const darray &Te={}, const darray &theta={}, bool draw=true, bool drawLegend=false);
     static void convolution_draw(TCanvas *c, TMultiGraph *mg, const darray &SCount, uint N_CHANNELS, double T0, double dT, uint N_TEMPERATURE, bool draw=true, bool drawLegend=true);
-    static void thomson_signal_draw(TCanvas *c, TMultiGraph *mg, SignalProcessing *sp, int integrate=0, bool draw=true, bool drawLegend=true, bool drawSigBox=false, uint NChannels=6);
+    static void thomson_signal_draw(TCanvas *c, TMultiGraph *mg, SignalProcessing *sp, int integrate=0, bool draw=true, bool drawLegend=true, bool drawSigBox=false, uint NChannels=6, const barray &work_mask={});
 };
 
 #endif

@@ -178,7 +178,7 @@ TGraph *ThomsonDraw::createSignalBox(double t1, double t2, double U, uint color,
     return createGraph(N_SIZE, x, y, color, lineStyle, lineWidth);
 }
 
-void ThomsonDraw::thomson_draw(TMultiGraph *mg, const SignalProcessing &sp, uint nPoints, const int integrate, bool draw, bool drawSigBox, bool drawFullLine, const std::vector<TString> &gTitle)
+void ThomsonDraw::thomson_draw(TMultiGraph *mg, const SignalProcessing &sp, uint nPoints, const int integrate, bool draw, bool drawSigBox, bool drawFullLine, const std::vector<TString> &gTitle, const barray &work_mask)
 {    
     uint color = 1;
 
@@ -190,6 +190,9 @@ void ThomsonDraw::thomson_draw(TMultiGraph *mg, const SignalProcessing &sp, uint
 
     for (uint p = 0; p < nPoints; p++) 
     {
+        if (p < work_mask.size() && !work_mask[p])
+            continue;
+
         TString title = p < gTitle.size() ? gTitle[p] : "";
 
         if (drawSigBox && integrate <= 0)
@@ -242,7 +245,7 @@ void ThomsonDraw::thomson_draw(TMultiGraph *mg, const SignalProcessing &sp, uint
     } 
 }
 
-void ThomsonDraw::thomson_signal_draw(TCanvas *c, TMultiGraph *mg, SignalProcessing *sp, int integrate, bool draw, bool drawLegend, bool drawSigBox, uint NChannels) 
+void ThomsonDraw::thomson_signal_draw(TCanvas *c, TMultiGraph *mg, SignalProcessing *sp, int integrate, bool draw, bool drawLegend, bool drawSigBox, uint NChannels, const barray &work_mask) 
 {
     c->cd();
     mg->SetTitle(integrate ? ";t, ns;U, V" : ";t, ns;Ut, V*ns");
@@ -252,7 +255,7 @@ void ThomsonDraw::thomson_signal_draw(TCanvas *c, TMultiGraph *mg, SignalProcess
     for (uint i = 0; i < NChannels; i++)
         gTitle.push_back(TString::Format("ch%u", i+1));
 
-    thomson_draw(mg, *sp, NChannels, integrate, draw, drawSigBox, true, gTitle);
+    thomson_draw(mg, *sp, NChannels, integrate, draw, drawSigBox, true, gTitle, work_mask);
     if (drawLegend)
         createLegend(mg, 0.12, 0.6, 0.35, 0.88);
 

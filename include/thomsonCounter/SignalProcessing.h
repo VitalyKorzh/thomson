@@ -59,7 +59,7 @@ private:
     
 public:
     
-    SignalProcessing(const darray &t_full, const darray &U_full, uint N_CHANNELS, const SignalProcessingParameters &parameters);
+    SignalProcessing(const darray &t_full, const darray &U_full, uint N_CHANNELS, const SignalProcessingParameters &parameters, const barray &work_mask={});
     SignalProcessing(const darray &signals, const barray &work_signal={});
 
     const darray &getSignals() const { return signals; }

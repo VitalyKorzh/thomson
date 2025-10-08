@@ -119,7 +119,7 @@ bool SignalProcessing::checkSignal(const darray &t, const darray &U, uint channe
         return false;
 }
 
-SignalProcessing::SignalProcessing(const darray &t_full, const darray &U_full, uint N_CHANNELS, const SignalProcessingParameters &parameters) : N_CHANNELS(N_CHANNELS),
+SignalProcessing::SignalProcessing(const darray &t_full, const darray &U_full, uint N_CHANNELS, const SignalProcessingParameters &parameters, const barray &work_mask) : N_CHANNELS(N_CHANNELS),
                                     signals(N_CHANNELS, 0), work_signal(N_CHANNELS, true), shifts(N_CHANNELS, 0.), UTintegrate_full(t_full.size()), t(t_full), UShift(t_full.size()), signal_box(3*N_CHANNELS), parameters(parameters)
 {
     tSize = t_full.size() / N_CHANNELS;
@@ -132,9 +132,15 @@ SignalProcessing::SignalProcessing(const darray &t_full, const darray &U_full, u
         double signal = countChannelSignal(UTintegrate_full, i, parameters.signal_point_start, parameters.signal_point_step);
 
         work_signal[i] = checkSignal(t_full, UShift, i, signal, parameters.threshold, parameters.increase_point, parameters.decrease_point);
+
         signals[i] = signal;
         shifts[i] = shift;
     }
+
+    for (uint i = 0; i < work_mask.size(); i++)
+        if (!work_mask[i])
+            work_signal[i] = false;
+
 }
 
 SignalProcessing::SignalProcessing(const darray &signals, const barray &work_signal) : N_CHANNELS(signals.size()), signals(signals), work_signal(work_signal)

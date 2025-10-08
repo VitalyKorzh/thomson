@@ -202,7 +202,7 @@ bool ThomsonGUI::processingSignalsData(const char *archive_name, int shot, const
                 }
             }
 
-            spArray.push_back(new SignalProcessing(t, U, N_CHANNELS, parameters));
+            spArray.push_back(new SignalProcessing(t, U, N_CHANNELS, parameters, work_mask));
         }
     }
     return successReadArchive;
@@ -268,6 +268,16 @@ void ThomsonGUI::clearCounterArray()
     counterArray.clear();
 }
 
+barray ThomsonGUI::createWorkMask(const std::string &work_mask_string) const
+{
+    barray work_mask(N_CHANNELS, false);
+
+    for (int i = 0; i < std::min((int) work_mask_string.size(), N_CHANNELS); i++)
+        work_mask[i] = work_mask_string[i] == '+' ? true : false;
+
+    return work_mask;
+}
+
 TString ThomsonGUI::getSignalName(uint nSpectrometer, uint nChannel) const
 {
     return TString::Format("ts%u-f-ch%u", nSpectrometer+1, nChannel+1);
@@ -294,8 +304,8 @@ ThomsonGUI::ThomsonGUI(const TGWindow *p, UInt_t width, UInt_t height, TApplicat
 
     readMainFileButton->SetToolTipText("read file until draw graphs");
 
-    readMainFileButton->Connect("Pressed()", CLASS_NAME, this, "ReadMainFile()");
-    openMainFileDialogButton->Connect("Pressed()", CLASS_NAME, this, "OpenMainFileDialog()");
+    readMainFileButton->Connect("Clicked()", CLASS_NAME, this, "ReadMainFile()");
+    openMainFileDialogButton->Connect("Clicked()", CLASS_NAME, this, "OpenMainFileDialog()");
 
     hframe->AddFrame(openMainFileDialogButton, new TGLayoutHints(kLHintsLeft, 5, 5, 5, 5));
     hframe->AddFrame(mainFileTextEntry, new TGLayoutHints(kLHintsExpandX, 5, 5, 5, 5));
@@ -317,7 +327,7 @@ ThomsonGUI::ThomsonGUI(const TGWindow *p, UInt_t width, UInt_t height, TApplicat
     TGHorizontalFrame *hframe_bottom = new TGHorizontalFrame(this, width, 80);
     this->AddFrame(hframe_bottom, new TGLayoutHints(kLHintsExpandX| kLHintsBottom, 5, 5, 5,  10));
     TGButton *drawButton = new TGTextButton(hframe_bottom, "Draw");
-    drawButton->Connect("Pressed()", CLASS_NAME, this, "DrawGraphs()");
+    drawButton->Connect("Clicked()", CLASS_NAME, this, "DrawGraphs()");
 
     timeListNumber = new TGNumberEntry(hframe_bottom, 1, 4, -1, TGNumberFormat::kNESInteger,
                                          TGNumberFormat::kNEANonNegative, TGNumberEntry::kNELLimitMinMax, 0, N_TIME_LIST-1);
@@ -355,6 +365,10 @@ void ThomsonGUI::ReadMainFile()
         std::getline(fin, convolution_file_folder);
         std::getline(fin, archive_name);
         
+        std::string work_mask_string;
+        std::getline(fin, work_mask_string);
+        work_mask = createWorkMask(work_mask_string);
+
         int shot;
         SignalProcessingParameters parameters;
         
@@ -417,7 +431,7 @@ void ThomsonGUI::DrawGraphs()
         ThomsonDraw::srf_draw(c, mg,counter->getSRF(), N_WORK_CHANNELS, counter->getLMin(), counter->getLMax(),
         counter->getNLambda(), LAMBDA_REFERENCE, {}, {}, true, false);
     }
-    if (drawConvolution)
+    if (drawConvolution->IsDown())
     {
         ThomsonCounter *counter = getThomsonCounter(0, nSpectrometer);
         TString canvas_name = TString::Format("convolution_sp_%u", nSpectrometer);
@@ -430,14 +444,14 @@ void ThomsonGUI::DrawGraphs()
         TString canvas_name = TString::Format("signal_tp_%u_sp_%u", nSpectrometer, nTimePage);
         TCanvas *c = ThomsonDraw::createCanvas(canvas_name);
         TMultiGraph *mg = ThomsonDraw::createMultiGraph("mg_"+canvas_name, "");
-        ThomsonDraw::thomson_signal_draw(c, mg, getSignalProcessing(nTimePage, nSpectrometer), 0, true, true, false, N_WORK_CHANNELS);
+        ThomsonDraw::thomson_signal_draw(c, mg, getSignalProcessing(nTimePage, nSpectrometer), 0, true, true, false, N_WORK_CHANNELS, work_mask);
     }
     if (drawIntegralInChannels->IsDown())
     {
         TString canvas_name = TString::Format("signal_integral_tp_%u_sp_%u", nSpectrometer, nTimePage);
         TCanvas *c = ThomsonDraw::createCanvas(canvas_name);
         TMultiGraph *mg = ThomsonDraw::createMultiGraph("mg_"+canvas_name, "");
-        ThomsonDraw::thomson_signal_draw(c, mg, getSignalProcessing(nTimePage, nSpectrometer), 1, true, true, false, N_WORK_CHANNELS);
+        ThomsonDraw::thomson_signal_draw(c, mg, getSignalProcessing(nTimePage, nSpectrometer), 1, true, true, false, N_WORK_CHANNELS, work_mask);
     }
 
 }

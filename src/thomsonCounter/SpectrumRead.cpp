@@ -52,6 +52,16 @@ bool readSpectrumFromT(std::string filename, double &T0, double &dT, uint &N_T, 
 
             N_T++;            
         }
+
+
+        darray S_T_TEMP(S_T.size());
+
+        for (uint ch = 0; ch < channels+UN_USE_CHANNELS; ch++)
+        {
+            for (uint it = 0; it < N_T; it++)
+                S_T_TEMP[ch*N_T+it] = S_T[ch+(channels+UN_USE_CHANNELS)*it];
+        }
+        S_T = S_T_TEMP;
         
     }
     else

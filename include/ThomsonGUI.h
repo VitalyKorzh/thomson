@@ -39,8 +39,12 @@ private:
     bool thomsonSuccess;
     std::string archive_name;
 
+    barray work_mask;
+
     std::vector <SignalProcessing*> spArray;
     std::vector <ThomsonCounter *> counterArray;
+
+    barray createWorkMask(const std::string &work_mask_string) const;
 
     TString getSignalName(uint nSpectrometer, uint nChannel) const;
     int& getShot(int &shot) const;
