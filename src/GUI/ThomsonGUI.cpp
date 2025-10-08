@@ -305,10 +305,12 @@ ThomsonGUI::ThomsonGUI(const TGWindow *p, UInt_t width, UInt_t height, TApplicat
     this->AddFrame(vframe, new TGLayoutHints(kLHintsTop, 5, 5, 5, 5));
 
     drawSRF = new TGCheckButton(vframe, "draw SRF");
+    drawConvolution = new TGCheckButton(vframe, "draw convolution");
     drawSignalsInChannels = new TGCheckButton(vframe, "draw signals in channels");
     drawIntegralInChannels = new TGCheckButton(vframe, "draw integral of signal in channels");
 
     vframe->AddFrame(drawSRF, new TGLayoutHints(kLHintsLeft, 1, 1, 2, 2));
+    vframe->AddFrame(drawConvolution, new TGLayoutHints(kLHintsLeft, 1, 1, 2, 2));
     vframe->AddFrame(drawSignalsInChannels, new TGLayoutHints(kLHintsLeft, 1, 1, 2, 2));
     vframe->AddFrame(drawIntegralInChannels, new TGLayoutHints(kLHintsLeft, 1, 1, 2, 2));
 
@@ -414,6 +416,14 @@ void ThomsonGUI::DrawGraphs()
         TMultiGraph *mg = ThomsonDraw::createMultiGraph("mg_"+canvas_name, "");
         ThomsonDraw::srf_draw(c, mg,counter->getSRF(), N_WORK_CHANNELS, counter->getLMin(), counter->getLMax(),
         counter->getNLambda(), LAMBDA_REFERENCE, {}, {}, true, false);
+    }
+    if (drawConvolution)
+    {
+        ThomsonCounter *counter = getThomsonCounter(0, nSpectrometer);
+        TString canvas_name = TString::Format("convolution_sp_%u", nSpectrometer);
+        TCanvas *c = ThomsonDraw::createCanvas(canvas_name);
+        TMultiGraph *mg = ThomsonDraw::createMultiGraph("mg_"+canvas_name, "");
+        ThomsonDraw::convolution_draw(c, mg, counter->getConvolution(), N_WORK_CHANNELS, counter->getTMin(), counter->getDT(), counter->getNTemperature(), true, true);
     }
     if (drawSignalsInChannels->IsDown()) 
     {

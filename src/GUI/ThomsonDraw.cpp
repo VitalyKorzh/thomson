@@ -97,6 +97,38 @@ void ThomsonDraw::srf_draw(TCanvas *c, TMultiGraph *mg, const darray &SRF, uint 
 
 }
 
+void ThomsonDraw::convolution_draw(TCanvas *c, TMultiGraph *mg, const darray &SCount, uint N_CHANNELS, double T0, double dT, uint N_TEMPERATURE, bool draw, bool drawLegend)
+{
+    c->cd();
+    mg->SetTitle(";Te, eV;signal a.u.");
+
+
+    darray T(N_TEMPERATURE);
+    for (uint i = 0; i < N_TEMPERATURE; i++)
+    {
+        T[i] = T0 + dT*i;
+    }
+
+    uint color = 1;
+    for (uint i = 0; i < N_CHANNELS; i++)
+    {
+        mg->Add(createGraph(N_TEMPERATURE, T.data(), SCount.data()+i*N_TEMPERATURE, color, 1, 2, TString::Format("ch%u", i+1)));
+
+        Color(color);
+    }
+
+    if (draw)
+    {
+        mg->GetXaxis()->CenterTitle();
+        mg->GetYaxis()->CenterTitle();
+        mg->Draw("AL");
+    }
+
+    if (drawLegend)
+        createLegend(mg);
+
+}
+
 TGraph *ThomsonDraw::createGraph(uint points, const double *const x, const double *const y, const uint color, const uint lineStyle, const uint lineWidth, const char *title)
 {
     TGraph *g = new TGraph(points, x, y);

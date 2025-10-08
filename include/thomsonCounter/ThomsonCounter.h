@@ -121,6 +121,9 @@ public:
     double getLMin() const { return lMin; }
     double getLMax() const { return lMax; }
     double getDL() const { return dl; }
+    double getTMin() const { return T0; }
+    double getDT() const { return dT; }
+    uint getNTemperature() const { return N_TEMPERATURE; }
 
 };
 

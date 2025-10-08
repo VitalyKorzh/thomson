@@ -31,6 +31,7 @@ private:
     TGNumberEntry *spectrometerNumber;
 
     TGCheckButton *drawSRF;
+    TGCheckButton *drawConvolution;
     TGCheckButton *drawSignalsInChannels;
     TGCheckButton *drawIntegralInChannels;
 
