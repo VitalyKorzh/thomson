@@ -389,8 +389,10 @@ void ThomsonGUI::ReadMainFile()
     }
     fin.close();
 
-    if (readSuccess)
+    if (readSuccess) {
         std::cout << "данные прочитаны!\n";
+        mainFileTextEntry->SetToolTipText(fileName + " read");
+    }
     if (thomsonSuccess)
         std::cout << "вычисления n,T подготовлены\n";
         
