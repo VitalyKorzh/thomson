@@ -35,6 +35,11 @@ private:
     TGCheckButton *drawSignalsInChannels;
     TGCheckButton *drawIntegralInChannels;
 
+    TGNumberEntry *calibrationShot;
+
+    TGNumberEntryField **thetaCalibration;
+    TGNumberEntryField **xPositionCalibration;
+
     bool readSuccess;
     bool thomsonSuccess;
     std::string archive_name;
@@ -64,6 +69,8 @@ public:
     ThomsonGUI(const TGWindow *p, UInt_t width, UInt_t height, TApplication *app);
 
     void ReadMainFile();
+    void ReadCalibration();
+    void WriteCalibration();
     void OpenMainFileDialog();
     void DrawGraphs();
 

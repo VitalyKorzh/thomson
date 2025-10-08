@@ -7,6 +7,9 @@
 #include <dasarchive/TSignalF.h>
 #include <dasarchive/TSignalC.h>
 #include <TGFileDialog.h>
+#include <TGTab.h>
+#include <TGText.h>
+#include <TGLabel.h>
 
 #include "ThomsonDraw.h"
 
@@ -295,52 +298,116 @@ ThomsonGUI::ThomsonGUI(const TGWindow *p, UInt_t width, UInt_t height, TApplicat
 {
     SetCleanup(kDeepCleanup);
 
-    TGHorizontalFrame *hframe = new TGHorizontalFrame(this, width, 40);
-    this->AddFrame(hframe, new TGLayoutHints(kLHintsExpandX, 5, 5, 5, 5));
+    {
+        TGHorizontalFrame *hframe = new TGHorizontalFrame(this, width, 40);
+        this->AddFrame(hframe, new TGLayoutHints(kLHintsExpandX, 5, 5, 5, 5));
 
-    TGButton *openMainFileDialogButton = new TGTextButton(hframe, "^");
-    mainFileTextEntry = new TGTextEntry(hframe);
-    TGButton *readMainFileButton = new TGTextButton(hframe, "Read");
+        TGButton *openMainFileDialogButton = new TGTextButton(hframe, "^");
+        mainFileTextEntry = new TGTextEntry(hframe);
+        TGButton *readMainFileButton = new TGTextButton(hframe, "Read");
 
-    readMainFileButton->SetToolTipText("read file until draw graphs");
+        readMainFileButton->SetToolTipText("read file until draw graphs");
 
-    readMainFileButton->Connect("Clicked()", CLASS_NAME, this, "ReadMainFile()");
-    openMainFileDialogButton->Connect("Clicked()", CLASS_NAME, this, "OpenMainFileDialog()");
+        readMainFileButton->Connect("Clicked()", CLASS_NAME, this, "ReadMainFile()");
+        openMainFileDialogButton->Connect("Clicked()", CLASS_NAME, this, "OpenMainFileDialog()");
 
-    hframe->AddFrame(openMainFileDialogButton, new TGLayoutHints(kLHintsLeft, 5, 5, 5, 5));
-    hframe->AddFrame(mainFileTextEntry, new TGLayoutHints(kLHintsExpandX, 5, 5, 5, 5));
-    hframe->AddFrame(readMainFileButton, new TGLayoutHints(kLHintsRight, 5, 5, 5, 5));
+        hframe->AddFrame(openMainFileDialogButton, new TGLayoutHints(kLHintsLeft, 5, 5, 5, 5));
+        hframe->AddFrame(mainFileTextEntry, new TGLayoutHints(kLHintsExpandX, 5, 5, 5, 5));
+        hframe->AddFrame(readMainFileButton, new TGLayoutHints(kLHintsRight, 5, 5, 5, 5));
+    }
 
-    TGVerticalFrame *vframe = new TGVerticalFrame(this, 20, 40);
-    this->AddFrame(vframe, new TGLayoutHints(kLHintsTop, 5, 5, 5, 5));
+    TGTab *fTap = new TGTab(this, width, height);
 
-    drawSRF = new TGCheckButton(vframe, "draw SRF");
-    drawConvolution = new TGCheckButton(vframe, "draw convolution");
-    drawSignalsInChannels = new TGCheckButton(vframe, "draw signals in channels");
-    drawIntegralInChannels = new TGCheckButton(vframe, "draw integral of signal in channels");
+    {
+        TGCompositeFrame *fTTu = fTap->AddTab("Diagnostic.");
 
-    vframe->AddFrame(drawSRF, new TGLayoutHints(kLHintsLeft, 1, 1, 2, 2));
-    vframe->AddFrame(drawConvolution, new TGLayoutHints(kLHintsLeft, 1, 1, 2, 2));
-    vframe->AddFrame(drawSignalsInChannels, new TGLayoutHints(kLHintsLeft, 1, 1, 2, 2));
-    vframe->AddFrame(drawIntegralInChannels, new TGLayoutHints(kLHintsLeft, 1, 1, 2, 2));
+        TGVerticalFrame *vframe = new TGVerticalFrame(fTTu, 20, 40);
+        fTTu->AddFrame(vframe, new TGLayoutHints(kLHintsTop, 5, 5, 5, 5));
 
-    TGHorizontalFrame *hframe_bottom = new TGHorizontalFrame(this, width, 80);
-    this->AddFrame(hframe_bottom, new TGLayoutHints(kLHintsExpandX| kLHintsBottom, 5, 5, 5,  10));
-    TGButton *drawButton = new TGTextButton(hframe_bottom, "Draw");
-    drawButton->Connect("Clicked()", CLASS_NAME, this, "DrawGraphs()");
+        drawSRF = new TGCheckButton(vframe, "draw SRF");
+        drawConvolution = new TGCheckButton(vframe, "draw convolution");
+        drawSignalsInChannels = new TGCheckButton(vframe, "draw signals in channels");
+        drawIntegralInChannels = new TGCheckButton(vframe, "draw integral of signal in channels");
 
-    timeListNumber = new TGNumberEntry(hframe_bottom, 1, 4, -1, TGNumberFormat::kNESInteger,
-                                         TGNumberFormat::kNEANonNegative, TGNumberEntry::kNELLimitMinMax, 0, N_TIME_LIST-1);
-    spectrometerNumber = new TGNumberEntry(hframe_bottom, 0, 4, -1, TGNumberFormat::kNESInteger,
-                                         TGNumberFormat::kNEANonNegative, TGNumberEntry::kNELLimitMinMax, 0, N_SPECTROMETERS-1);
+        vframe->AddFrame(drawSRF, new TGLayoutHints(kLHintsLeft, 1, 1, 2, 2));
+        vframe->AddFrame(drawConvolution, new TGLayoutHints(kLHintsLeft, 1, 1, 2, 2));
+        vframe->AddFrame(drawSignalsInChannels, new TGLayoutHints(kLHintsLeft, 1, 1, 2, 2));
+        vframe->AddFrame(drawIntegralInChannels, new TGLayoutHints(kLHintsLeft, 1, 1, 2, 2));
 
-    drawButton->SetToolTipText("draw selected graphs");
-    timeListNumber->GetNumberEntry()->SetToolTipText("time page number");
-    spectrometerNumber->GetNumberEntry()->SetToolTipText("spectrometer number");
-    
-    hframe_bottom->AddFrame(drawButton, new TGLayoutHints(kLHintsLeft, 5, 5, 5, 5));
-    hframe_bottom->AddFrame(timeListNumber, new TGLayoutHints(kLHintsLeft, 5, 5, 5, 5));
-    hframe_bottom->AddFrame(spectrometerNumber, new TGLayoutHints(kLHintsLeft, 5, 5, 5, 5));
+        TGHorizontalFrame *hframe_bottom = new TGHorizontalFrame(fTTu, width, 80);
+        fTTu->AddFrame(hframe_bottom, new TGLayoutHints(kLHintsExpandX| kLHintsBottom, 5, 5, 5,  10));
+        TGButton *drawButton = new TGTextButton(hframe_bottom, "Draw");
+        drawButton->Connect("Clicked()", CLASS_NAME, this, "DrawGraphs()");
+
+        timeListNumber = new TGNumberEntry(hframe_bottom, 1, 4, -1, TGNumberFormat::kNESInteger,
+                                            TGNumberFormat::kNEANonNegative, TGNumberEntry::kNELLimitMinMax, 0, N_TIME_LIST-1);
+        spectrometerNumber = new TGNumberEntry(hframe_bottom, 0, 4, -1, TGNumberFormat::kNESInteger,
+                                            TGNumberFormat::kNEANonNegative, TGNumberEntry::kNELLimitMinMax, 0, N_SPECTROMETERS-1);
+
+        drawButton->SetToolTipText("draw selected graphs");
+        timeListNumber->GetNumberEntry()->SetToolTipText("time page number");
+        spectrometerNumber->GetNumberEntry()->SetToolTipText("spectrometer number");
+        
+        hframe_bottom->AddFrame(drawButton, new TGLayoutHints(kLHintsLeft, 5, 5, 5, 5));
+        hframe_bottom->AddFrame(timeListNumber, new TGLayoutHints(kLHintsLeft, 5, 5, 5, 5));
+        hframe_bottom->AddFrame(spectrometerNumber, new TGLayoutHints(kLHintsLeft, 5, 5, 5, 5));
+    }
+
+    {
+        TGCompositeFrame *fTTu = fTap->AddTab("Calibration.");
+        TGHorizontalFrame *hframe = new TGHorizontalFrame(fTTu, width, 40);
+        fTTu->AddFrame(hframe, new TGLayoutHints(kLHintsLeft|kLHintsExpandX|kLHintsTop, 5, 5, 5, 5));
+
+        TGLabel *calibrationShotLabel = new TGLabel(hframe, "shot");
+        calibrationShot = new TGNumberEntry(hframe, 0, 12, -1, TGNumberFormat::kNESInteger, TGNumberFormat::kNEAAnyNumber, TGNumberFormat::kNELNoLimits);
+        hframe->AddFrame(calibrationShotLabel, new TGLayoutHints(kLHintsLeft, 5, 5, 10, 5));
+        hframe->AddFrame(calibrationShot, new TGLayoutHints(kLHintsLeft, 5, 5, 5, 5));
+
+
+        TGVerticalFrame *vframe = new TGVerticalFrame(fTTu, 200, height);
+        fTTu->AddFrame(vframe, new TGLayoutHints(kLHintsLeft|kLHintsTop, 5, 5, 10, 5));
+
+        thetaCalibration = new TGNumberEntryField*[N_SPECTROMETERS];
+        xPositionCalibration = new TGNumberEntryField*[N_SPECTROMETERS];
+        TGHorizontalFrame *hframeLabel= new TGHorizontalFrame(vframe, 200, 40);
+        vframe->AddFrame(hframeLabel, new TGLayoutHints(kLHintsTop, 5, 5, 5, 5));
+        TGLabel *labelXPosition = new TGLabel(hframeLabel, "x-position");
+        TGLabel *labelTheta = new TGLabel(hframeLabel, "theta");
+
+        hframeLabel->AddFrame(labelXPosition, new TGLayoutHints(kLHintsLeft, 125, 5, 0, 0));
+        hframeLabel->AddFrame(labelTheta, new TGLayoutHints(kLHintsLeft, 100, 5, 0, 0));
+
+        for (uint i = 0; i < N_SPECTROMETERS; i++)
+        {
+            TGHorizontalFrame *hframeI = new TGHorizontalFrame(vframe, 200, 40);
+            vframe->AddFrame(hframeI, new TGLayoutHints(kLHintsTop, 0, 0, 1, 1));
+            TGLabel *label = new TGLabel(hframeI, TString::Format("Spectrometer%u", i+1));
+            hframeI->AddFrame(label, new TGLayoutHints(kLHintsLeft, 0, 0, 3, 3));
+
+            xPositionCalibration[i] = new TGNumberEntryField(hframeI, -1, 0);
+            hframeI->AddFrame(xPositionCalibration[i], new TGLayoutHints(kLHintsLeft, 10, 5, 0, 0));
+
+            thetaCalibration[i] = new TGNumberEntryField(hframeI, -1, 0);
+            thetaCalibration[i]->SetLimits(TGNumberFormat::kNELLimitMinMax, 0., 180.);
+            hframeI->AddFrame(thetaCalibration[i], new TGLayoutHints(kLHintsLeft, 5, 5, 0, 0));
+
+
+        }
+
+
+        TGHorizontalFrame *hframeBottom = new TGHorizontalFrame(fTTu, width, 40);
+        fTTu->AddFrame(hframeBottom, new TGLayoutHints(kLHintsLeft|kLHintsExpandX|kLHintsBottom, 5, 5, 5, 5));
+        TGTextButton *readCalibration = new TGTextButton(hframeBottom,"Read");
+        readCalibration->SetToolTipText("read calibration from archive");
+        readCalibration->Connect("Clicked()", CLASS_NAME, this, "ReadCalibration()");
+        hframeBottom->AddFrame(readCalibration, new TGLayoutHints(kLHintsLeft, 5, 5, 5, 5));
+        TGTextButton *saveCalibration = new TGTextButton(hframeBottom,"Save");
+        saveCalibration->SetToolTipText("read calibration from archive");
+        saveCalibration->Connect("Clicked()", CLASS_NAME, this, "WriteCalibration()");
+        hframeBottom->AddFrame(saveCalibration, new TGLayoutHints(kLHintsLeft, 5, 5, 5, 5));
+    }
+
+    this->AddFrame(fTap, new TGLayoutHints(kLHintsTop|kLHintsLeft|kLHintsExpandX|kLHintsExpandY, 10, 10, 5, 5));
 
     SetName("Thomson");
     SetWindowName("Thomson");
@@ -396,6 +463,29 @@ void ThomsonGUI::ReadMainFile()
     if (thomsonSuccess)
         std::cout << "вычисления n,T подготовлены\n";
         
+}
+
+void ThomsonGUI::ReadCalibration()
+{
+    int shot = calibrationShot->GetNumber();
+    darray calibration = readCalibration(archive_name.c_str(), CALIBRATION_NAME, shot);
+
+    if (calibration.size() != 0)
+    {
+        for (uint i = 0; i < N_SPECTROMETERS; i++)
+        {
+            xPositionCalibration[i]->SetNumber(calibration[2*i]);
+            thetaCalibration[i]->SetNumber(calibration[2*i+1]*180./M_PI);
+        }
+    }
+    else {
+        std::cerr << "не удалось прочитать калибровку\n";
+    }
+
+}
+
+void ThomsonGUI::WriteCalibration()
+{
 }
 
 void ThomsonGUI::OpenMainFileDialog()
@@ -472,6 +562,9 @@ ThomsonGUI::~ThomsonGUI()
 
     clearSpArray();
     clearCounterArray();
+
+    delete[] thetaCalibration;
+    delete[] xPositionCalibration;
 
     app->Terminate();
     delete app;
