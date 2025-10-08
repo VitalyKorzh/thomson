@@ -26,6 +26,7 @@ private:
 public:
     static TCanvas *createCanvas(const char *canvas_name, uint width=700, uint height=800);
     static TMultiGraph *createMultiGraph(const char *mg_name, const char *mg_title);
+    static void srf_draw(TCanvas *c, TMultiGraph *mg, const darray &SRF, uint N_CHANNELS, double lMin, double lMax, uint N_LAMBDA, double lambda_reference=1064., const darray &Te={}, const darray &theta={}, bool draw=true, bool drawLegend=false);
     static void thomson_signal_draw(TCanvas *c, TMultiGraph *mg, SignalProcessing *sp, int integrate=0, bool draw=true, bool drawLegend=true, bool drawSigBox=false, uint NChannels=6);
 };
 

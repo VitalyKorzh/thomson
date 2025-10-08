@@ -208,12 +208,48 @@ bool ThomsonGUI::processingSignalsData(const char *archive_name, int shot, const
     return successReadArchive;
 }
 
+bool ThomsonGUI::countThomson(const std::string &srf_file_folder, const std::string &convolution_file_folder, bool clearArray)
+{
+    bool thomsonSuccess = true;
+    if (clearArray) clearCounterArray();
+    counterArray.reserve(counterArray.size()+N_SPECTROMETERS*N_TIME_LIST);
+    for (uint sp = 0; sp < N_SPECTROMETERS; sp++)
+    {
+        std::string srf_file_name = srf_file_folder+"SRF_Spectro-" + std::to_string(sp+1)+".dat";
+        std::string convolution_file_name = convolution_file_folder+"Convolution_Spectro-" + std::to_string(sp+1)+".dat";
+
+        for (uint it = 0; it < N_TIME_LIST; it++)
+        {
+            darray sigma(N_CHANNELS, 0.);
+            ThomsonCounter * counter = new ThomsonCounter(srf_file_name, convolution_file_name, *getSignalProcessing(it, sp), sigma, M_PI, LAMBDA_REFERENCE);
+            if (!counter->isWork()) {
+                thomsonSuccess = false;
+                break;
+            }
+            counterArray.push_back(counter);
+        }
+
+        if (!thomsonSuccess)
+            break;
+    }
+
+    return thomsonSuccess;
+}
+
 SignalProcessing *ThomsonGUI::getSignalProcessing(uint it, uint sp) const
 {
     if (it >= N_TIME_LIST || sp >= N_SPECTROMETERS)
         return nullptr;
     else
         return spArray[it+sp*N_TIME_LIST];
+}
+
+ThomsonCounter *ThomsonGUI::getThomsonCounter(uint it, uint sp) const
+{
+    if (it >= N_TIME_LIST || sp >= N_SPECTROMETERS)
+        return nullptr;
+    else
+        return counterArray[it+sp*N_TIME_LIST];
 }
 
 void ThomsonGUI::clearSpArray()
@@ -245,7 +281,7 @@ int &ThomsonGUI::getShot(int &shot) const
 }
 
 ThomsonGUI::ThomsonGUI(const TGWindow *p, UInt_t width, UInt_t height, TApplication *app) : TGMainFrame(p, width, height),
-                                                                                            app(app), readSuccess(false)
+                                                                                            app(app), readSuccess(false), thomsonSuccess(false)
 {
     SetCleanup(kDeepCleanup);
 
@@ -268,9 +304,11 @@ ThomsonGUI::ThomsonGUI(const TGWindow *p, UInt_t width, UInt_t height, TApplicat
     TGVerticalFrame *vframe = new TGVerticalFrame(this, 20, 40);
     this->AddFrame(vframe, new TGLayoutHints(kLHintsTop, 5, 5, 5, 5));
 
+    drawSRF = new TGCheckButton(vframe, "draw SRF");
     drawSignalsInChannels = new TGCheckButton(vframe, "draw signals in channels");
     drawIntegralInChannels = new TGCheckButton(vframe, "draw integral of signal in channels");
 
+    vframe->AddFrame(drawSRF, new TGLayoutHints(kLHintsLeft, 1, 1, 2, 2));
     vframe->AddFrame(drawSignalsInChannels, new TGLayoutHints(kLHintsLeft, 1, 1, 2, 2));
     vframe->AddFrame(drawIntegralInChannels, new TGLayoutHints(kLHintsLeft, 1, 1, 2, 2));
 
@@ -308,6 +346,9 @@ void ThomsonGUI::ReadMainFile()
     if (fin.is_open())
     {
         readSuccess = true;
+        thomsonSuccess = false;
+        std::string srf_file_folder;
+        std::string convolution_file_folder;
         std::getline(fin, srf_file_folder);
         std::getline(fin, convolution_file_folder);
         std::getline(fin, archive_name);
@@ -322,32 +363,21 @@ void ThomsonGUI::ReadMainFile()
             readSuccess = false;
             std::cerr << "ошибка чтения файла!\n";
         }
+        else
+            thomsonSuccess = countThomson(srf_file_folder, convolution_file_folder, true);
     }
     else {
         std::cerr << "не удалось открыть файл: " << fileName << "!\n"; 
         readSuccess = false;
+        thomsonSuccess = false;
     }
+    fin.close();
 
     if (readSuccess)
         std::cout << "данные прочитаны!\n";
-
-
-    clearCounterArray();
-    counterArray.reserve(counterArray.size()+N_SPECTROMETERS*N_TIME_LIST);
-    for (uint sp = 0; sp < N_SPECTROMETERS; sp++)
-    {
-        std::string srf_file_name = srf_file_folder+"SRF_Spectro-" + std::to_string(sp+1)+".dat";
-        std::string convolution_file_name = convolution_file_folder+"Convolution_Spectro-" + std::to_string(sp+1)+".dat";
-        for (uint it = 0; it < N_TIME_LIST; it++)
-        {
-            ThomsonCounter * counter = new ThomsonCounter(srf_file_name, convolution_file_name, *getSignalProcessing(it, sp), {}, M_PI, LAMBDA_REFERENCE);
-
-            counterArray.push_back(counter);
-        }
-    }
+    if (thomsonSuccess)
+        std::cout << "вычисления n,T подготовлены\n";
         
-
-    fin.close();
 }
 
 void ThomsonGUI::OpenMainFileDialog()
@@ -376,6 +406,15 @@ void ThomsonGUI::DrawGraphs()
     uint nSpectrometer = spectrometerNumber->GetNumber();
     uint nTimePage = timeListNumber->GetNumber();
 
+    if (drawSRF->IsDown())
+    {
+        ThomsonCounter *counter = getThomsonCounter(0, nSpectrometer);
+        TString canvas_name = TString::Format("SRF_sp_%u", nSpectrometer);
+        TCanvas *c = ThomsonDraw::createCanvas(canvas_name);
+        TMultiGraph *mg = ThomsonDraw::createMultiGraph("mg_"+canvas_name, "");
+        ThomsonDraw::srf_draw(c, mg,counter->getSRF(), N_WORK_CHANNELS, counter->getLMin(), counter->getLMax(),
+        counter->getNLambda(), LAMBDA_REFERENCE, {}, {}, true, false);
+    }
     if (drawSignalsInChannels->IsDown()) 
     {
         TString canvas_name = TString::Format("signal_tp_%u_sp_%u", nSpectrometer, nTimePage);

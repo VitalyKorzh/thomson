@@ -117,6 +117,11 @@ public:
     const darray &getSRF() const { return SRF; }
     const darray &getConvolution() const { return SCount; }
 
+    uint getNLambda() const { return N_LAMBDA; }
+    double getLMin() const { return lMin; }
+    double getLMax() const { return lMax; }
+    double getDL() const { return dl; }
+
 };
 
 

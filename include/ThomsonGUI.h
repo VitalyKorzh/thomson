@@ -30,12 +30,12 @@ private:
     TGNumberEntry *timeListNumber;
     TGNumberEntry *spectrometerNumber;
 
+    TGCheckButton *drawSRF;
     TGCheckButton *drawSignalsInChannels;
     TGCheckButton *drawIntegralInChannels;
 
     bool readSuccess;
-    std::string srf_file_folder;
-    std::string convolution_file_folder;
+    bool thomsonSuccess;
     std::string archive_name;
 
     std::vector <SignalProcessing*> spArray;
@@ -48,7 +48,9 @@ private:
     bool isCalibrationNew(TFile *f, const char *calibration_name) const;
     bool writeCalibration(const char *archive_name, const char *calibration_name, darray &calibration) const;
     bool processingSignalsData(const char *archive_name, int shot, const SignalProcessingParameters &parameters, bool clearArray=true);
+    bool countThomson(const std::string &srf_file_folder, const std::string &convolution_file_folder, bool clearArray=true);
     SignalProcessing * getSignalProcessing(uint it, uint sp) const;
+    ThomsonCounter * getThomsonCounter(uint it, uint sp) const;
 
     void clearSpArray();
     void clearCounterArray();

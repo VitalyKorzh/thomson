@@ -1,4 +1,5 @@
 #include "ThomsonDraw.h"
+#include "thomsonCounter/Spectrum.h"
 #include <TROOT.h>
 
 uint &ThomsonDraw::Color(uint &color)
@@ -46,6 +47,54 @@ TMultiGraph *ThomsonDraw::createMultiGraph(const char *mg_name, const char *mg_t
     mg=new TMultiGraph(mg_name, mg_title);
     mg->SetBit(kCanDelete);
     return mg;
+}
+
+void ThomsonDraw::srf_draw(TCanvas *c, TMultiGraph *mg, const darray &SRF, uint N_CHANNELS, double lMin, double lMax, uint N_LAMBDA, double lambda_reference, const darray &Te, const darray &theta, bool draw, bool drawLegend)
+{
+    c->cd();
+    mg->SetTitle(";#lambda, nm;SRF, a.u.");
+
+    darray lambda(N_LAMBDA);
+    double dl = (lMax-lMin) / (N_LAMBDA-1.);
+    for (uint i = 0; i < N_LAMBDA; i++)
+        lambda[i] = lMin + dl*i;
+
+    uint color = 1;
+    for (uint i = 0; i < N_CHANNELS; i++)
+    {
+        mg->Add(createGraph(N_LAMBDA, lambda.data(), SRF.data()+i*N_LAMBDA, color));
+
+        Color(color);
+    }
+
+    color = 1;
+    for (size_t i = 0; i < std::min(Te.size(), theta.size()); i++)
+    {
+        darray S = countSArray(N_LAMBDA, lMin, dl, countA(Te[i]), 1., theta[i], lambda_reference);
+
+        mg->Add(createGraph(N_LAMBDA, lambda.data(), S.data(), color, 1, 1, TString::Format("Te=%.2f", Te[i])));
+        Color(color);
+    }
+
+    {
+        const uint NPoints=2;
+        double l[NPoints] = {lambda_reference, lambda_reference};
+        double s[NPoints] = {0., 1.};
+
+        mg->Add(createGraph(NPoints, l, s, 14, 9, 2));
+    }
+
+    if (draw)
+    {
+        mg->GetXaxis()->CenterTitle();
+        mg->GetYaxis()->CenterTitle();
+
+        mg->Draw("AL");
+    }
+
+    if (drawLegend && std::min(Te.size(), theta.size()) != 0)
+        createLegend(mg, 0.12, 0.6, 0.35, 0.88);
+
 }
 
 TGraph *ThomsonDraw::createGraph(uint points, const double *const x, const double *const y, const uint color, const uint lineStyle, const uint lineWidth, const char *title)
