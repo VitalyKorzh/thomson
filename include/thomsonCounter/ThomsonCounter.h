@@ -54,8 +54,13 @@ private:
     uiarray number_ratio;
     darray weight;
 
+    uiarray use_ratio;
+
     double TResult;
     double t_error;
+
+    double neResult;
+    double ne_error;
 
     void createChannelsNumberArray();
 
@@ -88,6 +93,7 @@ public:
     ThomsonCounter(const std::string &srf_file_name, const std::string &convolution_file_name, const SignalProcessing &sp, const darray &sigma_channels, double theta, double lambda_reference=W_REFERENCE);
 
     bool count(const double alpha=0.001, const uint iter_limit=10000, const double epsilon=1e-12);
+    bool countConcetration();
 
     bool isWork() const { return work; }
 
@@ -112,6 +118,8 @@ public:
 
     double getT() const { return TResult; }
     double getTError() const { return t_error; }
+    double getN() const { return neResult; }
+    double getNError() const { return ne_error; }
 
 
     const darray &getSRF() const { return SRF; }

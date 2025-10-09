@@ -253,6 +253,7 @@ bool ThomsonGUI::countThomson(const std::string &srf_file_folder, const std::str
                 break;
             }
             counter->count();
+            counter->countConcetration();
             counterArray.push_back(counter);
         }
 
@@ -631,8 +632,8 @@ void ThomsonGUI::DrawGraphs()
 
             for (uint i = 0; i < N_SPECTROMETERS; i++) {
                 xPosition[i] = calibrations[i*N_SPECTROMETER_CALIBRATIONS];
-                //Te[i] = getThomsonCounter(nTimePage, i)->getT();
-                //TeError[i] = getThomsonCounter(nTimePage, i)->getTError();
+                ne[i] = getThomsonCounter(nTimePage, i)->getN();
+                neError[i] = getThomsonCounter(nTimePage, i)->getN()*calibrations[i*N_SPECTROMETERS+2];
             }
 
             mg->SetTitle(";x, mm;ne, #cm^{-3}");

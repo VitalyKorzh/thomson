@@ -286,6 +286,7 @@ bool ThomsonCounter::count(const double alpha, const uint iter_limit, const doub
 
     std::vector <std::pair<uint, double>> devTijZeroArray;
     devTijZeroArray.reserve(N_RATIO_WORK);
+    use_ratio.reserve(N_RATIO_WORK);
 
     {
         uint index_ratio = 0;
@@ -329,6 +330,7 @@ bool ThomsonCounter::count(const double alpha, const uint iter_limit, const doub
             number_ratio.push_back(it.first);
 
             step_count++;
+            use_ratio.push_back(it.first);
             if(step_count >= N_CHANNELS_WORK)
                break;
         }
@@ -341,4 +343,40 @@ bool ThomsonCounter::count(const double alpha, const uint iter_limit, const doub
     }
 
     return work;
+}
+
+bool ThomsonCounter::countConcetration()
+{
+    double Te = getT();
+    double TeError  = getTError();
+    double dT = 1e-8;
+
+    darray SResult = countSArray(N_LAMBDA, lMin, lMax, countA(Te), 1., theta, lambda_reference);
+    darray SResultdT = countSArray(N_LAMBDA, lMin, lMax, countA(Te+dT), 1., theta, lambda_reference);
+
+    double max_signal = 0;
+    uint ch = 0;
+    for (uint i = 0; i < N_CHANNELS; i++)
+    {
+        if (signal[i] > max_signal) {
+            max_signal = signal[i];
+            ch = i;
+        }
+    }
+
+    double F = convolution(getSRFch(ch), SResult, lMin, lMax);
+    double FdT = convolution(getSRFch(ch), SResultdT, lMin, lMax);
+
+    neResult = max_signal / F;
+
+    double ai = max_signal;
+    double dai = signal_error[ch];
+
+    double dF = TeError * (F-FdT)/dT;
+
+    double covFTeAi = 0.;
+
+    ne_error = neResult * sqrt(dai*dai/(ai*ai) + dF*dF/(F*F) - 2. * covFTeAi/ai/F);
+
+    return true;
 }
