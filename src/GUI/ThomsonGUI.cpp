@@ -254,6 +254,7 @@ bool ThomsonGUI::countThomson(const std::string &srf_file_folder, const std::str
             }
             counter->count();
             counter->countConcetration();
+            counter->countSignalResult();
             counterArray.push_back(counter);
         }
 
@@ -617,7 +618,7 @@ void ThomsonGUI::DrawGraphs()
                 TeError[i] = getThomsonCounter(nTimePage, i)->getTError();
             }
 
-            mg->SetTitle(";x, mm;Te, eV");
+            mg->SetTitle(";x, mm;T_{e}, eV");
             ThomsonDraw::draw_result_from_r(c, mg, xPosition, Te, TeError);
         }
         if (drawConceterationRDependes->IsDown())
@@ -633,15 +634,19 @@ void ThomsonGUI::DrawGraphs()
             for (uint i = 0; i < N_SPECTROMETERS; i++) {
                 xPosition[i] = calibrations[i*N_SPECTROMETER_CALIBRATIONS];
                 ne[i] = getThomsonCounter(nTimePage, i)->getN();
-                neError[i] = getThomsonCounter(nTimePage, i)->getN()*calibrations[i*N_SPECTROMETERS+2];
+                neError[i] = getThomsonCounter(nTimePage, i)->getNError()*calibrations[i*N_SPECTROMETERS+2];
             }
 
-            mg->SetTitle(";x, mm;ne, #cm^{-3}");
+            mg->SetTitle(";x, mm;n_{e}, cm^{-3}");
             ThomsonDraw::draw_result_from_r(c, mg, xPosition, ne, neError);
         }
         if (drawCompareSingalAndResult->IsDown())
         {
-
+            ThomsonCounter *counter = getThomsonCounter(nTimePage, nSpectrometer);
+            TString canvas_name = TString::Format("signal_compare_tp_%u_sp_%u", nTimePage, nSpectrometer);
+            TCanvas *c = ThomsonDraw::createCanvas(canvas_name);
+            THStack *hs = ThomsonDraw::createHStack("hs_"+canvas_name, "");
+            ThomsonDraw::draw_comapre_signals(c, hs, N_WORK_CHANNELS, counter->getSignal(), counter->getSignalError(), counter->getSignalResult(), counter->getWorkSignal(), true);
         }
     }
 

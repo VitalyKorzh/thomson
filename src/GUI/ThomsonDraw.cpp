@@ -1,6 +1,7 @@
 #include "ThomsonDraw.h"
 #include "thomsonCounter/Spectrum.h"
 #include <TROOT.h>
+#include <iostream>
 
 uint &ThomsonDraw::Color(uint &color)
 {
@@ -47,6 +48,24 @@ TMultiGraph *ThomsonDraw::createMultiGraph(const char *mg_name, const char *mg_t
     mg=new TMultiGraph(mg_name, mg_title);
     mg->SetBit(kCanDelete);
     return mg;
+}
+
+THStack *ThomsonDraw::createHStack(const char *hs_name, const char *hs_title)
+{
+    THStack *hs;
+
+    TObject* const o = gROOT->FindObject(hs_name);
+    if( o && o->InheritsFrom(TCanvas::Class()) )
+	{
+		hs = (THStack*)o;
+        hs->GetHists()->Delete();
+        hs->Clear();
+        delete hs;
+	}
+	
+    hs=new THStack(hs_name, hs_title);
+    hs->SetBit(kCanDelete);
+    return hs;
 }
 
 void ThomsonDraw::srf_draw(TCanvas *c, TMultiGraph *mg, const darray &SRF, uint N_CHANNELS, double lMin, double lMax, uint N_LAMBDA, double lambda_reference, const darray &Te, const darray &theta, bool draw, bool drawLegend)
@@ -138,6 +157,26 @@ TGraph *ThomsonDraw::createGraph(uint points, const double *const x, const doubl
     g->SetLineStyle(lineStyle);
     g->SetLineColor(color);
     return g;
+}
+
+TH1 *ThomsonDraw::createHist(uint points, double xmin, double xmax, const double *const y, const uint color, const uint lineStyle, const uint lineWidth, const char *title, const double *const error)
+{
+    TH1 *h = new TH1D("", "", points, xmin, xmax);
+    for (uint i = 0; i < points; i++)
+    {
+        h->SetBinContent(i+1, y[i]);
+        if (error != nullptr)
+            h->SetBinError(i+1, error[i]);
+        else
+            h->SetBinError(i+1, 0);
+    }
+
+    h->SetBit(kCanDelete);
+    h->SetLineColor(color);
+    h->SetLineWidth(lineWidth);
+    h->SetLineStyle(lineStyle);
+
+    return h;
 }
 
 TLegend *ThomsonDraw::createLegend(const TMultiGraph *const mg, double x1, double y1, double x2, double y2, bool draw)
@@ -248,7 +287,7 @@ void ThomsonDraw::thomson_draw(TMultiGraph *mg, const SignalProcessing &sp, uint
 void ThomsonDraw::thomson_signal_draw(TCanvas *c, TMultiGraph *mg, SignalProcessing *sp, int integrate, bool draw, bool drawLegend, bool drawSigBox, uint NChannels, const barray &work_mask) 
 {
     c->cd();
-    mg->SetTitle(integrate ? ";t, ns;U, V" : ";t, ns;Ut, V*ns");
+    mg->SetTitle(!integrate ? ";t, ns;U, V" : ";t, ns;Ut, V*ns");
 
     std::vector <TString> gTitle;
     gTitle.reserve(NChannels);
@@ -278,4 +317,31 @@ void ThomsonDraw::draw_result_from_r(TCanvas *c, TMultiGraph *mg, const darray &
         mg->Draw("AP");
     }
 
+}
+
+void ThomsonDraw::draw_comapre_signals(TCanvas *c, THStack *hs, uint NChannel, const darray &signal, const darray &signal_error, const darray &countSignal, const barray &work_channel, bool draw)
+{
+    c->cd();
+    hs->SetTitle(";channel;Vt, V*ns");
+
+    darray signalN(NChannel, 0.);
+    darray signalNE(NChannel, 0.);
+    darray signalNCount(NChannel, 0.);
+
+    for (uint i = 0; i < NChannel; i++)
+    {
+        if (work_channel[i])
+        {
+            signalN[i] = signal[i];
+            signalNE[i] = signal_error[i];
+            signalNCount[i] = countSignal[i];
+        }
+    }
+
+    hs->Add(createHist(NChannel, 0., NChannel, signalN.data(), 1, 1, 2, "", signalNE.data()));
+    hs->Add(createHist(NChannel, 0., NChannel, signalNCount.data(), 2, 1, 2, ""));
+    if (draw)
+    {
+        hs->Draw("nostack HIST E1");
+    }
 }

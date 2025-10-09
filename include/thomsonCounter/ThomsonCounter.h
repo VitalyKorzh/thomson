@@ -55,6 +55,7 @@ private:
     darray weight;
 
     uiarray use_ratio;
+    darray signalResult;
 
     double TResult;
     double t_error;
@@ -94,14 +95,17 @@ public:
 
     bool count(const double alpha=0.001, const uint iter_limit=10000, const double epsilon=1e-12);
     bool countConcetration();
+    bool countSignalResult();
 
     bool isWork() const { return work; }
 
     uint getNChannels() const { return N_CHANNELS; }
     uint getNChannelsWork() const { return N_CHANNELS_WORK; }
 
-    darray getTijArray () const { return TijArray; }
-    darray getSigmaTijArray () const { return sigmaTijArray; }
+    const darray &getTijArray () const { return TijArray; }
+    const darray &getSigmaTijArray () const { return sigmaTijArray; }
+    const uiarray &getUseRatio() const { return use_ratio; }
+    const darray &getSignalResult() const { return signalResult; }
 
     double getTij (uint ch1, uint ch2) const { return TijArray[findRatioNumber(ch1, ch2)]; }
     double getSigmaTij (uint ch1, uint ch2) const { return sigmaTijArray[findRatioNumber(ch1, ch2)]; }
@@ -110,6 +114,10 @@ public:
     double getSigmaTij (uint k) const { return sigmaTijArray[k]; }
     double getTe0() const { return Te0; }
     double getWeight(uint k) const { return weight[k]; }
+
+    const darray &getSignal() const { return signal; }
+    const darray &getSignalError() const { return signal_error; }
+    const barray &getWorkSignal() const { return channel_work; }
 
     uint getCh1(uint k) const { return channels_number[k].first; }
     uint getCh2(uint k) const { return channels_number[k].second; }

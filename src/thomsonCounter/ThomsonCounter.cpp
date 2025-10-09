@@ -351,18 +351,19 @@ bool ThomsonCounter::countConcetration()
     double TeError  = getTError();
     double dT = 1e-8;
 
-    darray SResult = countSArray(N_LAMBDA, lMin, lMax, countA(Te), 1., theta, lambda_reference);
-    darray SResultdT = countSArray(N_LAMBDA, lMin, lMax, countA(Te+dT), 1., theta, lambda_reference);
+    darray SResult = countSArray(N_LAMBDA, lMin, dl, countA(Te), 1., theta, lambda_reference);
+    darray SResultdT = countSArray(N_LAMBDA, lMin, dl, countA(Te+dT), 1., theta, lambda_reference);
 
     double max_signal = 0;
     uint ch = 0;
     for (uint i = 0; i < N_CHANNELS; i++)
     {
-        if (signal[i] > max_signal) {
+        if (channel_work[i] && signal[i] > max_signal) {
             max_signal = signal[i];
             ch = i;
         }
     }
+
 
     double F = convolution(getSRFch(ch), SResult, lMin, lMax);
     double FdT = convolution(getSRFch(ch), SResultdT, lMin, lMax);
@@ -377,6 +378,26 @@ bool ThomsonCounter::countConcetration()
     double covFTeAi = 0.;
 
     ne_error = neResult * sqrt(dai*dai/(ai*ai) + dF*dF/(F*F) - 2. * covFTeAi/ai/F);
+
+    return true;
+}
+
+bool ThomsonCounter::countSignalResult()
+{
+    double Te = getT();
+    double ne = getN();
+
+    signalResult.resize(N_CHANNELS, 0);
+
+    for (uint i = 0; i < N_CHANNELS; i++)
+    {
+        if (channel_work[i])
+        {
+            darray S = countSArray(N_LAMBDA, lMin, dl, countA(Te), ne, theta, lambda_reference);
+            double sig = convolution(getSRFch(i), S, lMin, lMax);
+            signalResult[i] = sig;
+        }
+    }
 
     return true;
 }
