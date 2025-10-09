@@ -295,7 +295,7 @@ bool ThomsonCounter::count(const double alpha, const uint iter_limit, const doub
             uint ch1 = it.first;
             uint ch2 = it.second;
 
-            if (!(channel_work[ch1] &&channel_work[ch2])) continue;
+            if (!(channel_work[ch1] && channel_work[ch2])) continue;
 
             double devTij_zero = devFij_zero(ch1, ch2, Te0);
             double sigmaTij_zero = countSigmaTij(ch1, ch2, devTij_zero);

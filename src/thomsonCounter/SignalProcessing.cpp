@@ -42,7 +42,7 @@ double SignalProcessing::countChannelSignal(const darray &UTintegrate, uint chan
         return signal_mean / signal_point_step_real;
 }
 
-double SignalProcessing::findZeroLine(const darray &t, const darray &U, uint channel, uint step_from_start_zero_line, uint step_from_end_zero_line) const
+double SignalProcessing::findZeroLine(const darray &t, const darray &U, uint channel, uint step_from_start_zero_line, uint step_from_end_zero_line, uint start_point_from_start_zero_line, uint start_point_from_end_zero_line) const
 {
     double shift = 0.;
 
@@ -53,7 +53,9 @@ double SignalProcessing::findZeroLine(const darray &t, const darray &U, uint cha
 
     for (uint i = 0; i < tSize; i++)
     {
-        if (i < step_from_start_zero_line || i >= tSize - step_from_end_zero_line) 
+        if ((i >= start_point_from_start_zero_line && i < start_point_from_start_zero_line + step_from_start_zero_line) 
+            ||
+            (i >= tSize - start_point_from_end_zero_line - step_from_end_zero_line && i < tSize - start_point_from_end_zero_line)) 
         {
             shift += U[channel*tSize+i];
             use_points++;
@@ -126,7 +128,7 @@ SignalProcessing::SignalProcessing(const darray &t_full, const darray &U_full, u
 
     for (uint i = 0; i < N_CHANNELS; i++)
     {
-        double shift = findZeroLine(t_full, U_full, i, parameters.step_from_start_zero_line, parameters.step_from_end_zero_line);
+        double shift = findZeroLine(t_full, U_full, i, parameters.step_from_start_zero_line, parameters.step_from_end_zero_line, parameters.start_point_from_start_zero_line, parameters.start_point_from_end_zero_line);
         integrateSignal(t_full, U_full, i, shift);
         shiftSignal(U_full, i, shift);
         double signal = countChannelSignal(UTintegrate_full, i, parameters.signal_point_start, parameters.signal_point_step);

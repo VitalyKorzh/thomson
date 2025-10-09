@@ -129,9 +129,9 @@ void ThomsonDraw::convolution_draw(TCanvas *c, TMultiGraph *mg, const darray &SC
 
 }
 
-TGraph *ThomsonDraw::createGraph(uint points, const double *const x, const double *const y, const uint color, const uint lineStyle, const uint lineWidth, const char *title)
+TGraph *ThomsonDraw::createGraph(uint points, const double *const x, const double *const y, const uint color, const uint lineStyle, const uint lineWidth, const char *title, const double * const errorX, const double * const errorY)
 {
-    TGraph *g = new TGraph(points, x, y);
+    TGraph *g = new TGraphErrors(points, x, y, errorX, errorY);
     g->SetTitle(title);
     g->SetBit(kCanDelete);
     g->SetLineWidth(lineWidth);
@@ -258,5 +258,24 @@ void ThomsonDraw::thomson_signal_draw(TCanvas *c, TMultiGraph *mg, SignalProcess
     thomson_draw(mg, *sp, NChannels, integrate, draw, drawSigBox, true, gTitle, work_mask);
     if (drawLegend)
         createLegend(mg, 0.12, 0.6, 0.35, 0.88);
+
+}
+
+void ThomsonDraw::draw_result_from_r(TCanvas *c, TMultiGraph *mg, const darray &xPosition, const darray &result, const darray &result_error, uint marker_style, float marker_size, bool draw)
+{
+    c->cd();
+    TGraphErrors *g = (TGraphErrors*) createGraph(xPosition.size(), xPosition.data(), result.data(), 1, 1, 2, "", nullptr, result_error.data());
+    g->SetMarkerStyle(marker_style);
+    g->SetMarkerSize(marker_size);
+
+    mg->Add(g);
+
+    if (draw)
+    {
+        mg->GetXaxis()->CenterTitle();
+        mg->GetYaxis()->CenterTitle();
+
+        mg->Draw("AP");
+    }
 
 }

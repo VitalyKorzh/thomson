@@ -34,17 +34,23 @@ private:
     TGCheckButton *drawConvolution;
     TGCheckButton *drawSignalsInChannels;
     TGCheckButton *drawIntegralInChannels;
+    TGCheckButton *drawTemepratureRDependes;
+    TGCheckButton *drawConceterationRDependes;
+    TGCheckButton *drawCompareSingalAndResult;
 
     TGNumberEntry *calibrationShot;
 
-    TGNumberEntryField **thetaCalibration;
     TGNumberEntryField **xPositionCalibration;
+    TGNumberEntryField **thetaCalibration;
+    TGNumberEntryField **nCalibrationCoeff;
 
     bool readSuccess;
     bool thomsonSuccess;
+    int shot;
     std::string archive_name;
 
     barray work_mask;
+    darray calibrations;
 
     std::vector <SignalProcessing*> spArray;
     std::vector <ThomsonCounter *> counterArray;
@@ -58,7 +64,7 @@ private:
     bool isCalibrationNew(TFile *f, const char *calibration_name) const;
     bool writeCalibration(const char *archive_name, const char *calibration_name, darray &calibration) const;
     bool processingSignalsData(const char *archive_name, int shot, const SignalProcessingParameters &parameters, bool clearArray=true);
-    bool countThomson(const std::string &srf_file_folder, const std::string &convolution_file_folder, bool clearArray=true);
+    bool countThomson(const std::string &srf_file_folder, const std::string &convolution_file_folder, int shot, bool clearArray=true);
     SignalProcessing * getSignalProcessing(uint it, uint sp) const;
     ThomsonCounter * getThomsonCounter(uint it, uint sp) const;
 

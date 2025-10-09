@@ -16,7 +16,7 @@ class ThomsonDraw
 {
 private:
     static uint & Color(uint &color);
-    static TGraph * createGraph(uint points, const double * const x, const double * const y, const uint color=1, const uint lineStyle=1, const uint lineWidth=2, const char *title="");
+    static TGraph * createGraph(uint points, const double * const x, const double * const y, const uint color=1, const uint lineStyle=1, const uint lineWidth=2, const char *title="", const double * const errorX=nullptr, const double * const errorY=nullptr);
     static TLegend *createLegend(const TMultiGraph * const mg, double x1=0.12, double y1=0.6, double x2=0.35, double y2=0.88, bool draw=true);
     static TGraph * createSignalBox(double t1, double t2, double U, uint color=6, uint lineStyle=1, uint lineWidth=1);
 
@@ -29,6 +29,7 @@ public:
     static void srf_draw(TCanvas *c, TMultiGraph *mg, const darray &SRF, uint N_CHANNELS, double lMin, double lMax, uint N_LAMBDA, double lambda_reference=1064., const darray &Te={}, const darray &theta={}, bool draw=true, bool drawLegend=false);
     static void convolution_draw(TCanvas *c, TMultiGraph *mg, const darray &SCount, uint N_CHANNELS, double T0, double dT, uint N_TEMPERATURE, bool draw=true, bool drawLegend=true);
     static void thomson_signal_draw(TCanvas *c, TMultiGraph *mg, SignalProcessing *sp, int integrate=0, bool draw=true, bool drawLegend=true, bool drawSigBox=false, uint NChannels=6, const barray &work_mask={});
+    static void draw_result_from_r(TCanvas *c, TMultiGraph *mg, const darray &xPosition, const darray &result, const darray &result_error, uint marker_style=kFullSquare, float marker_size=1.5, bool draw=true);
 };
 
 #endif

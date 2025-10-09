@@ -15,6 +15,8 @@
 
 ClassImp(ThomsonGUI)
 
+#define ERROR_COEFF 0.1
+
 #define N_SPECTROMETERS 6
 #define N_CHANNELS 8
 #define N_WORK_CHANNELS 6
@@ -22,6 +24,8 @@ ClassImp(ThomsonGUI)
 #define N_TIME_SIZE 1000
 #define UNUSEFULL 48
 
+
+#define N_SPECTROMETER_CALIBRATIONS 3
 #define LAMBDA_REFERENCE 1064.
 
 #define KUST_NAME "tomson"
@@ -211,11 +215,26 @@ bool ThomsonGUI::processingSignalsData(const char *archive_name, int shot, const
     return successReadArchive;
 }
 
-bool ThomsonGUI::countThomson(const std::string &srf_file_folder, const std::string &convolution_file_folder, bool clearArray)
+bool ThomsonGUI::countThomson(const std::string &srf_file_folder, const std::string &convolution_file_folder, int shot, bool clearArray)
 {
     bool thomsonSuccess = true;
     if (clearArray) clearCounterArray();
     counterArray.reserve(counterArray.size()+N_SPECTROMETERS*N_TIME_LIST);
+
+
+    calibrations = readCalibration(archive_name.c_str(), CALIBRATION_NAME, shot);
+
+    if (calibrations.size() == 0)
+    {
+        OpenArchive(archive_name.c_str());
+        int lastShotCal = GetLastShot()+1;
+        CloseArchive();
+        calibrations = readCalibration(archive_name.c_str(), CALIBRATION_NAME, lastShotCal);
+    }
+
+    if (calibrations.size() < N_SPECTROMETERS*N_SPECTROMETER_CALIBRATIONS)
+        return false;
+
     for (uint sp = 0; sp < N_SPECTROMETERS; sp++)
     {
         std::string srf_file_name = srf_file_folder+"SRF_Spectro-" + std::to_string(sp+1)+".dat";
@@ -223,12 +242,17 @@ bool ThomsonGUI::countThomson(const std::string &srf_file_folder, const std::str
 
         for (uint it = 0; it < N_TIME_LIST; it++)
         {
-            darray sigma(N_CHANNELS, 0.);
-            ThomsonCounter * counter = new ThomsonCounter(srf_file_name, convolution_file_name, *getSignalProcessing(it, sp), sigma, M_PI, LAMBDA_REFERENCE);
+            darray sigma(N_CHANNELS);
+
+            for (uint i = 0; i < N_CHANNELS; i++)
+                sigma[i] = ERROR_COEFF*sqrt(getSignalProcessing(it, sp)->getSignals()[i]);
+
+            ThomsonCounter * counter = new ThomsonCounter(srf_file_name, convolution_file_name, *getSignalProcessing(it, sp), sigma, calibrations[sp*N_SPECTROMETER_CALIBRATIONS+1], LAMBDA_REFERENCE);
             if (!counter->isWork()) {
                 thomsonSuccess = false;
                 break;
             }
+            counter->count();
             counterArray.push_back(counter);
         }
 
@@ -328,11 +352,17 @@ ThomsonGUI::ThomsonGUI(const TGWindow *p, UInt_t width, UInt_t height, TApplicat
         drawConvolution = new TGCheckButton(vframe, "draw convolution");
         drawSignalsInChannels = new TGCheckButton(vframe, "draw signals in channels");
         drawIntegralInChannels = new TGCheckButton(vframe, "draw integral of signal in channels");
+        drawTemepratureRDependes = new TGCheckButton(vframe, "draw Te(r)");
+        drawConceterationRDependes = new TGCheckButton(vframe, "draw ne(r)");
+        drawCompareSingalAndResult = new TGCheckButton(vframe, "singnal in channel");
 
         vframe->AddFrame(drawSRF, new TGLayoutHints(kLHintsLeft, 1, 1, 2, 2));
         vframe->AddFrame(drawConvolution, new TGLayoutHints(kLHintsLeft, 1, 1, 2, 2));
         vframe->AddFrame(drawSignalsInChannels, new TGLayoutHints(kLHintsLeft, 1, 1, 2, 2));
         vframe->AddFrame(drawIntegralInChannels, new TGLayoutHints(kLHintsLeft, 1, 1, 2, 2));
+        vframe->AddFrame(drawTemepratureRDependes, new TGLayoutHints(kLHintsLeft, 1, 1, 2, 2));
+        vframe->AddFrame(drawConceterationRDependes, new TGLayoutHints(kLHintsLeft, 1, 1, 2, 2));
+        vframe->AddFrame(drawCompareSingalAndResult, new TGLayoutHints(kLHintsLeft, 1, 1, 2, 2));
 
         TGHorizontalFrame *hframe_bottom = new TGHorizontalFrame(fTTu, width, 80);
         fTTu->AddFrame(hframe_bottom, new TGLayoutHints(kLHintsExpandX| kLHintsBottom, 5, 5, 5,  10));
@@ -369,20 +399,24 @@ ThomsonGUI::ThomsonGUI(const TGWindow *p, UInt_t width, UInt_t height, TApplicat
 
         thetaCalibration = new TGNumberEntryField*[N_SPECTROMETERS];
         xPositionCalibration = new TGNumberEntryField*[N_SPECTROMETERS];
+        nCalibrationCoeff = new TGNumberEntryField*[N_SPECTROMETERS];
         TGHorizontalFrame *hframeLabel= new TGHorizontalFrame(vframe, 200, 40);
         vframe->AddFrame(hframeLabel, new TGLayoutHints(kLHintsTop, 5, 5, 5, 5));
         TGLabel *labelXPosition = new TGLabel(hframeLabel, "x-position");
         TGLabel *labelTheta = new TGLabel(hframeLabel, "theta");
+        TGLabel *labelNCoeff = new TGLabel(hframeLabel, "n coefficient");
 
         hframeLabel->AddFrame(labelXPosition, new TGLayoutHints(kLHintsLeft, 125, 5, 0, 0));
         hframeLabel->AddFrame(labelTheta, new TGLayoutHints(kLHintsLeft, 100, 5, 0, 0));
+        hframeLabel->AddFrame(labelNCoeff, new TGLayoutHints(kLHintsLeft, 100, 5, 0, 0));
+
 
         for (uint i = 0; i < N_SPECTROMETERS; i++)
         {
             TGHorizontalFrame *hframeI = new TGHorizontalFrame(vframe, 200, 40);
             vframe->AddFrame(hframeI, new TGLayoutHints(kLHintsTop, 0, 0, 1, 1));
             TGLabel *label = new TGLabel(hframeI, TString::Format("Spectrometer%u", i+1));
-            hframeI->AddFrame(label, new TGLayoutHints(kLHintsLeft, 0, 0, 3, 3));
+            hframeI->AddFrame(label, new TGLayoutHints(kLHintsLeft, 0, 0, 4, 3));
 
             xPositionCalibration[i] = new TGNumberEntryField(hframeI, -1, 0);
             hframeI->AddFrame(xPositionCalibration[i], new TGLayoutHints(kLHintsLeft, 10, 5, 0, 0));
@@ -391,7 +425,9 @@ ThomsonGUI::ThomsonGUI(const TGWindow *p, UInt_t width, UInt_t height, TApplicat
             thetaCalibration[i]->SetLimits(TGNumberFormat::kNELLimitMinMax, 0., 180.);
             hframeI->AddFrame(thetaCalibration[i], new TGLayoutHints(kLHintsLeft, 5, 5, 0, 0));
 
-
+            nCalibrationCoeff[i] = new TGNumberEntryField(hframeI, -1, 0);
+            nCalibrationCoeff[i]->SetLimits(TGNumberFormat::kNELLimitMin, 0.);
+            hframeI->AddFrame(nCalibrationCoeff[i], new TGLayoutHints(kLHintsLeft, 5, 5, 0, 0));      
         }
 
 
@@ -436,10 +472,10 @@ void ThomsonGUI::ReadMainFile()
         std::getline(fin, work_mask_string);
         work_mask = createWorkMask(work_mask_string);
 
-        int shot;
         SignalProcessingParameters parameters;
         
-        fin >> shot >> parameters.step_from_start_zero_line >> parameters.step_from_end_zero_line >> parameters.signal_point_start >> 
+        fin >> shot >> parameters.start_point_from_start_zero_line >> parameters.step_from_start_zero_line >> parameters.start_point_from_end_zero_line >> 
+        parameters.step_from_end_zero_line >> parameters.signal_point_start >> 
         parameters.signal_point_step >> parameters.threshold >> parameters.increase_point >> parameters.decrease_point;
 
         if (fin.fail() || !processingSignalsData(archive_name.c_str(), shot, parameters, true)) {
@@ -447,7 +483,7 @@ void ThomsonGUI::ReadMainFile()
             std::cerr << "ошибка чтения файла!\n";
         }
         else
-            thomsonSuccess = countThomson(srf_file_folder, convolution_file_folder, true);
+            thomsonSuccess = countThomson(srf_file_folder, convolution_file_folder, shot, true);
     }
     else {
         std::cerr << "не удалось открыть файл: " << fileName << "!\n"; 
@@ -467,15 +503,19 @@ void ThomsonGUI::ReadMainFile()
 
 void ThomsonGUI::ReadCalibration()
 {
+    if (!readSuccess || archive_name == "")
+        return;
+
     int shot = calibrationShot->GetNumber();
     darray calibration = readCalibration(archive_name.c_str(), CALIBRATION_NAME, shot);
 
-    if (calibration.size() != 0)
+    if (calibration.size() >= N_SPECTROMETERS*N_SPECTROMETER_CALIBRATIONS)
     {
         for (uint i = 0; i < N_SPECTROMETERS; i++)
         {
-            xPositionCalibration[i]->SetNumber(calibration[2*i]);
-            thetaCalibration[i]->SetNumber(calibration[2*i+1]*180./M_PI);
+            xPositionCalibration[i]->SetNumber(calibration[N_SPECTROMETER_CALIBRATIONS*i]);
+            thetaCalibration[i]->SetNumber(calibration[N_SPECTROMETER_CALIBRATIONS*i+1]*180./M_PI);
+            nCalibrationCoeff[i]->SetNumber(calibration[N_SPECTROMETER_CALIBRATIONS*i+2]);
         }
     }
     else {
@@ -486,6 +526,19 @@ void ThomsonGUI::ReadCalibration()
 
 void ThomsonGUI::WriteCalibration()
 {
+    if (!readSuccess || archive_name == "")
+        return;
+
+    darray calibration(N_SPECTROMETERS*N_SPECTROMETER_CALIBRATIONS);
+
+    for (uint i = 0; i < N_SPECTROMETERS; i++)
+    {
+        calibration[N_SPECTROMETER_CALIBRATIONS*i] = xPositionCalibration[i]->GetNumber();
+        calibration[N_SPECTROMETER_CALIBRATIONS*i+1] = thetaCalibration[i]->GetNumber()*M_PI/180.;
+        calibration[N_SPECTROMETER_CALIBRATIONS*i+2] = nCalibrationCoeff[i]->GetNumber();
+    }
+
+    writeCalibration(archive_name.c_str(), CALIBRATION_NAME, calibration);
 }
 
 void ThomsonGUI::OpenMainFileDialog()
@@ -533,17 +586,62 @@ void ThomsonGUI::DrawGraphs()
     }
     if (drawSignalsInChannels->IsDown()) 
     {
-        TString canvas_name = TString::Format("signal_tp_%u_sp_%u", nSpectrometer, nTimePage);
+        TString canvas_name = TString::Format("signal_tp_%u_sp_%u", nTimePage, nSpectrometer);
         TCanvas *c = ThomsonDraw::createCanvas(canvas_name);
         TMultiGraph *mg = ThomsonDraw::createMultiGraph("mg_"+canvas_name, "");
         ThomsonDraw::thomson_signal_draw(c, mg, getSignalProcessing(nTimePage, nSpectrometer), 0, true, true, false, N_WORK_CHANNELS, work_mask);
     }
     if (drawIntegralInChannels->IsDown())
     {
-        TString canvas_name = TString::Format("signal_integral_tp_%u_sp_%u", nSpectrometer, nTimePage);
+        TString canvas_name = TString::Format("signal_integral_tp_%u_sp_%u", nTimePage, nSpectrometer);
         TCanvas *c = ThomsonDraw::createCanvas(canvas_name);
         TMultiGraph *mg = ThomsonDraw::createMultiGraph("mg_"+canvas_name, "");
         ThomsonDraw::thomson_signal_draw(c, mg, getSignalProcessing(nTimePage, nSpectrometer), 1, true, true, false, N_WORK_CHANNELS, work_mask);
+    }
+    if (thomsonSuccess)
+    {
+        if (drawTemepratureRDependes->IsDown())
+        {
+            TString canvas_name = TString::Format("Te_from_r_tp_%u", nTimePage);
+            TCanvas *c = ThomsonDraw::createCanvas(canvas_name);
+            TMultiGraph *mg = ThomsonDraw::createMultiGraph("mg_"+canvas_name, "");
+
+            darray xPosition(N_SPECTROMETERS);
+            darray Te(N_SPECTROMETERS);
+            darray TeError(N_SPECTROMETERS);
+
+            for (uint i = 0; i < N_SPECTROMETERS; i++) {
+                xPosition[i] = calibrations[i*N_SPECTROMETER_CALIBRATIONS];
+                Te[i] = getThomsonCounter(nTimePage, i)->getT();
+                TeError[i] = getThomsonCounter(nTimePage, i)->getTError();
+            }
+
+            mg->SetTitle(";x, mm;Te, eV");
+            ThomsonDraw::draw_result_from_r(c, mg, xPosition, Te, TeError);
+        }
+        if (drawConceterationRDependes->IsDown())
+        {
+            TString canvas_name = TString::Format("ne_from_r_tp_%u", nTimePage);
+            TCanvas *c = ThomsonDraw::createCanvas(canvas_name);
+            TMultiGraph *mg = ThomsonDraw::createMultiGraph("mg_"+canvas_name, "");
+
+            darray xPosition(N_SPECTROMETERS);
+            darray ne(N_SPECTROMETERS);
+            darray neError(N_SPECTROMETERS);
+
+            for (uint i = 0; i < N_SPECTROMETERS; i++) {
+                xPosition[i] = calibrations[i*N_SPECTROMETER_CALIBRATIONS];
+                //Te[i] = getThomsonCounter(nTimePage, i)->getT();
+                //TeError[i] = getThomsonCounter(nTimePage, i)->getTError();
+            }
+
+            mg->SetTitle(";x, mm;ne, #cm^{-3}");
+            ThomsonDraw::draw_result_from_r(c, mg, xPosition, ne, neError);
+        }
+        if (drawCompareSingalAndResult->IsDown())
+        {
+
+        }
     }
 
 }
@@ -565,6 +663,7 @@ ThomsonGUI::~ThomsonGUI()
 
     delete[] thetaCalibration;
     delete[] xPositionCalibration;
+    delete[] nCalibrationCoeff;
 
     app->Terminate();
     delete app;

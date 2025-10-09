@@ -12,6 +12,8 @@ typedef std::vector <std::pair<double, std::pair<uint, uint>>> d3group;
 
 struct SignalProcessingParameters 
 {
+    uint start_point_from_start_zero_line;
+    uint start_point_from_end_zero_line;
     uint step_from_start_zero_line; // сколько точек от начала сигнала взять для вычисления нулевой линии
     uint step_from_end_zero_line; // сколько точек от конца сигнала взять для вычисления нулевой линии
     uint signal_point_start; // начиная с данной точки берется значение импульса
@@ -21,10 +23,13 @@ struct SignalProcessingParameters
     int increase_point; // сколько точек возрастания сигнала дожны быть чтобы считать сигнал с импульсом
     int decrease_point; // сколько точек уменьшения сигнала должно быть чтобы считать сигнал с импульсом
 
-    SignalProcessingParameters(uint step_from_start_zero_line=0, uint step_from_end_zero_line=0, 
+    SignalProcessingParameters(
+                                uint start_point_from_start_zero_line = 0, uint start_point_from_end_zero_line = 0,
+                                uint step_from_start_zero_line=0, uint step_from_end_zero_line=0, 
                                 uint signal_point_start=0, uint signal_point_step=0,
                                 double threshold=0., int increase_point=0, int decrease_point=0
                                 ) :
+                                start_point_from_start_zero_line(start_point_from_start_zero_line), start_point_from_end_zero_line(start_point_from_end_zero_line),
                                 step_from_start_zero_line(step_from_start_zero_line), step_from_end_zero_line(step_from_end_zero_line),
                                 signal_point_start(signal_point_start), signal_point_step(signal_point_step),
                                 threshold(threshold), increase_point(increase_point), decrease_point(decrease_point)
@@ -55,7 +60,7 @@ private:
     void integrateSignal(const darray &t, const darray &U, uint channel, double UZero);    
     void shiftSignal(const darray &U, uint channel, double UZero);
     double countChannelSignal(const darray &UTintegrate, uint channel, uint signal_point_start, uint signal_point_step) const;
-    double findZeroLine(const darray &t, const darray &U, uint channel, uint step_from_start_zero_line, uint step_from_end_zero_line) const;
+    double findZeroLine(const darray &t, const darray &U, uint channel, uint step_from_start_zero_line, uint step_from_end_zero_line, uint start_point_from_start_zero_line, uint start_point_from_end_zero_line) const;
     
 public:
     
