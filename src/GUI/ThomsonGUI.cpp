@@ -297,6 +297,45 @@ void ThomsonGUI::clearCounterArray()
     counterArray.clear();
 }
 
+void ThomsonGUI::testCountMode_0(const std::string &srf_file, const std::string &convolution_file, double theta) const
+{
+
+    darray signal(N_CHANNELS, 0);
+    darray sigma(N_CHANNELS, 0);
+    darray work_signal(N_CHANNELS, false);
+
+    for (uint i = 0; i < N_WORK_CHANNELS; i++)
+    {
+        signal[i] = testChannelSignal[i]->GetNumber();
+        sigma[i] = testChannelSignalError[i]->GetNumber();
+        work_signal[i] = true;
+    }
+
+    ThomsonCounter counter(srf_file, convolution_file, signal, sigma, theta, LAMBDA_REFERENCE);
+    counter.count();
+    counter.countConcetration();
+    counter.countSignalResult();
+
+    std::ofstream fout;
+    fout.open(testOutFile);
+
+    uint NCount = 1;
+    if (fout.is_open())
+    {
+        fout << 0 << " " << NCount << "\n";
+        for (uint f = 0; f < NCount;f++)
+        {
+            for (uint i = 0; i < N_WORK_CHANNELS; i++)
+                fout << signal[i] << " " << sigma[i] << " " << counter.getSignalResult()[i] << "\n";
+
+            fout << counter.getT() << " " << counter.getTError() << " " << counter.getN() << " " << counter.getNError() << "\n";
+        }
+    }
+
+    fout.close();
+
+}
+
 barray ThomsonGUI::createWorkMask(const std::string &work_mask_string) const
 {
     barray work_mask(N_CHANNELS, false);
@@ -358,7 +397,17 @@ ThomsonGUI::ThomsonGUI(const TGWindow *p, UInt_t width, UInt_t height, TApplicat
         drawConceterationRDependes = new TGCheckButton(vframe, "draw ne(r)");
         drawCompareSingalAndResult = new TGCheckButton(vframe, "singnal in channel");
 
+
+        drawSRF->SetEnabled(false);
+        drawConvolution->SetEnabled(false);
+        drawSignalsInChannels->SetEnabled(false);
+        drawIntegralInChannels->SetEnabled(false);
+        drawTemepratureRDependes->SetEnabled(false);
+        drawConceterationRDependes->SetEnabled(false);
+        drawCompareSingalAndResult->SetEnabled(false);
+
         vframe->AddFrame(drawSRF, new TGLayoutHints(kLHintsLeft, 1, 1, 2, 2));
+        drawSRF->SetEnabled(false);
         vframe->AddFrame(drawConvolution, new TGLayoutHints(kLHintsLeft, 1, 1, 2, 2));
         vframe->AddFrame(drawSignalsInChannels, new TGLayoutHints(kLHintsLeft, 1, 1, 2, 2));
         vframe->AddFrame(drawIntegralInChannels, new TGLayoutHints(kLHintsLeft, 1, 1, 2, 2));
@@ -445,6 +494,48 @@ ThomsonGUI::ThomsonGUI(const TGWindow *p, UInt_t width, UInt_t height, TApplicat
         hframeBottom->AddFrame(saveCalibration, new TGLayoutHints(kLHintsLeft, 5, 5, 5, 5));
     }
 
+    {
+        TGCompositeFrame *fTTu = fTap->AddTab("Test.");
+        
+        TGHorizontalFrame *hframe = new TGHorizontalFrame(fTTu, width, 40);
+        fTTu->AddFrame(hframe, new TGLayoutHints(kLHintsLeft|kLHintsTop,5,5,5,5));
+
+
+        
+        testFile = new TGTextEntry(hframe);
+        testFile->SetToolTipText("set file input");
+        TGButton *buttonRead = new TGTextButton(hframe, "Read");
+        buttonRead->Connect("Clicked()", CLASS_NAME, this, "ReadTestFile()");
+        hframe->AddFrame(testFile, new TGLayoutHints(kLHintsLeft,5,5,5,5));
+        hframe->AddFrame(buttonRead, new TGLayoutHints(kLHintsLeft,5,5,5,5));
+        
+        testChannelSignal = new TGNumberEntryField*[N_WORK_CHANNELS];
+        testChannelSignalError = new TGNumberEntryField*[N_WORK_CHANNELS];
+
+        TGVerticalFrame *vframe = new TGVerticalFrame(fTTu, 40, height);
+        fTTu->AddFrame(vframe, new TGLayoutHints(kLHintsLeft|kLHintsTop,5,5,5,5));
+
+        for (uint i = 0; i < N_WORK_CHANNELS; i++)
+        {
+            TGHorizontalFrame *hframeI = new TGHorizontalFrame(vframe, width, 40);
+            vframe->AddFrame(hframeI, new TGLayoutHints(kLHintsTop, 0, 0, 0, 0));
+
+            TGLabel *labelCh = new TGLabel(hframeI, TString::Format("ch%u", i+1));
+            testChannelSignal[i] = new TGNumberEntryField(hframeI, -1, 0.);
+            testChannelSignal[i]->SetLimits(TGNumberFormat::kNELLimitMin, 0);
+            testChannelSignal[i]->SetToolTipText("set channel signal");
+            testChannelSignalError[i] = new TGNumberEntryField(hframeI, -1, 0.);
+            testChannelSignalError[i]->SetLimits(TGNumberFormat::kNELLimitMin, 0);
+            testChannelSignalError[i]->SetToolTipText("set channel error");
+
+            hframeI->AddFrame(labelCh, new TGLayoutHints(kLHintsLeft, 2,2,6,2));
+            hframeI->AddFrame(testChannelSignal[i], new TGLayoutHints(kLHintsLeft, 2,2,2,2));
+            hframeI->AddFrame(testChannelSignalError[i], new TGLayoutHints(kLHintsLeft, 2,2,2,2));
+        }
+
+
+    }
+
     this->AddFrame(fTap, new TGLayoutHints(kLHintsTop|kLHintsLeft|kLHintsExpandX|kLHintsExpandY, 10, 10, 5, 5));
 
     SetName("Thomson");
@@ -497,9 +588,17 @@ void ThomsonGUI::ReadMainFile()
     if (readSuccess) {
         std::cout << "данные прочитаны!\n";
         mainFileTextEntry->SetToolTipText(fileName + " read");
+        drawSignalsInChannels->SetEnabled(true);
+        drawIntegralInChannels->SetEnabled(true);
     }
-    if (thomsonSuccess)
+    if (thomsonSuccess) {
+        drawSRF->SetEnabled(true);
+        drawConvolution->SetEnabled(true);
+        drawTemepratureRDependes->SetEnabled(true);
+        drawConceterationRDependes->SetEnabled(true);
+        drawCompareSingalAndResult->SetEnabled(true);
         std::cout << "вычисления n,T подготовлены\n";
+    }
         
 }
 
@@ -652,6 +751,48 @@ void ThomsonGUI::DrawGraphs()
 
 }
 
+void ThomsonGUI::ReadTestFile()
+{
+    std::ifstream fin;
+
+    fin.open(testFile->GetText());
+
+    if (fin.is_open())
+    {
+        std::string srf_file;
+        std::string convolution_file;
+        
+        std::getline(fin, srf_file);
+        std::getline(fin, convolution_file);
+        std::getline(fin, testOutFile);
+
+        int mode;
+        double theta;
+        fin >> mode >> theta;
+        theta *= M_PI/180.;
+
+        if (!fin.fail()) {
+            if (mode == 0)
+            {
+                testCountMode_0(srf_file, convolution_file, theta);
+            }
+            else 
+            {
+                uint NCount;
+                uint TeCount;
+                fin >> NCount >> TeCount;
+                if (!fin.fail())
+                {
+
+                }
+            }
+        }
+
+    }
+
+    fin.close();
+}
+
 void ThomsonGUI::run()
 {
     MapSubwindows();
@@ -670,6 +811,9 @@ ThomsonGUI::~ThomsonGUI()
     delete[] thetaCalibration;
     delete[] xPositionCalibration;
     delete[] nCalibrationCoeff;
+
+    delete[] testChannelSignal;
+    delete[] testChannelSignalError;
 
     app->Terminate();
     delete app;

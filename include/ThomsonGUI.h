@@ -43,6 +43,12 @@ private:
     TGNumberEntryField **xPositionCalibration;
     TGNumberEntryField **thetaCalibration;
     TGNumberEntryField **nCalibrationCoeff;
+    
+    TGTextEntry *testFile;
+    TGNumberEntryField **testChannelSignal;
+    TGNumberEntryField **testChannelSignalError;
+    std::string testOutFile;
+
 
     bool readSuccess;
     bool thomsonSuccess;
@@ -71,6 +77,8 @@ private:
     void clearSpArray();
     void clearCounterArray();
 
+    void testCountMode_0(const std::string &srf_file, const std::string &convolution_file, double theta) const;
+
 public:
     ThomsonGUI(const TGWindow *p, UInt_t width, UInt_t height, TApplication *app);
 
@@ -79,6 +87,7 @@ public:
     void WriteCalibration();
     void OpenMainFileDialog();
     void DrawGraphs();
+    void ReadTestFile();
 
     void run();
     ~ThomsonGUI();
