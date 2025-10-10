@@ -297,42 +297,21 @@ void ThomsonGUI::clearCounterArray()
     counterArray.clear();
 }
 
-void ThomsonGUI::testCountMode_0(const std::string &srf_file, const std::string &convolution_file, double theta) const
+void ThomsonGUI::setDrawEnable(int signal, int thomson)
 {
-
-    darray signal(N_CHANNELS, 0);
-    darray sigma(N_CHANNELS, 0);
-    darray work_signal(N_CHANNELS, false);
-
-    for (uint i = 0; i < N_WORK_CHANNELS; i++)
+    if (thomson >= 0)
     {
-        signal[i] = testChannelSignal[i]->GetNumber();
-        sigma[i] = testChannelSignalError[i]->GetNumber();
-        work_signal[i] = true;
+        drawSRF->SetEnabled(thomson);
+        drawConvolution->SetEnabled(thomson);
+        drawTemepratureRDependes->SetEnabled(thomson);
+        drawConceterationRDependes->SetEnabled(thomson);
+        drawCompareSingalAndResult->SetEnabled(thomson);
     }
-
-    ThomsonCounter counter(srf_file, convolution_file, signal, sigma, theta, LAMBDA_REFERENCE);
-    counter.count();
-    counter.countConcetration();
-    counter.countSignalResult();
-
-    std::ofstream fout;
-    fout.open(testOutFile);
-
-    uint NCount = 1;
-    if (fout.is_open())
+    if (signal >= 0)
     {
-        fout << 0 << " " << NCount << "\n";
-        for (uint f = 0; f < NCount;f++)
-        {
-            for (uint i = 0; i < N_WORK_CHANNELS; i++)
-                fout << signal[i] << " " << sigma[i] << " " << counter.getSignalResult()[i] << "\n";
-
-            fout << counter.getT() << " " << counter.getTError() << " " << counter.getN() << " " << counter.getNError() << "\n";
-        }
+        drawSignalsInChannels->SetEnabled(signal);
+        drawIntegralInChannels->SetEnabled(signal);
     }
-
-    fout.close();
 
 }
 
@@ -397,14 +376,7 @@ ThomsonGUI::ThomsonGUI(const TGWindow *p, UInt_t width, UInt_t height, TApplicat
         drawConceterationRDependes = new TGCheckButton(vframe, "draw ne(r)");
         drawCompareSingalAndResult = new TGCheckButton(vframe, "singnal in channel");
 
-
-        drawSRF->SetEnabled(false);
-        drawConvolution->SetEnabled(false);
-        drawSignalsInChannels->SetEnabled(false);
-        drawIntegralInChannels->SetEnabled(false);
-        drawTemepratureRDependes->SetEnabled(false);
-        drawConceterationRDependes->SetEnabled(false);
-        drawCompareSingalAndResult->SetEnabled(false);
+        setDrawEnable(0,0);
 
         vframe->AddFrame(drawSRF, new TGLayoutHints(kLHintsLeft, 1, 1, 2, 2));
         drawSRF->SetEnabled(false);
@@ -588,16 +560,11 @@ void ThomsonGUI::ReadMainFile()
     if (readSuccess) {
         std::cout << "данные прочитаны!\n";
         mainFileTextEntry->SetToolTipText(fileName + " read");
-        drawSignalsInChannels->SetEnabled(true);
-        drawIntegralInChannels->SetEnabled(true);
+        setDrawEnable(1, -1);
     }
     if (thomsonSuccess) {
-        drawSRF->SetEnabled(true);
-        drawConvolution->SetEnabled(true);
-        drawTemepratureRDependes->SetEnabled(true);
-        drawConceterationRDependes->SetEnabled(true);
-        drawCompareSingalAndResult->SetEnabled(true);
         std::cout << "вычисления n,T подготовлены\n";
+        setDrawEnable(-1, 1);
     }
         
 }
@@ -749,48 +716,6 @@ void ThomsonGUI::DrawGraphs()
         }
     }
 
-}
-
-void ThomsonGUI::ReadTestFile()
-{
-    std::ifstream fin;
-
-    fin.open(testFile->GetText());
-
-    if (fin.is_open())
-    {
-        std::string srf_file;
-        std::string convolution_file;
-        
-        std::getline(fin, srf_file);
-        std::getline(fin, convolution_file);
-        std::getline(fin, testOutFile);
-
-        int mode;
-        double theta;
-        fin >> mode >> theta;
-        theta *= M_PI/180.;
-
-        if (!fin.fail()) {
-            if (mode == 0)
-            {
-                testCountMode_0(srf_file, convolution_file, theta);
-            }
-            else 
-            {
-                uint NCount;
-                uint TeCount;
-                fin >> NCount >> TeCount;
-                if (!fin.fail())
-                {
-
-                }
-            }
-        }
-
-    }
-
-    fin.close();
 }
 
 void ThomsonGUI::run()

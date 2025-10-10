@@ -39,7 +39,6 @@ private:
     TGCheckButton *drawCompareSingalAndResult;
 
     TGNumberEntry *calibrationShot;
-
     TGNumberEntryField **xPositionCalibration;
     TGNumberEntryField **thetaCalibration;
     TGNumberEntryField **nCalibrationCoeff;
@@ -47,8 +46,6 @@ private:
     TGTextEntry *testFile;
     TGNumberEntryField **testChannelSignal;
     TGNumberEntryField **testChannelSignalError;
-    std::string testOutFile;
-
 
     bool readSuccess;
     bool thomsonSuccess;
@@ -60,6 +57,8 @@ private:
 
     std::vector <SignalProcessing*> spArray;
     std::vector <ThomsonCounter *> counterArray;
+
+    void setDrawEnable(int signal, int thomson);
 
     barray createWorkMask(const std::string &work_mask_string) const;
 
@@ -77,8 +76,6 @@ private:
     void clearSpArray();
     void clearCounterArray();
 
-    void testCountMode_0(const std::string &srf_file, const std::string &convolution_file, double theta) const;
-
 public:
     ThomsonGUI(const TGWindow *p, UInt_t width, UInt_t height, TApplication *app);
 
@@ -87,7 +84,6 @@ public:
     void WriteCalibration();
     void OpenMainFileDialog();
     void DrawGraphs();
-    void ReadTestFile();
 
     void run();
     ~ThomsonGUI();
