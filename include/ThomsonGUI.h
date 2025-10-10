@@ -76,13 +76,15 @@ private:
     void clearSpArray();
     void clearCounterArray();
 
+    void OpenFileDialogTemplate(TGTextEntry *textEntry, const char *name, const char *type);
+
 public:
     ThomsonGUI(const TGWindow *p, UInt_t width, UInt_t height, TApplication *app);
 
     void ReadMainFile();
     void ReadCalibration();
     void WriteCalibration();
-    void OpenMainFileDialog();
+    void OpenMainFileDialog() { OpenFileDialogTemplate(mainFileTextEntry, "setting file", "*.txt"); }
     void DrawGraphs();
 
     void run();

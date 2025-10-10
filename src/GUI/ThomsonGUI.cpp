@@ -609,9 +609,9 @@ void ThomsonGUI::WriteCalibration()
     writeCalibration(archive_name.c_str(), CALIBRATION_NAME, calibration);
 }
 
-void ThomsonGUI::OpenMainFileDialog()
+void ThomsonGUI::OpenFileDialogTemplate(TGTextEntry *textEntry, const char *name, const char *type)
 {
-    static const char *fileTypes[] = { "setting file", "*.txt" };
+    static const char *fileTypes[] = { name, type };
     static const char initDir[] = "";
     TGFileInfo fi;
     fi.fFileTypes = fileTypes;
@@ -620,8 +620,8 @@ void ThomsonGUI::OpenMainFileDialog()
     if (!fi.fFilename)
         return;
 
-    mainFileTextEntry->Clear();
-    mainFileTextEntry->AppendText(fi.fFilename);
+    textEntry->Clear();
+    textEntry->AppendText(fi.fFilename);
 }
 
 void ThomsonGUI::DrawGraphs()
