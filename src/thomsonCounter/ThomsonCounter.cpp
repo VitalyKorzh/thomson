@@ -273,6 +273,13 @@ bool ThomsonCounter::count(const double alpha, const uint iter_limit, const doub
     if (alpha <= 0. || iter_limit == 0 || epsilon <= 0.)
         return false;
 
+    if (N_CHANNELS_WORK == 0)
+    {
+        TResult = 0;
+        t_error = 0;
+        return false;
+    }
+
     this->alpha = alpha;
     this->iter_limit = iter_limit;
     this->epsilon = epsilon;
@@ -347,6 +354,13 @@ bool ThomsonCounter::count(const double alpha, const uint iter_limit, const doub
 
 bool ThomsonCounter::countConcetration()
 {
+    if (N_CHANNELS_WORK == 0)
+    {
+        neResult = 0;
+        ne_error = 0;
+        return false;
+    }
+
     double Te = getT();
     double TeError  = getTError();
     double dT = 1e-8;
@@ -363,7 +377,6 @@ bool ThomsonCounter::countConcetration()
             ch = i;
         }
     }
-
 
     double F = convolution(getSRFch(ch), SResult, lMin, lMax);
     double FdT = convolution(getSRFch(ch), SResultdT, lMin, lMax);

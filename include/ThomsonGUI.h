@@ -76,7 +76,7 @@ private:
     void clearSpArray();
     void clearCounterArray();
 
-    void OpenFileDialogTemplate(TGTextEntry *textEntry, const char *name, const char *type);
+    void OpenFileDialogTemplate(TGTextEntry *textEntry);
 
 public:
     ThomsonGUI(const TGWindow *p, UInt_t width, UInt_t height, TApplication *app);
@@ -84,7 +84,8 @@ public:
     void ReadMainFile();
     void ReadCalibration();
     void WriteCalibration();
-    void OpenMainFileDialog() { OpenFileDialogTemplate(mainFileTextEntry, "setting file", "*.txt"); }
+    void OpenMainFileDialog() { OpenFileDialogTemplate(mainFileTextEntry); }
+    void OpenTestFileDialog() { OpenFileDialogTemplate(testFile); }
     void DrawGraphs();
 
     void run();

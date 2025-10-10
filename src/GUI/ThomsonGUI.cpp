@@ -32,6 +32,11 @@ ClassImp(ThomsonGUI)
 #define CALIBRATION_NAME "thomson"
 #define CLASS_NAME "ThomsonGUI"
 
+
+#define ID_X 0
+#define ID_THETA 1
+#define ID_N_COEFF 2
+
 bool ThomsonGUI::readDataFromArchive(const char *archive_name, const char *kust, const char *signal_name, int shot, darray &t, darray &U, int timePoint, int timeList, const uint N_INFORM, const uint N_UNUSEFULL) const
 {
     const uint N_POINT = N_INFORM+N_UNUSEFULL;
@@ -472,15 +477,15 @@ ThomsonGUI::ThomsonGUI(const TGWindow *p, UInt_t width, UInt_t height, TApplicat
         TGHorizontalFrame *hframe = new TGHorizontalFrame(fTTu, width, 40);
         fTTu->AddFrame(hframe, new TGLayoutHints(kLHintsLeft|kLHintsTop,5,5,5,5));
 
-
-        
         testFile = new TGTextEntry(hframe);
         testFile->SetToolTipText("set file input");
+        TGButton *buttonOpenDialog = new TGTextButton(hframe, "^");
+        buttonOpenDialog->Connect("Clicked()", CLASS_NAME, this, "OpenTestFileDialog()");
         TGButton *buttonRead = new TGTextButton(hframe, "Read");
-        buttonRead->Connect("Clicked()", CLASS_NAME, this, "ReadTestFile()");
+        hframe->AddFrame(buttonOpenDialog, new TGLayoutHints(kLHintsLeft,5,5,5,5));
         hframe->AddFrame(testFile, new TGLayoutHints(kLHintsLeft,5,5,5,5));
         hframe->AddFrame(buttonRead, new TGLayoutHints(kLHintsLeft,5,5,5,5));
-        
+
         testChannelSignal = new TGNumberEntryField*[N_WORK_CHANNELS];
         testChannelSignalError = new TGNumberEntryField*[N_WORK_CHANNELS];
 
@@ -581,9 +586,9 @@ void ThomsonGUI::ReadCalibration()
     {
         for (uint i = 0; i < N_SPECTROMETERS; i++)
         {
-            xPositionCalibration[i]->SetNumber(calibration[N_SPECTROMETER_CALIBRATIONS*i]);
-            thetaCalibration[i]->SetNumber(calibration[N_SPECTROMETER_CALIBRATIONS*i+1]*180./M_PI);
-            nCalibrationCoeff[i]->SetNumber(calibration[N_SPECTROMETER_CALIBRATIONS*i+2]);
+            xPositionCalibration[i]->SetNumber(calibration[N_SPECTROMETER_CALIBRATIONS*i+ID_X]);
+            thetaCalibration[i]->SetNumber(calibration[N_SPECTROMETER_CALIBRATIONS*i+ID_THETA]*180./M_PI);
+            nCalibrationCoeff[i]->SetNumber(calibration[N_SPECTROMETER_CALIBRATIONS*i+ID_N_COEFF]);
         }
     }
     else {
@@ -601,17 +606,17 @@ void ThomsonGUI::WriteCalibration()
 
     for (uint i = 0; i < N_SPECTROMETERS; i++)
     {
-        calibration[N_SPECTROMETER_CALIBRATIONS*i] = xPositionCalibration[i]->GetNumber();
-        calibration[N_SPECTROMETER_CALIBRATIONS*i+1] = thetaCalibration[i]->GetNumber()*M_PI/180.;
-        calibration[N_SPECTROMETER_CALIBRATIONS*i+2] = nCalibrationCoeff[i]->GetNumber();
+        calibration[N_SPECTROMETER_CALIBRATIONS*i+ID_X] = xPositionCalibration[i]->GetNumber();
+        calibration[N_SPECTROMETER_CALIBRATIONS*i+ID_THETA] = thetaCalibration[i]->GetNumber()*M_PI/180.;
+        calibration[N_SPECTROMETER_CALIBRATIONS*i+ID_N_COEFF] = nCalibrationCoeff[i]->GetNumber();
     }
 
     writeCalibration(archive_name.c_str(), CALIBRATION_NAME, calibration);
 }
 
-void ThomsonGUI::OpenFileDialogTemplate(TGTextEntry *textEntry, const char *name, const char *type)
+void ThomsonGUI::OpenFileDialogTemplate(TGTextEntry *textEntry)
 {
-    static const char *fileTypes[] = { name, type };
+    static const char *fileTypes[] = { "setting file",  "*.txt" };
     static const char initDir[] = "";
     TGFileInfo fi;
     fi.fFileTypes = fileTypes;
@@ -619,7 +624,6 @@ void ThomsonGUI::OpenFileDialogTemplate(TGTextEntry *textEntry, const char *name
     new TGFileDialog(gClient->GetRoot(), this, kFDOpen, &fi);
     if (!fi.fFilename)
         return;
-
     textEntry->Clear();
     textEntry->AppendText(fi.fFilename);
 }
@@ -698,9 +702,9 @@ void ThomsonGUI::DrawGraphs()
             darray neError(N_SPECTROMETERS);
 
             for (uint i = 0; i < N_SPECTROMETERS; i++) {
-                xPosition[i] = calibrations[i*N_SPECTROMETER_CALIBRATIONS];
-                ne[i] = getThomsonCounter(nTimePage, i)->getN();
-                neError[i] = getThomsonCounter(nTimePage, i)->getNError()*calibrations[i*N_SPECTROMETERS+2];
+                xPosition[i] = calibrations[i*N_SPECTROMETER_CALIBRATIONS + ID_X];
+                ne[i] = getThomsonCounter(nTimePage, i)->getN()*calibrations[i*N_SPECTROMETER_CALIBRATIONS+ID_THETA];
+                neError[i] = getThomsonCounter(nTimePage, i)->getNError()*calibrations[i*N_SPECTROMETER_CALIBRATIONS+ID_N_COEFF];
             }
 
             mg->SetTitle(";x, mm;n_{e}, cm^{-3}");
