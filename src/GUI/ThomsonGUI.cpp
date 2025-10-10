@@ -15,25 +15,25 @@
 
 ClassImp(ThomsonGUI)
 
-#define ERROR_COEFF 0.1
+#define ERROR_COEFF 0.1 // ошибка в канале ERROR_COEFF*sqrt(signal)
 
 #define N_SPECTROMETERS 6
 #define N_CHANNELS 8
-#define N_WORK_CHANNELS 6
+#define N_WORK_CHANNELS 6 //работают каналы 1 2 3 4 5 6 (7, 8 не работают)
 #define N_TIME_LIST 11
 #define N_TIME_SIZE 1000
-#define UNUSEFULL 48
+#define UNUSEFULL 48 // SIZE_ARCHIVE = N_TIME_LIST*(2*N_TIME_SIZE+UNUSEFULL) 
 
 
-#define N_SPECTROMETER_CALIBRATIONS 3
-#define LAMBDA_REFERENCE 1064.
+#define N_SPECTROMETER_CALIBRATIONS 3 //число калибровок для спектрометра
+#define LAMBDA_REFERENCE 1064. 
 
 #define KUST_NAME "tomson"
 #define CALIBRATION_NAME "thomson"
 #define CLASS_NAME "ThomsonGUI"
 
-
-#define ID_X 0
+// калибровка записана X THETA COEFF
+#define ID_X 0 
 #define ID_THETA 1
 #define ID_N_COEFF 2
 
@@ -311,11 +311,21 @@ void ThomsonGUI::setDrawEnable(int signal, int thomson)
         drawTemepratureRDependes->SetEnabled(thomson);
         drawConceterationRDependes->SetEnabled(thomson);
         drawCompareSingalAndResult->SetEnabled(thomson);
+
+        infoUseRatio->SetEnabled(thomson);
+        infoUseChannelToNe->SetEnabled(thomson);
+        infoTij->SetEnabled(thomson);
+        infoTe->SetEnabled(thomson);
+        infoNe->SetEnabled(thomson);
+        infoCountSignal->SetEnabled(thomson);
     }
     if (signal >= 0)
     {
         drawSignalsInChannels->SetEnabled(signal);
         drawIntegralInChannels->SetEnabled(signal);
+
+        infoSignal->SetEnabled(signal);
+        infoWorkChannels->SetEnabled(signal);
     }
 
 }
@@ -370,32 +380,63 @@ ThomsonGUI::ThomsonGUI(const TGWindow *p, UInt_t width, UInt_t height, TApplicat
     {
         TGCompositeFrame *fTTu = fTap->AddTab("Diagnostic.");
 
-        TGVerticalFrame *vframe = new TGVerticalFrame(fTTu, 20, 40);
-        fTTu->AddFrame(vframe, new TGLayoutHints(kLHintsTop, 5, 5, 5, 5));
+        TGHorizontalFrame *hframeGroups = new TGHorizontalFrame(fTTu, width, 40);
+        fTTu->AddFrame(hframeGroups, new TGLayoutHints(kLHintsTop|kLHintsLeft));
 
-        drawSRF = new TGCheckButton(vframe, "draw SRF");
-        drawConvolution = new TGCheckButton(vframe, "draw convolution");
-        drawSignalsInChannels = new TGCheckButton(vframe, "draw signals in channels");
-        drawIntegralInChannels = new TGCheckButton(vframe, "draw integral of signal in channels");
-        drawTemepratureRDependes = new TGCheckButton(vframe, "draw Te(r)");
-        drawConceterationRDependes = new TGCheckButton(vframe, "draw ne(r)");
-        drawCompareSingalAndResult = new TGCheckButton(vframe, "singnal in channel");
+        TGGroupFrame *vframeDraw = new TGGroupFrame(hframeGroups, "draw", kVerticalFrame);
+        TGGroupFrame *vframeInfo = new TGGroupFrame(hframeGroups, "info", kVerticalFrame);
+        hframeGroups->AddFrame(vframeDraw, new TGLayoutHints(kLHintsTop, 5, 5, 5, 5));
+        hframeGroups->AddFrame(vframeInfo, new TGLayoutHints(kLHintsTop, 5, 5, 5, 5));
 
+        const uint drawSize = 7;
+        drawSRF = new TGCheckButton(vframeDraw, "draw SRF");
+        drawConvolution = new TGCheckButton(vframeDraw, "draw convolution");
+        drawSignalsInChannels = new TGCheckButton(vframeDraw, "draw signals in channels");
+        drawIntegralInChannels = new TGCheckButton(vframeDraw, "draw integral of signal in channels");
+        drawTemepratureRDependes = new TGCheckButton(vframeDraw, "draw Te(r)");
+        drawConceterationRDependes = new TGCheckButton(vframeDraw, "draw ne(r)");
+        drawCompareSingalAndResult = new TGCheckButton(vframeDraw, "draw count signals in channel");
+
+        TGCheckButton *drawArray[drawSize] = {
+            drawSRF, drawConvolution, drawSignalsInChannels, drawIntegralInChannels,
+            drawTemepratureRDependes, drawConceterationRDependes, drawCompareSingalAndResult
+        };
+
+        for (uint i = 0; i < drawSize; i++)
+        {
+            vframeDraw->AddFrame(drawArray[i], new TGLayoutHints(kLHintsLeft, 1, 1, 2, 2));
+        }
+        
+        const uint infoSize = 8;
+        
+        infoSignal = new TGCheckButton(vframeInfo, "print signals");
+        infoWorkChannels = new TGCheckButton(vframeInfo, "print work channels");
+        infoUseRatio = new TGCheckButton(vframeInfo, "print use ratio for Te");
+        infoUseChannelToNe = new TGCheckButton(vframeInfo, "print use channel for ne");
+        infoTij = new TGCheckButton(vframeInfo, "print Tij");
+        infoTe = new TGCheckButton(vframeInfo, "print Te");
+        infoNe = new TGCheckButton(vframeInfo, "print ne");
+        infoCountSignal = new TGCheckButton(vframeInfo, "print count signals");
+        
+        TGCheckButton *infoArray[] = {
+            infoSignal, infoWorkChannels, infoUseRatio, 
+            infoUseChannelToNe, infoTij, infoTe,
+            infoNe, infoCountSignal
+        };
+        
+        for (uint i = 0; i < infoSize; i++)
+        {
+            //infoArray[i]->SetState(kButtonDown);
+            vframeInfo->AddFrame(infoArray[i], new TGLayoutHints(kLHintsLeft, 1, 1, 2, 2));
+        }
+        
         setDrawEnable(0,0);
-
-        vframe->AddFrame(drawSRF, new TGLayoutHints(kLHintsLeft, 1, 1, 2, 2));
-        drawSRF->SetEnabled(false);
-        vframe->AddFrame(drawConvolution, new TGLayoutHints(kLHintsLeft, 1, 1, 2, 2));
-        vframe->AddFrame(drawSignalsInChannels, new TGLayoutHints(kLHintsLeft, 1, 1, 2, 2));
-        vframe->AddFrame(drawIntegralInChannels, new TGLayoutHints(kLHintsLeft, 1, 1, 2, 2));
-        vframe->AddFrame(drawTemepratureRDependes, new TGLayoutHints(kLHintsLeft, 1, 1, 2, 2));
-        vframe->AddFrame(drawConceterationRDependes, new TGLayoutHints(kLHintsLeft, 1, 1, 2, 2));
-        vframe->AddFrame(drawCompareSingalAndResult, new TGLayoutHints(kLHintsLeft, 1, 1, 2, 2));
 
         TGHorizontalFrame *hframe_bottom = new TGHorizontalFrame(fTTu, width, 80);
         fTTu->AddFrame(hframe_bottom, new TGLayoutHints(kLHintsExpandX| kLHintsBottom, 5, 5, 5,  10));
         TGButton *drawButton = new TGTextButton(hframe_bottom, "Draw");
         drawButton->Connect("Clicked()", CLASS_NAME, this, "DrawGraphs()");
+        drawButton->Connect("Clicked()", CLASS_NAME, this, "PrintInfo()");
 
         timeListNumber = new TGNumberEntry(hframe_bottom, 1, 4, -1, TGNumberFormat::kNESInteger,
                                             TGNumberFormat::kNEANonNegative, TGNumberEntry::kNELLimitMinMax, 0, N_TIME_LIST-1);
@@ -554,6 +595,7 @@ void ThomsonGUI::ReadMainFile()
         }
         else
             thomsonSuccess = countThomson(srf_file_folder, convolution_file_folder, shot, true);
+        setDrawEnable(0, 0);
     }
     else {
         std::cerr << "не удалось открыть файл: " << fileName << "!\n"; 
@@ -718,6 +760,50 @@ void ThomsonGUI::DrawGraphs()
             THStack *hs = ThomsonDraw::createHStack("hs_"+canvas_name, "");
             ThomsonDraw::draw_comapre_signals(c, hs, N_WORK_CHANNELS, counter->getSignal(), counter->getSignalError(), counter->getSignalResult(), counter->getWorkSignal(), true);
         }
+    }
+
+}
+
+void ThomsonGUI::PrintInfo()
+{
+
+    if (!readSuccess)
+        return;
+
+    uint nSpectrometer = spectrometerNumber->GetNumber();
+    uint nTimePage = timeListNumber->GetNumber();
+    std::cout << "spectrometer: " << nSpectrometer << " time page: " << nTimePage << "\n"; 
+    if (infoSignal->IsDown())
+    {
+
+    }
+    if (infoWorkChannels->IsDown())
+    {
+        
+    }
+    if (infoUseRatio->IsDown())
+    {
+        
+    }
+    if (infoUseChannelToNe->IsDown())
+    {
+        
+    }
+    if (infoTij->IsDown())
+    {
+
+    }
+    if (infoTe->IsDown())
+    {
+
+    }
+    if (infoNe->IsDown())
+    {
+
+    }
+    if (infoCountSignal->IsDown())
+    {
+
     }
 
 }

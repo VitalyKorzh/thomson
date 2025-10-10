@@ -30,18 +30,30 @@ private:
     TGNumberEntry *timeListNumber;
     TGNumberEntry *spectrometerNumber;
 
-    TGCheckButton *drawSRF;
-    TGCheckButton *drawConvolution;
-    TGCheckButton *drawSignalsInChannels;
-    TGCheckButton *drawIntegralInChannels;
-    TGCheckButton *drawTemepratureRDependes;
-    TGCheckButton *drawConceterationRDependes;
-    TGCheckButton *drawCompareSingalAndResult;
+    TGCheckButton *drawSRF,
+                *drawConvolution,
+                *drawSignalsInChannels,
+                *drawIntegralInChannels,
+                *drawTemepratureRDependes,
+                *drawConceterationRDependes,
+                *drawCompareSingalAndResult;
+
+
+    TGCheckButton *infoSignal,
+                    *infoWorkChannels,
+                    *infoUseRatio,
+                    *infoUseChannelToNe,
+                    *infoTij,
+                    *infoTe,
+                    *infoNe,
+                    *infoCountSignal;
+
+
 
     TGNumberEntry *calibrationShot;
-    TGNumberEntryField **xPositionCalibration;
-    TGNumberEntryField **thetaCalibration;
-    TGNumberEntryField **nCalibrationCoeff;
+    TGNumberEntryField **xPositionCalibration,
+                        **thetaCalibration,
+                        **nCalibrationCoeff;
     
     TGTextEntry *testFile;
     TGNumberEntryField **testChannelSignal;
@@ -87,6 +99,7 @@ public:
     void OpenMainFileDialog() { OpenFileDialogTemplate(mainFileTextEntry); }
     void OpenTestFileDialog() { OpenFileDialogTemplate(testFile); }
     void DrawGraphs();
+    void PrintInfo();
 
     void run();
     ~ThomsonGUI();
