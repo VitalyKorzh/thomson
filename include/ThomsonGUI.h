@@ -57,13 +57,8 @@ private:
     TGNumberEntryField **xPositionCalibration,
                         **thetaCalibration,
                         **nCalibrationCoeff;
-    
-    /*TGTextEntry *testFile;
-    TGNumberEntryField **testChannelSignal;
-    TGNumberEntryField **testChannelSignalError;*/
 
-    bool readSuccess;
-    bool thomsonSuccess;
+    int fileType;
     int shot;
     std::string archive_name;
 
@@ -95,6 +90,9 @@ private:
 
     static TString getFileFormat(TString fileName);
 
+    void readROOTFormat(const std::string &fileName, const std::string &srf_file_folder, const std::string &convolution_file_folder, std::ifstream &fin);
+    void readT1Format(const std::string &fileName, const std::string &srf_file_folder, const std::string &convolution_file_folder);
+
 public:
     ThomsonGUI(const TGWindow *p, UInt_t width, UInt_t height, TApplication *app);
 
@@ -102,7 +100,6 @@ public:
     void ReadCalibration();
     void WriteCalibration();
     void OpenMainFileDialog() { OpenFileDialogTemplate(mainFileTextEntry); }
-    //void OpenTestFileDialog() { OpenFileDialogTemplate(testFile); }
     void DrawGraphs();
     void PrintInfo();
 

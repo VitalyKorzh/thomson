@@ -37,6 +37,10 @@ ClassImp(ThomsonGUI)
 #define ID_THETA 1
 #define ID_N_COEFF 2
 
+#define isROOT 0
+#define isT1 1
+#define isT2 2
+
 bool ThomsonGUI::readDataFromArchive(const char *archive_name, const char *kust, const char *signal_name, int shot, darray &t, darray &U, int timePoint, int timeList, const uint N_INFORM, const uint N_UNUSEFULL) const
 {
     const uint N_POINT = N_INFORM+N_UNUSEFULL;
@@ -109,8 +113,6 @@ darray ThomsonGUI::readCalibration(const char *archive_name, const char *calibra
 
         TString shot_string = TString::Format("%d", shot);
         TString shot_name = file->GetDirectory(shot_string) != nullptr ? GetShotCalibration(shot) : shot_string;
-
-        //std::cout << "shot_name: " << shot_name << "\n";
 
         TSignalC *calibration_signal = nullptr;
         calibration_signal = (TSignalC*) GetCalibration(calibration_name, shot_name);
@@ -358,7 +360,7 @@ int &ThomsonGUI::getShot(int &shot) const
 }
 
 ThomsonGUI::ThomsonGUI(const TGWindow *p, UInt_t width, UInt_t height, TApplication *app) : TGMainFrame(p, width, height),
-                                                                                            app(app), readSuccess(false), thomsonSuccess(false)
+                                                                                            app(app), fileType(-1)
 {
     SetCleanup(kDeepCleanup);
 
@@ -504,48 +506,6 @@ ThomsonGUI::ThomsonGUI(const TGWindow *p, UInt_t width, UInt_t height, TApplicat
         hframeBottom->AddFrame(saveCalibration, new TGLayoutHints(kLHintsLeft, 5, 5, 5, 5));
     }
 
-    /*{
-        TGCompositeFrame *fTTu = fTap->AddTab("Test.");
-        
-        TGHorizontalFrame *hframe = new TGHorizontalFrame(fTTu, width, 40);
-        fTTu->AddFrame(hframe, new TGLayoutHints(kLHintsLeft|kLHintsTop,5,5,5,5));
-
-        testFile = new TGTextEntry(hframe);
-        testFile->SetToolTipText("set file input");
-        TGButton *buttonOpenDialog = new TGTextButton(hframe, "^");
-        buttonOpenDialog->Connect("Clicked()", CLASS_NAME, this, "OpenTestFileDialog()");
-        TGButton *buttonRead = new TGTextButton(hframe, "Read");
-        hframe->AddFrame(buttonOpenDialog, new TGLayoutHints(kLHintsLeft,5,5,5,5));
-        hframe->AddFrame(testFile, new TGLayoutHints(kLHintsLeft,5,5,5,5));
-        hframe->AddFrame(buttonRead, new TGLayoutHints(kLHintsLeft,5,5,5,5));
-
-        testChannelSignal = new TGNumberEntryField*[N_WORK_CHANNELS];
-        testChannelSignalError = new TGNumberEntryField*[N_WORK_CHANNELS];
-
-        TGVerticalFrame *vframe = new TGVerticalFrame(fTTu, 40, height);
-        fTTu->AddFrame(vframe, new TGLayoutHints(kLHintsLeft|kLHintsTop,5,5,5,5));
-
-        for (uint i = 0; i < N_WORK_CHANNELS; i++)
-        {
-            TGHorizontalFrame *hframeI = new TGHorizontalFrame(vframe, width, 40);
-            vframe->AddFrame(hframeI, new TGLayoutHints(kLHintsTop, 0, 0, 0, 0));
-
-            TGLabel *labelCh = new TGLabel(hframeI, TString::Format("ch%u", i+1));
-            testChannelSignal[i] = new TGNumberEntryField(hframeI, -1, 0.);
-            testChannelSignal[i]->SetLimits(TGNumberFormat::kNELLimitMin, 0);
-            testChannelSignal[i]->SetToolTipText("set channel signal");
-            testChannelSignalError[i] = new TGNumberEntryField(hframeI, -1, 0.);
-            testChannelSignalError[i]->SetLimits(TGNumberFormat::kNELLimitMin, 0);
-            testChannelSignalError[i]->SetToolTipText("set channel error");
-
-            hframeI->AddFrame(labelCh, new TGLayoutHints(kLHintsLeft, 2,2,6,2));
-            hframeI->AddFrame(testChannelSignal[i], new TGLayoutHints(kLHintsLeft, 2,2,2,2));
-            hframeI->AddFrame(testChannelSignalError[i], new TGLayoutHints(kLHintsLeft, 2,2,2,2));
-        }
-
-
-    }*/
-
     this->AddFrame(fTap, new TGLayoutHints(kLHintsTop|kLHintsLeft|kLHintsExpandX|kLHintsExpandY, 10, 10, 5, 5));
 
     SetName("Thomson");
@@ -563,8 +523,7 @@ void ThomsonGUI::ReadMainFile()
 
     if (fin.is_open())
     {
-        readSuccess = true;
-        thomsonSuccess = false;
+        fileType = -1;
         std::string srf_file_folder;
         std::string convolution_file_folder;
         std::getline(fin, srf_file_folder);
@@ -573,58 +532,49 @@ void ThomsonGUI::ReadMainFile()
         
         std::string work_mask_string;
         std::getline(fin, work_mask_string);
-        work_mask = createWorkMask(work_mask_string);
-
-        TString file_format = getFileFormat(archive_name);
-        if (file_format == "root")
+        
+        if (!fin.fail())
         {
-            SignalProcessingParameters parameters;
-            
-            fin >> shot >> parameters.start_point_from_start_zero_line >> parameters.step_from_start_zero_line >> parameters.start_point_from_end_zero_line >> 
-            parameters.step_from_end_zero_line >> parameters.signal_point_start >> 
-            parameters.signal_point_step >> parameters.threshold >> parameters.increase_point >> parameters.decrease_point;
-
-            if (fin.fail() || !processingSignalsData(archive_name.c_str(), shot, parameters, true)) {
-                readSuccess = false;
-                std::cerr << "ошибка чтения файла!\n";
+            TString file_format = getFileFormat(archive_name);
+            work_mask = createWorkMask(work_mask_string);
+            if (file_format == "root")
+            {
+                setDrawEnable(0, 0);
+                fileType = isROOT;
+                readROOTFormat(archive_name, srf_file_folder, convolution_file_folder, fin);
             }
-            else
-                thomsonSuccess = countThomson(srf_file_folder, convolution_file_folder, shot, true);
+            else if (file_format == "t1")
+            {
+                setDrawEnable(0, 0);
+                fileType = isT1;
+                readT1Format(archive_name,  srf_file_folder, convolution_file_folder);
+            }
         }
-        else if (file_format == "t1")
-        {
-            readSuccess = false;
-        }
-        else if (file_format == "t2")
-        {
-            readSuccess = false;
-        }
-        else
-            readSuccess = false;
-        setDrawEnable(0, 0);
     }
     else {
         std::cerr << "не удалось открыть файл: " << fileName << "!\n"; 
-        readSuccess = false;
-        thomsonSuccess = false;
     }
     fin.close();
 
-    if (readSuccess) {
+    if (fileType == isROOT)
+    {
         std::cout << "данные прочитаны!\n";
         mainFileTextEntry->SetToolTipText(fileName + " read");
-        setDrawEnable(1, -1);
-    }
-    if (thomsonSuccess) {
         std::cout << "вычисления n,T подготовлены\n\n";
-        setDrawEnable(-1, 1);
+        setDrawEnable(1, 1);
+    }
+    else if (fileType == isT1)
+    {
+        drawCompareSingalAndResult->SetEnabled(true);
+        for (uint i = 0; i < checkButtonInfo.size(); i++)
+            checkButtonInfo[i]->SetEnabled(true);
     }
         
 }
 
 void ThomsonGUI::ReadCalibration()
 {
-    if (!readSuccess || archive_name == "")
+    if (fileType != isROOT || archive_name == "")
         return;
 
     int shot = calibrationShot->GetNumber();
@@ -647,7 +597,7 @@ void ThomsonGUI::ReadCalibration()
 
 void ThomsonGUI::WriteCalibration()
 {
-    if (!readSuccess || archive_name == "")
+    if (fileType != isROOT || archive_name == "")
         return;
 
     darray calibration(N_SPECTROMETERS*N_SPECTROMETER_CALIBRATIONS);
@@ -684,93 +634,155 @@ TString ThomsonGUI::getFileFormat(TString fileName)
     return fileName(lastDot + 1, fileName.Length() - lastDot - 1);;
 }
 
+void ThomsonGUI::readROOTFormat(const std::string &fileName, const std::string &srf_file_folder, const std::string &convolution_file_folder, std::ifstream &fin)
+{
+    SignalProcessingParameters parameters;
+    
+    fin >> shot >> parameters.start_point_from_start_zero_line >> parameters.step_from_start_zero_line >> parameters.start_point_from_end_zero_line >> 
+    parameters.step_from_end_zero_line >> parameters.signal_point_start >> 
+    parameters.signal_point_step >> parameters.threshold >> parameters.increase_point >> parameters.decrease_point;
+
+    if (fin.fail() || !processingSignalsData(archive_name.c_str(), shot, parameters, true) || !countThomson(srf_file_folder, convolution_file_folder, shot, true)) {
+        std::cerr << "ошибка чтения файла!\n";
+        fileType = -1;
+    }
+}
+
+void ThomsonGUI::readT1Format(const std::string &fileName, const std::string &srf_file_folder, const std::string &convolution_file_folder)
+{
+    std::ifstream fin;
+    fin.open(archive_name);
+
+    if (fin.is_open())
+    {
+        double theta;
+        darray signal(N_WORK_CHANNELS);
+        darray signal_error(N_WORK_CHANNELS);
+
+        fin >> theta;
+        for (uint i = 0; i < N_WORK_CHANNELS; i++)
+            fin >> signal[i] >> signal_error[i];
+
+        std::string srf_file;
+        std::string convolution_file;
+
+        std::getline(fin, srf_file);
+        std::getline(fin, convolution_file);
+
+        srf_file = srf_file_folder + srf_file;
+        convolution_file = convolution_file_folder + convolution_file;
+
+        if (!fin.fail())
+        {
+            clearSpArray();
+            clearCounterArray();
+            SignalProcessing *sp = new SignalProcessing(signal, work_mask);
+            ThomsonCounter *counter = new ThomsonCounter(srf_file, convolution_file, *sp, signal_error, theta, LAMBDA_REFERENCE);
+            if (counter->isWork())
+            {
+                spArray.push_back(sp);
+                counterArray.push_back(counter);
+            }
+            else
+                fileType = -1;
+        }
+        else
+            fileType = -1;
+    }
+    else
+        fileType = -1;
+
+    fin.close();
+}
+
 void ThomsonGUI::DrawGraphs()
 {
-    uint nSpectrometer = spectrometerNumber->GetNumber();
-    uint nTimePage = timeListNumber->GetNumber();
+    if (fileType < 0)
+        return;
 
-    if (readSuccess)
+    uint nSpectrometer=0, nTimePage=0;
+    if (fileType == isROOT)
     {
-        if (drawSRF->IsDown())
-        {
-            ThomsonCounter *counter = getThomsonCounter(0, nSpectrometer);
-            TString canvas_name = TString::Format("SRF_sp_%u", nSpectrometer);
-            TCanvas *c = ThomsonDraw::createCanvas(canvas_name);
-            TMultiGraph *mg = ThomsonDraw::createMultiGraph("mg_"+canvas_name, "");
-            ThomsonDraw::srf_draw(c, mg,counter->getSRF(), N_WORK_CHANNELS, counter->getLMin(), counter->getLMax(),
-            counter->getNLambda(), LAMBDA_REFERENCE, {}, {}, true, false);
-        }
-        if (drawConvolution->IsDown())
-        {
-            ThomsonCounter *counter = getThomsonCounter(0, nSpectrometer);
-            TString canvas_name = TString::Format("convolution_sp_%u", nSpectrometer);
-            TCanvas *c = ThomsonDraw::createCanvas(canvas_name);
-            TMultiGraph *mg = ThomsonDraw::createMultiGraph("mg_"+canvas_name, "");
-            ThomsonDraw::convolution_draw(c, mg, counter->getConvolution(), N_WORK_CHANNELS, counter->getTMin(), counter->getDT(), counter->getNTemperature(), true, true);
-        }
-        if (drawSignalsInChannels->IsDown()) 
-        {
-            TString canvas_name = TString::Format("signal_tp_%u_sp_%u", nTimePage, nSpectrometer);
-            TCanvas *c = ThomsonDraw::createCanvas(canvas_name);
-            TMultiGraph *mg = ThomsonDraw::createMultiGraph("mg_"+canvas_name, "");
-            ThomsonDraw::thomson_signal_draw(c, mg, getSignalProcessing(nTimePage, nSpectrometer), 0, true, true, false, N_WORK_CHANNELS, work_mask);
-        }
-        if (drawIntegralInChannels->IsDown())
-        {
-            TString canvas_name = TString::Format("signal_integral_tp_%u_sp_%u", nTimePage, nSpectrometer);
-            TCanvas *c = ThomsonDraw::createCanvas(canvas_name);
-            TMultiGraph *mg = ThomsonDraw::createMultiGraph("mg_"+canvas_name, "");
-            ThomsonDraw::thomson_signal_draw(c, mg, getSignalProcessing(nTimePage, nSpectrometer), 1, true, true, false, N_WORK_CHANNELS, work_mask);
-        }
+        nSpectrometer = spectrometerNumber->GetNumber();
+        nTimePage = timeListNumber->GetNumber();
     }
-    if (thomsonSuccess)
+
+    if (drawSRF->IsDown())
     {
-        if (drawTemepratureRDependes->IsDown())
-        {
-            TString canvas_name = TString::Format("Te_from_r_tp_%u", nTimePage);
-            TCanvas *c = ThomsonDraw::createCanvas(canvas_name);
-            TMultiGraph *mg = ThomsonDraw::createMultiGraph("mg_"+canvas_name, "");
+        ThomsonCounter *counter = getThomsonCounter(0, nSpectrometer);
+        TString canvas_name = TString::Format("SRF_sp_%u", nSpectrometer);
+        TCanvas *c = ThomsonDraw::createCanvas(canvas_name);
+        TMultiGraph *mg = ThomsonDraw::createMultiGraph("mg_"+canvas_name, "");
+        ThomsonDraw::srf_draw(c, mg,counter->getSRF(), N_WORK_CHANNELS, counter->getLMin(), counter->getLMax(),
+        counter->getNLambda(), LAMBDA_REFERENCE, {}, {}, true, false);
+    }
+    if (drawConvolution->IsDown())
+    {
+        ThomsonCounter *counter = getThomsonCounter(0, nSpectrometer);
+        TString canvas_name = TString::Format("convolution_sp_%u", nSpectrometer);
+        TCanvas *c = ThomsonDraw::createCanvas(canvas_name);
+        TMultiGraph *mg = ThomsonDraw::createMultiGraph("mg_"+canvas_name, "");
+        ThomsonDraw::convolution_draw(c, mg, counter->getConvolution(), N_WORK_CHANNELS, counter->getTMin(), counter->getDT(), counter->getNTemperature(), true, true);
+    }
+    if (drawSignalsInChannels->IsDown() && fileType == isROOT) 
+    {
+        TString canvas_name = TString::Format("signal_tp_%u_sp_%u", nTimePage, nSpectrometer);
+        TCanvas *c = ThomsonDraw::createCanvas(canvas_name);
+        TMultiGraph *mg = ThomsonDraw::createMultiGraph("mg_"+canvas_name, "");
+        ThomsonDraw::thomson_signal_draw(c, mg, getSignalProcessing(nTimePage, nSpectrometer), 0, true, true, false, N_WORK_CHANNELS, work_mask);
+    }
+    if (drawIntegralInChannels->IsDown() && fileType == isROOT)
+    {
+        TString canvas_name = TString::Format("signal_integral_tp_%u_sp_%u", nTimePage, nSpectrometer);
+        TCanvas *c = ThomsonDraw::createCanvas(canvas_name);
+        TMultiGraph *mg = ThomsonDraw::createMultiGraph("mg_"+canvas_name, "");
+        ThomsonDraw::thomson_signal_draw(c, mg, getSignalProcessing(nTimePage, nSpectrometer), 1, true, true, false, N_WORK_CHANNELS, work_mask);
+    }
+    if (drawTemepratureRDependes->IsDown() && fileType == isROOT)
+    {
+        TString canvas_name = TString::Format("Te_from_r_tp_%u", nTimePage);
+        TCanvas *c = ThomsonDraw::createCanvas(canvas_name);
+        TMultiGraph *mg = ThomsonDraw::createMultiGraph("mg_"+canvas_name, "");
 
-            darray xPosition(N_SPECTROMETERS);
-            darray Te(N_SPECTROMETERS);
-            darray TeError(N_SPECTROMETERS);
+        darray xPosition(N_SPECTROMETERS);
+        darray Te(N_SPECTROMETERS);
+        darray TeError(N_SPECTROMETERS);
 
-            for (uint i = 0; i < N_SPECTROMETERS; i++) {
-                xPosition[i] = calibrations[i*N_SPECTROMETER_CALIBRATIONS];
-                Te[i] = getThomsonCounter(nTimePage, i)->getT();
-                TeError[i] = getThomsonCounter(nTimePage, i)->getTError();
-            }
-
-            mg->SetTitle(";x, mm;T_{e}, eV");
-            ThomsonDraw::draw_result_from_r(c, mg, xPosition, Te, TeError);
+        for (uint i = 0; i < N_SPECTROMETERS; i++) {
+            xPosition[i] = calibrations[i*N_SPECTROMETER_CALIBRATIONS];
+            Te[i] = getThomsonCounter(nTimePage, i)->getT();
+            TeError[i] = getThomsonCounter(nTimePage, i)->getTError();
         }
-        if (drawConceterationRDependes->IsDown())
-        {
-            TString canvas_name = TString::Format("ne_from_r_tp_%u", nTimePage);
-            TCanvas *c = ThomsonDraw::createCanvas(canvas_name);
-            TMultiGraph *mg = ThomsonDraw::createMultiGraph("mg_"+canvas_name, "");
 
-            darray xPosition(N_SPECTROMETERS);
-            darray ne(N_SPECTROMETERS);
-            darray neError(N_SPECTROMETERS);
+        mg->SetTitle(";x, mm;T_{e}, eV");
+        ThomsonDraw::draw_result_from_r(c, mg, xPosition, Te, TeError);
+    }
+    if (drawConceterationRDependes->IsDown() && fileType == isROOT)
+    {
+        TString canvas_name = TString::Format("ne_from_r_tp_%u", nTimePage);
+        TCanvas *c = ThomsonDraw::createCanvas(canvas_name);
+        TMultiGraph *mg = ThomsonDraw::createMultiGraph("mg_"+canvas_name, "");
 
-            for (uint i = 0; i < N_SPECTROMETERS; i++) {
-                xPosition[i] = calibrations[i*N_SPECTROMETER_CALIBRATIONS + ID_X];
-                ne[i] = getThomsonCounter(nTimePage, i)->getN()*calibrations[i*N_SPECTROMETER_CALIBRATIONS+ID_THETA];
-                neError[i] = getThomsonCounter(nTimePage, i)->getNError()*calibrations[i*N_SPECTROMETER_CALIBRATIONS+ID_N_COEFF];
-            }
+        darray xPosition(N_SPECTROMETERS);
+        darray ne(N_SPECTROMETERS);
+        darray neError(N_SPECTROMETERS);
 
-            mg->SetTitle(";x, mm;n_{e}, cm^{-3}");
-            ThomsonDraw::draw_result_from_r(c, mg, xPosition, ne, neError);
+        for (uint i = 0; i < N_SPECTROMETERS; i++) {
+            xPosition[i] = calibrations[i*N_SPECTROMETER_CALIBRATIONS + ID_X];
+            ne[i] = getThomsonCounter(nTimePage, i)->getN()*calibrations[i*N_SPECTROMETER_CALIBRATIONS+ID_THETA];
+            neError[i] = getThomsonCounter(nTimePage, i)->getNError()*calibrations[i*N_SPECTROMETER_CALIBRATIONS+ID_N_COEFF];
         }
-        if (drawCompareSingalAndResult->IsDown())
-        {
-            ThomsonCounter *counter = getThomsonCounter(nTimePage, nSpectrometer);
-            TString canvas_name = TString::Format("signal_compare_tp_%u_sp_%u", nTimePage, nSpectrometer);
-            TCanvas *c = ThomsonDraw::createCanvas(canvas_name);
-            THStack *hs = ThomsonDraw::createHStack("hs_"+canvas_name, "");
-            ThomsonDraw::draw_comapre_signals(c, hs, N_WORK_CHANNELS, counter->getSignal(), counter->getSignalError(), counter->getSignalResult(), counter->getWorkSignal(), true);
-        }
+
+        mg->SetTitle(";x, mm;n_{e}, cm^{-3}");
+        ThomsonDraw::draw_result_from_r(c, mg, xPosition, ne, neError);
+    }
+    if (drawCompareSingalAndResult->IsDown())
+    {
+        ThomsonCounter *counter = getThomsonCounter(nTimePage, nSpectrometer);
+        TString canvas_name = TString::Format("signal_compare_tp_%u_sp_%u", nTimePage, nSpectrometer);
+        TCanvas *c = ThomsonDraw::createCanvas(canvas_name);
+        THStack *hs = ThomsonDraw::createHStack("hs_"+canvas_name, "");
+        ThomsonDraw::draw_comapre_signals(c, hs, N_WORK_CHANNELS, counter->getSignal(), counter->getSignalError(), counter->getSignalResult(), counter->getWorkSignal(), true);
     }
 
 }
@@ -778,7 +790,7 @@ void ThomsonGUI::DrawGraphs()
 void ThomsonGUI::PrintInfo()
 {
 
-    if (!thomsonSuccess || !readSuccess)
+    if (fileType < 0)
         return;
 
     uint nSpectrometer = spectrometerNumber->GetNumber();
@@ -842,8 +854,6 @@ void ThomsonGUI::PrintInfo()
             uint index_i = counter->getNumberRatioij(i);
             if (counter->getWeight(i) != 0)
                 std::cout << "\t" << "Te" << counter->getCh1(index_i) << counter->getCh2(index_i) << "= " << counter->getTij(i) << " +/- " << counter->getSigmaTij(i) << "\n";
-            //else
-            //    std::cout << i << ") Te" << counter->getCh1(index_i) << counter->getCh2(index_i)+1 << "= " << counter->getTij(i) << " +/- " << counter->getSigmaTij(i) << " не используется!\n";
         }
     }
     if (infoTe->IsDown())
@@ -884,9 +894,6 @@ ThomsonGUI::~ThomsonGUI()
     delete[] thetaCalibration;
     delete[] xPositionCalibration;
     delete[] nCalibrationCoeff;
-
-    //delete[] testChannelSignal;
-    //delete[] testChannelSignalError;
 
     app->Terminate();
     delete app;
