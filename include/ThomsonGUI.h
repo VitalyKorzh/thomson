@@ -93,7 +93,7 @@ private:
 
     double gaussian_noise(double sigma);
     darray createSignal(const darray &SRF, double lMin, double lMax, double dl, uint N_LAMBDA, double Te_true, double theta, double Aampl=10., const darray &sigma_noise={});
-    darray createSignal(const std::string &srf_name, const darray &sigma_channel, double Te, double ne);
+    darray createSignal(const std::string &srf_name, const darray &sigma_channel, double Te, double ne, double theta);
 
     void addToArrayTFormat(const std::string &srf_file, const std::string &convolution_file,  const darray &signal, const darray &signal_error, double theta);
 

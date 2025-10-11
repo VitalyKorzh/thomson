@@ -675,7 +675,7 @@ darray ThomsonGUI::createSignal(const darray &SRF, double lMin, double lMax, dou
     return signal;
 }
 
-darray ThomsonGUI::createSignal(const std::string &srf_name, const darray &sigma_channel, double Te, double ne)
+darray ThomsonGUI::createSignal(const std::string &srf_name, const darray &sigma_channel, double Te, double ne, double theta)
 {
     darray SRF;
     double lMin, lMax, dl;
@@ -683,7 +683,7 @@ darray ThomsonGUI::createSignal(const std::string &srf_name, const darray &sigma
     uint nChannels;
     readSRF(srf_name, SRF, lMin, lMax, dl, N_LAMBDA, nChannels);
     
-    darray signal_with_noise = createSignal(SRF, lMin, lMax, dl, N_LAMBDA, N_CHANNELS, Te, ne, sigma_channel);
+    darray signal_with_noise = createSignal(SRF, lMin, lMax, dl, N_LAMBDA, Te, theta, ne, sigma_channel);
 
     return signal_with_noise;
 }
@@ -784,10 +784,11 @@ void ThomsonGUI::readT2Format(const std::string &fileName, const std::string &sr
         srf_file = srf_file_folder + srf_file;
         convolution_file = convolution_file_folder + convolution_file;
 
-        darray signal = createSignal(srf_file, signal_error, Te, ne);
-
         if (!fin.fail())
+        {
+            darray signal = createSignal(srf_file, signal_error, Te, ne, theta);
             addToArrayTFormat(srf_file, convolution_file, signal, signal_error, theta);
+        }
         else
         {
             std::cerr << "ошибка чтения файла: " << archive_name << "\n";
