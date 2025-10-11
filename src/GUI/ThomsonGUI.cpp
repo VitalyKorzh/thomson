@@ -1,6 +1,7 @@
 #include "ThomsonGUI.h"
 #include <iostream>
 #include <fstream>
+#include <random>
 
 #include <dasarchive/service.h>
 #include <dasarchive/TSignal.h>
@@ -11,6 +12,7 @@
 #include <TGText.h>
 #include <TGLabel.h>
 
+#include "thomsonCounter/SRF.h"
 #include "ThomsonDraw.h"
 
 ClassImp(ThomsonGUI)
@@ -39,7 +41,6 @@ ClassImp(ThomsonGUI)
 
 #define isROOT 0
 #define isT1 1
-#define isT2 2
 
 bool ThomsonGUI::readDataFromArchive(const char *archive_name, const char *kust, const char *signal_name, int shot, darray &t, darray &U, int timePoint, int timeList, const uint N_INFORM, const uint N_UNUSEFULL) const
 {
@@ -549,6 +550,12 @@ void ThomsonGUI::ReadMainFile()
                 fileType = isT1;
                 readT1Format(archive_name,  srf_file_folder, convolution_file_folder);
             }
+            else if (file_format == "t2")
+            {
+                setDrawEnable(0, 0);
+                fileType = isT1;
+                readT2Format(archive_name, srf_file_folder, convolution_file_folder);
+            }
         }
     }
     else {
@@ -637,6 +644,69 @@ TString ThomsonGUI::getFileFormat(TString fileName)
     return fileName(lastDot + 1, fileName.Length() - lastDot - 1);;
 }
 
+double ThomsonGUI::gaussian_noise(double sigma)
+{
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::normal_distribution<double> dist(0.0, sigma);
+    return dist(gen);
+}
+
+darray ThomsonGUI::createSignal(const darray &SRF, double lMin, double lMax, double dl, uint N_LAMBDA, double Te_true, double theta, double Aampl, const darray &sigma_noise)
+{
+    darray signal(N_CHANNELS);
+
+    double a_true = countA(Te_true);
+    darray SArray(N_LAMBDA);
+    for (uint i = 0; i < N_LAMBDA; i++) {
+        SArray[i] = SRelative(Aampl, lMin + i*dl, LAMBDA_REFERENCE, a_true, theta);
+    }
+
+    for (uint i = 0; i < N_CHANNELS; i++) {
+        double result = convolution(SRF.data()+i*N_LAMBDA, SArray, lMin, lMax);
+        signal[i] = result;
+
+        if (i < sigma_noise.size() && sigma_noise[i] > 0) 
+        {
+            signal[i] += gaussian_noise(sigma_noise[i]);
+        }
+    }
+
+    return signal;
+}
+
+darray ThomsonGUI::createSignal(const std::string &srf_name, const darray &sigma_channel, double Te, double ne)
+{
+    darray SRF;
+    double lMin, lMax, dl;
+    uint N_LAMBDA;
+    uint nChannels;
+    readSRF(srf_name, SRF, lMin, lMax, dl, N_LAMBDA, nChannels);
+    
+    darray signal_with_noise = createSignal(SRF, lMin, lMax, dl, N_LAMBDA, N_CHANNELS, Te, ne, sigma_channel);
+
+    return signal_with_noise;
+}
+
+void ThomsonGUI::addToArrayTFormat(const std::string &srf_file, const std::string &convolution_file, const darray &signal, const darray &signal_error, double theta)
+{
+    clearSpArray();
+    clearCounterArray();
+    SignalProcessing *sp = new SignalProcessing(signal, work_mask);
+    ThomsonCounter *counter = new ThomsonCounter(srf_file, convolution_file, *sp, signal_error, theta, LAMBDA_REFERENCE);
+    if (counter->isWork())
+    {
+        counter->count();
+        counter->countConcetration();
+        counter->countSignalResult();
+
+        spArray.push_back(sp);
+        counterArray.push_back(counter);
+    }
+    else
+        fileType = -1;
+}
+
 void ThomsonGUI::readROOTFormat(const std::string &fileName, const std::string &srf_file_folder, const std::string &convolution_file_folder, std::ifstream &fin)
 {
     SignalProcessingParameters parameters;
@@ -676,23 +746,48 @@ void ThomsonGUI::readT1Format(const std::string &fileName, const std::string &sr
         convolution_file = convolution_file_folder + convolution_file;
 
         if (!fin.fail())
+            addToArrayTFormat(srf_file, convolution_file, signal, signal_error, theta);
+        else
         {
-            clearSpArray();
-            clearCounterArray();
-            SignalProcessing *sp = new SignalProcessing(signal, work_mask);
-            ThomsonCounter *counter = new ThomsonCounter(srf_file, convolution_file, *sp, signal_error, theta, LAMBDA_REFERENCE);
-            if (counter->isWork())
-            {
-                counter->count();
-                counter->countConcetration();
-                counter->countSignalResult();
-
-                spArray.push_back(sp);
-                counterArray.push_back(counter);
-            }
-            else
-                fileType = -1;
+            std::cerr << "ошибка чтения файла: " << archive_name << "\n";
+            fileType = -1;
         }
+    }
+    else {
+        std::cerr << "не удалось открыть файл: " << archive_name << "\n";
+        fileType = -1;
+    }
+
+    fin.close();
+}
+
+void ThomsonGUI::readT2Format(const std::string &fileName, const std::string &srf_file_folder, const std::string &convolution_file_folder)
+{
+    std::ifstream fin;
+    fin.open(archive_name);
+
+    if (fin.is_open())
+    {
+        double theta, ne, Te;
+        darray signal_error(N_CHANNELS, 0.);
+
+        fin >> theta >> ne >> Te;
+        theta *= M_PI/180;
+        for (uint i = 0; i < N_WORK_CHANNELS; i++)
+            fin >> signal_error[i];
+
+        std::string srf_file;
+        std::string convolution_file;
+
+        fin >> srf_file >> convolution_file;
+
+        srf_file = srf_file_folder + srf_file;
+        convolution_file = convolution_file_folder + convolution_file;
+
+        darray signal = createSignal(srf_file, signal_error, Te, ne);
+
+        if (!fin.fail())
+            addToArrayTFormat(srf_file, convolution_file, signal, signal_error, theta);
         else
         {
             std::cerr << "ошибка чтения файла: " << archive_name << "\n";
