@@ -70,7 +70,7 @@ bool readSRF(std::string filename, darray &SRF, double &lMin, double &lMax, doub
     }
     else 
     {
-        std::cerr << "не удалось открыть файл\n";
+        std::cerr << "не удалось открыть файл: " << filename << "\n";
         return false;
     }
 

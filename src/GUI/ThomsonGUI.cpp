@@ -557,19 +557,22 @@ void ThomsonGUI::ReadMainFile()
     fin.close();
 
     if (fileType == isROOT)
+        setDrawEnable(1, 1);
+    else if (fileType == isT1)
+    {
+        drawCompareSingalAndResult->SetEnabled(true);
+        drawSRF->SetEnabled(true);
+        drawConvolution->SetEnabled(true);
+        for (uint i = 0; i < checkButtonInfo.size(); i++)
+            checkButtonInfo[i]->SetEnabled(true);
+    }
+
+    if (fileType >= 0)
     {
         std::cout << "данные прочитаны!\n";
         mainFileTextEntry->SetToolTipText(fileName + " read");
         std::cout << "вычисления n,T подготовлены\n\n";
-        setDrawEnable(1, 1);
     }
-    else if (fileType == isT1)
-    {
-        drawCompareSingalAndResult->SetEnabled(true);
-        for (uint i = 0; i < checkButtonInfo.size(); i++)
-            checkButtonInfo[i]->SetEnabled(true);
-    }
-        
 }
 
 void ThomsonGUI::ReadCalibration()
@@ -656,18 +659,18 @@ void ThomsonGUI::readT1Format(const std::string &fileName, const std::string &sr
     if (fin.is_open())
     {
         double theta;
-        darray signal(N_WORK_CHANNELS);
-        darray signal_error(N_WORK_CHANNELS);
+        darray signal(N_CHANNELS, 0.);
+        darray signal_error(N_CHANNELS, 0.);
 
         fin >> theta;
+        theta *= M_PI/180;
         for (uint i = 0; i < N_WORK_CHANNELS; i++)
             fin >> signal[i] >> signal_error[i];
 
         std::string srf_file;
         std::string convolution_file;
 
-        std::getline(fin, srf_file);
-        std::getline(fin, convolution_file);
+        fin >> srf_file >> convolution_file;
 
         srf_file = srf_file_folder + srf_file;
         convolution_file = convolution_file_folder + convolution_file;
@@ -680,6 +683,10 @@ void ThomsonGUI::readT1Format(const std::string &fileName, const std::string &sr
             ThomsonCounter *counter = new ThomsonCounter(srf_file, convolution_file, *sp, signal_error, theta, LAMBDA_REFERENCE);
             if (counter->isWork())
             {
+                counter->count();
+                counter->countConcetration();
+                counter->countSignalResult();
+
                 spArray.push_back(sp);
                 counterArray.push_back(counter);
             }
@@ -687,10 +694,15 @@ void ThomsonGUI::readT1Format(const std::string &fileName, const std::string &sr
                 fileType = -1;
         }
         else
+        {
+            std::cerr << "ошибка чтения файла: " << archive_name << "\n";
             fileType = -1;
+        }
     }
-    else
+    else {
+        std::cerr << "не удалось открыть файл: " << archive_name << "\n";
         fileType = -1;
+    }
 
     fin.close();
 }
@@ -707,7 +719,7 @@ void ThomsonGUI::DrawGraphs()
         nTimePage = timeListNumber->GetNumber();
     }
 
-    if (drawSRF->IsDown())
+    if (checkButton(drawSRF))
     {
         ThomsonCounter *counter = getThomsonCounter(0, nSpectrometer);
         TString canvas_name = TString::Format("SRF_sp_%u", nSpectrometer);
@@ -716,7 +728,7 @@ void ThomsonGUI::DrawGraphs()
         ThomsonDraw::srf_draw(c, mg,counter->getSRF(), N_WORK_CHANNELS, counter->getLMin(), counter->getLMax(),
         counter->getNLambda(), LAMBDA_REFERENCE, {}, {}, true, false);
     }
-    if (drawConvolution->IsDown())
+    if (checkButton(drawConvolution))
     {
         ThomsonCounter *counter = getThomsonCounter(0, nSpectrometer);
         TString canvas_name = TString::Format("convolution_sp_%u", nSpectrometer);
@@ -724,21 +736,21 @@ void ThomsonGUI::DrawGraphs()
         TMultiGraph *mg = ThomsonDraw::createMultiGraph("mg_"+canvas_name, "");
         ThomsonDraw::convolution_draw(c, mg, counter->getConvolution(), N_WORK_CHANNELS, counter->getTMin(), counter->getDT(), counter->getNTemperature(), true, true);
     }
-    if (drawSignalsInChannels->IsDown() && fileType == isROOT) 
+    if (checkButton(drawSignalsInChannels) && fileType == isROOT) 
     {
         TString canvas_name = TString::Format("signal_tp_%u_sp_%u", nTimePage, nSpectrometer);
         TCanvas *c = ThomsonDraw::createCanvas(canvas_name);
         TMultiGraph *mg = ThomsonDraw::createMultiGraph("mg_"+canvas_name, "");
         ThomsonDraw::thomson_signal_draw(c, mg, getSignalProcessing(nTimePage, nSpectrometer), 0, true, true, false, N_WORK_CHANNELS, work_mask);
     }
-    if (drawIntegralInChannels->IsDown() && fileType == isROOT)
+    if (checkButton(drawIntegralInChannels) && fileType == isROOT)
     {
         TString canvas_name = TString::Format("signal_integral_tp_%u_sp_%u", nTimePage, nSpectrometer);
         TCanvas *c = ThomsonDraw::createCanvas(canvas_name);
         TMultiGraph *mg = ThomsonDraw::createMultiGraph("mg_"+canvas_name, "");
         ThomsonDraw::thomson_signal_draw(c, mg, getSignalProcessing(nTimePage, nSpectrometer), 1, true, true, false, N_WORK_CHANNELS, work_mask);
     }
-    if (drawTemepratureRDependes->IsDown() && fileType == isROOT)
+    if (checkButton(drawTemepratureRDependes) && fileType == isROOT)
     {
         TString canvas_name = TString::Format("Te_from_r_tp_%u", nTimePage);
         TCanvas *c = ThomsonDraw::createCanvas(canvas_name);
@@ -757,7 +769,7 @@ void ThomsonGUI::DrawGraphs()
         mg->SetTitle(";x, mm;T_{e}, eV");
         ThomsonDraw::draw_result_from_r(c, mg, xPosition, Te, TeError);
     }
-    if (drawConceterationRDependes->IsDown() && fileType == isROOT)
+    if (checkButton(drawConceterationRDependes) && fileType == isROOT)
     {
         TString canvas_name = TString::Format("ne_from_r_tp_%u", nTimePage);
         TCanvas *c = ThomsonDraw::createCanvas(canvas_name);
@@ -776,7 +788,7 @@ void ThomsonGUI::DrawGraphs()
         mg->SetTitle(";x, mm;n_{e}, cm^{-3}");
         ThomsonDraw::draw_result_from_r(c, mg, xPosition, ne, neError);
     }
-    if (drawCompareSingalAndResult->IsDown())
+    if (checkButton(drawCompareSingalAndResult))
     {
         ThomsonCounter *counter = getThomsonCounter(nTimePage, nSpectrometer);
         TString canvas_name = TString::Format("signal_compare_tp_%u_sp_%u", nTimePage, nSpectrometer);
@@ -793,8 +805,12 @@ void ThomsonGUI::PrintInfo()
     if (fileType < 0)
         return;
 
-    uint nSpectrometer = spectrometerNumber->GetNumber();
-    uint nTimePage = timeListNumber->GetNumber();
+    uint nSpectrometer=0, nTimePage=0;
+    if (fileType == isROOT)
+    {
+        nSpectrometer = spectrometerNumber->GetNumber();
+        nTimePage = timeListNumber->GetNumber();
+    }
 
     bool isInfo = false;
     for (uint i = 0; i < checkButtonInfo.size(); i++) {
@@ -810,13 +826,13 @@ void ThomsonGUI::PrintInfo()
 
     ThomsonCounter *counter = getThomsonCounter(nTimePage, nSpectrometer);
 
-    if (infoSignal->IsDown())
+    if (checkButton(infoSignal))
     {
         std::cout << "signals:\n";
         for (uint i = 0; i < N_WORK_CHANNELS; i++)
             std::cout << "\t" << counter->getSignal()[i] << " +/- " << counter->getSignalError()[i] << "\n"; 
     }
-    if (infoWorkChannels->IsDown())
+    if (checkButton(infoWorkChannels))
     {
         std::cout << "work channels: ";
 
@@ -824,7 +840,7 @@ void ThomsonGUI::PrintInfo()
             std::cout << (counter->getWorkSignal()[i] ? "+" : "-");
         std::cout << "\n";
     }
-    if (infoWorkChannels->IsDown())
+    if (checkButton(infoUseRatio))
     {
         std::cout << "use ratio:\n";
 
@@ -836,15 +852,15 @@ void ThomsonGUI::PrintInfo()
             std::cout << "\t" << "(" << ch1 << ", " << ch2 << ")\n"; 
         }
     }
-    if (infoUseChannelToNe->IsDown())
+    if (checkButton(infoUseChannelToNe))
     {
         std::cout << "channel to count ne: " << counter->getChannelNeCount() << "\n";
     }
-    if (infoTe0->IsDown())
+    if (checkButton(infoTe0))
     {
         std::cout << "Te0=" << counter->getTe0() << "\n";
     }
-    if (infoTij->IsDown())
+    if (checkButton(infoTij))
     {
         std::cout << "Teij:\n";
         uint N_RATIO = counter->getNRatioUse();
@@ -856,15 +872,15 @@ void ThomsonGUI::PrintInfo()
                 std::cout << "\t" << "Te" << counter->getCh1(index_i) << counter->getCh2(index_i) << "= " << counter->getTij(i) << " +/- " << counter->getSigmaTij(i) << "\n";
         }
     }
-    if (infoTe->IsDown())
+    if (checkButton(infoTe))
     {
         std::cout << "Te=" << counter->getT() << " +/- " << counter->getTError() << "\n";
     }
-    if (infoNe->IsDown())
+    if (checkButton(infoNe))
     {
         std::cout << "ne=" << counter->getN() << " +/- " << counter->getNError() << "\n";
     }
-    if (infoCountSignal->IsDown())
+    if (checkButton(infoCountSignal))
     {
         std::cout << "count signals:\n";
         for (uint i = 0; i < N_WORK_CHANNELS; i++)

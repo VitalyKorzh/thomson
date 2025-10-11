@@ -66,7 +66,7 @@ bool readSpectrumFromT(std::string filename, double &T0, double &dT, uint &N_T, 
     }
     else
     {
-        std::cerr << "не удалось открыть файл\n";
+        std::cerr << "не удалось открыть файл: "  << filename << "\n";
         return false;
     }
 

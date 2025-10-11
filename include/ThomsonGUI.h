@@ -93,6 +93,8 @@ private:
     void readROOTFormat(const std::string &fileName, const std::string &srf_file_folder, const std::string &convolution_file_folder, std::ifstream &fin);
     void readT1Format(const std::string &fileName, const std::string &srf_file_folder, const std::string &convolution_file_folder);
 
+    bool checkButton(TGCheckButton *ch, bool lookEnable=true) { return ch->IsDown() && (!lookEnable || ch->IsEnabled()); }
+
 public:
     ThomsonGUI(const TGWindow *p, UInt_t width, UInt_t height, TApplication *app);
 
