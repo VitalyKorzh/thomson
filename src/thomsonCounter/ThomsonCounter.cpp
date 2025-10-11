@@ -358,6 +358,7 @@ bool ThomsonCounter::countConcetration()
     {
         neResult = 0;
         ne_error = 0;
+        chToNeCount = 0;
         return false;
     }
 
@@ -391,7 +392,7 @@ bool ThomsonCounter::countConcetration()
     double covFTeAi = 0.;
 
     ne_error = neResult * sqrt(dai*dai/(ai*ai) + dF*dF/(F*F) - 2. * covFTeAi/ai/F);
-
+    chToNeCount = ch;
     return true;
 }
 

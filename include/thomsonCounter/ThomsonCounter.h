@@ -55,6 +55,7 @@ private:
     darray weight;
 
     uiarray use_ratio;
+    uint chToNeCount;
     darray signalResult;
 
     double TResult;
@@ -123,6 +124,7 @@ public:
     uint getCh2(uint k) const { return channels_number[k].second; }
     uint getNRatio() const { return N_RATIO; }
     uint getNRatioUse() const { return TijArray.size(); } 
+    uint getChannelNeCount() const { return chToNeCount; }
 
     double getT() const { return TResult; }
     double getTError() const { return t_error; }

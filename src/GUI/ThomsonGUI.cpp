@@ -110,7 +110,7 @@ darray ThomsonGUI::readCalibration(const char *archive_name, const char *calibra
         TString shot_string = TString::Format("%d", shot);
         TString shot_name = file->GetDirectory(shot_string) != nullptr ? GetShotCalibration(shot) : shot_string;
 
-        std::cout << "shot_name: " << shot_name << "\n";
+        //std::cout << "shot_name: " << shot_name << "\n";
 
         TSignalC *calibration_signal = nullptr;
         calibration_signal = (TSignalC*) GetCalibration(calibration_name, shot_name);
@@ -235,6 +235,10 @@ bool ThomsonGUI::countThomson(const std::string &srf_file_folder, const std::str
         int lastShotCal = GetLastShot()+1;
         CloseArchive();
         calibrations = readCalibration(archive_name.c_str(), CALIBRATION_NAME, lastShotCal);
+
+        if (calibrations.size() == 0)
+            calibrations = readCalibration(archive_name.c_str(), CALIBRATION_NAME, lastShotCal-1);
+
     }
 
     if (calibrations.size() < N_SPECTROMETERS*N_SPECTROMETER_CALIBRATIONS)
@@ -314,6 +318,7 @@ void ThomsonGUI::setDrawEnable(int signal, int thomson)
 
         infoUseRatio->SetEnabled(thomson);
         infoUseChannelToNe->SetEnabled(thomson);
+        infoTe0->SetEnabled(thomson);
         infoTij->SetEnabled(thomson);
         infoTe->SetEnabled(thomson);
         infoNe->SetEnabled(thomson);
@@ -388,46 +393,33 @@ ThomsonGUI::ThomsonGUI(const TGWindow *p, UInt_t width, UInt_t height, TApplicat
         hframeGroups->AddFrame(vframeDraw, new TGLayoutHints(kLHintsTop, 5, 5, 5, 5));
         hframeGroups->AddFrame(vframeInfo, new TGLayoutHints(kLHintsTop, 5, 5, 5, 5));
 
-        const uint drawSize = 7;
-        drawSRF = new TGCheckButton(vframeDraw, "draw SRF");
-        drawConvolution = new TGCheckButton(vframeDraw, "draw convolution");
-        drawSignalsInChannels = new TGCheckButton(vframeDraw, "draw signals in channels");
-        drawIntegralInChannels = new TGCheckButton(vframeDraw, "draw integral of signal in channels");
-        drawTemepratureRDependes = new TGCheckButton(vframeDraw, "draw Te(r)");
-        drawConceterationRDependes = new TGCheckButton(vframeDraw, "draw ne(r)");
-        drawCompareSingalAndResult = new TGCheckButton(vframeDraw, "draw count signals in channel");
+        checkButtonDraw.push_back(drawSRF = new TGCheckButton(vframeDraw, "draw SRF"));
+        checkButtonDraw.push_back(drawConvolution = new TGCheckButton(vframeDraw, "draw convolution"));
+        checkButtonDraw.push_back(drawSignalsInChannels = new TGCheckButton(vframeDraw, "draw signals in channels"));
+        checkButtonDraw.push_back(drawIntegralInChannels = new TGCheckButton(vframeDraw, "draw integral of signal in channels"));
+        checkButtonDraw.push_back(drawTemepratureRDependes = new TGCheckButton(vframeDraw, "draw Te(r)"));
+        checkButtonDraw.push_back(drawConceterationRDependes = new TGCheckButton(vframeDraw, "draw ne(r)"));
+        checkButtonDraw.push_back(drawCompareSingalAndResult = new TGCheckButton(vframeDraw, "draw count signals in channel"));
 
-        TGCheckButton *drawArray[drawSize] = {
-            drawSRF, drawConvolution, drawSignalsInChannels, drawIntegralInChannels,
-            drawTemepratureRDependes, drawConceterationRDependes, drawCompareSingalAndResult
-        };
-
-        for (uint i = 0; i < drawSize; i++)
+        for (uint i = 0; i < checkButtonDraw.size(); i++)
         {
-            vframeDraw->AddFrame(drawArray[i], new TGLayoutHints(kLHintsLeft, 1, 1, 2, 2));
+            vframeDraw->AddFrame(checkButtonDraw[i], new TGLayoutHints(kLHintsLeft, 1, 1, 2, 2));
         }
         
-        const uint infoSize = 8;
+        checkButtonInfo.push_back(infoSignal = new TGCheckButton(vframeInfo, "print signals"));
+        checkButtonInfo.push_back(infoWorkChannels = new TGCheckButton(vframeInfo, "print work channels"));
+        checkButtonInfo.push_back(infoUseRatio = new TGCheckButton(vframeInfo, "print use ratio for Te"));
+        checkButtonInfo.push_back(infoUseChannelToNe = new TGCheckButton(vframeInfo, "print use channel for ne"));
+        checkButtonInfo.push_back(infoTe0 = new TGCheckButton(vframeInfo, "print Te0"));
+        checkButtonInfo.push_back(infoTij = new TGCheckButton(vframeInfo, "print Tij"));
+        checkButtonInfo.push_back(infoTe = new TGCheckButton(vframeInfo, "print Te"));
+        checkButtonInfo.push_back(infoNe = new TGCheckButton(vframeInfo, "print ne"));
+        checkButtonInfo.push_back(infoCountSignal = new TGCheckButton(vframeInfo, "print count signals"));
         
-        infoSignal = new TGCheckButton(vframeInfo, "print signals");
-        infoWorkChannels = new TGCheckButton(vframeInfo, "print work channels");
-        infoUseRatio = new TGCheckButton(vframeInfo, "print use ratio for Te");
-        infoUseChannelToNe = new TGCheckButton(vframeInfo, "print use channel for ne");
-        infoTij = new TGCheckButton(vframeInfo, "print Tij");
-        infoTe = new TGCheckButton(vframeInfo, "print Te");
-        infoNe = new TGCheckButton(vframeInfo, "print ne");
-        infoCountSignal = new TGCheckButton(vframeInfo, "print count signals");
         
-        TGCheckButton *infoArray[] = {
-            infoSignal, infoWorkChannels, infoUseRatio, 
-            infoUseChannelToNe, infoTij, infoTe,
-            infoNe, infoCountSignal
-        };
-        
-        for (uint i = 0; i < infoSize; i++)
+        for (uint i = 0; i < checkButtonInfo.size(); i++)
         {
-            //infoArray[i]->SetState(kButtonDown);
-            vframeInfo->AddFrame(infoArray[i], new TGLayoutHints(kLHintsLeft, 1, 1, 2, 2));
+            vframeInfo->AddFrame(checkButtonInfo[i], new TGLayoutHints(kLHintsLeft, 1, 1, 2, 2));
         }
         
         setDrawEnable(0,0);
@@ -512,7 +504,7 @@ ThomsonGUI::ThomsonGUI(const TGWindow *p, UInt_t width, UInt_t height, TApplicat
         hframeBottom->AddFrame(saveCalibration, new TGLayoutHints(kLHintsLeft, 5, 5, 5, 5));
     }
 
-    {
+    /*{
         TGCompositeFrame *fTTu = fTap->AddTab("Test.");
         
         TGHorizontalFrame *hframe = new TGHorizontalFrame(fTTu, width, 40);
@@ -552,7 +544,7 @@ ThomsonGUI::ThomsonGUI(const TGWindow *p, UInt_t width, UInt_t height, TApplicat
         }
 
 
-    }
+    }*/
 
     this->AddFrame(fTap, new TGLayoutHints(kLHintsTop|kLHintsLeft|kLHintsExpandX|kLHintsExpandY, 10, 10, 5, 5));
 
@@ -583,18 +575,32 @@ void ThomsonGUI::ReadMainFile()
         std::getline(fin, work_mask_string);
         work_mask = createWorkMask(work_mask_string);
 
-        SignalProcessingParameters parameters;
-        
-        fin >> shot >> parameters.start_point_from_start_zero_line >> parameters.step_from_start_zero_line >> parameters.start_point_from_end_zero_line >> 
-        parameters.step_from_end_zero_line >> parameters.signal_point_start >> 
-        parameters.signal_point_step >> parameters.threshold >> parameters.increase_point >> parameters.decrease_point;
+        TString file_format = getFileFormat(archive_name);
+        if (file_format == "root")
+        {
+            SignalProcessingParameters parameters;
+            
+            fin >> shot >> parameters.start_point_from_start_zero_line >> parameters.step_from_start_zero_line >> parameters.start_point_from_end_zero_line >> 
+            parameters.step_from_end_zero_line >> parameters.signal_point_start >> 
+            parameters.signal_point_step >> parameters.threshold >> parameters.increase_point >> parameters.decrease_point;
 
-        if (fin.fail() || !processingSignalsData(archive_name.c_str(), shot, parameters, true)) {
+            if (fin.fail() || !processingSignalsData(archive_name.c_str(), shot, parameters, true)) {
+                readSuccess = false;
+                std::cerr << "ошибка чтения файла!\n";
+            }
+            else
+                thomsonSuccess = countThomson(srf_file_folder, convolution_file_folder, shot, true);
+        }
+        else if (file_format == "t1")
+        {
             readSuccess = false;
-            std::cerr << "ошибка чтения файла!\n";
+        }
+        else if (file_format == "t2")
+        {
+            readSuccess = false;
         }
         else
-            thomsonSuccess = countThomson(srf_file_folder, convolution_file_folder, shot, true);
+            readSuccess = false;
         setDrawEnable(0, 0);
     }
     else {
@@ -610,7 +616,7 @@ void ThomsonGUI::ReadMainFile()
         setDrawEnable(1, -1);
     }
     if (thomsonSuccess) {
-        std::cout << "вычисления n,T подготовлены\n";
+        std::cout << "вычисления n,T подготовлены\n\n";
         setDrawEnable(-1, 1);
     }
         
@@ -670,47 +676,52 @@ void ThomsonGUI::OpenFileDialogTemplate(TGTextEntry *textEntry)
     textEntry->AppendText(fi.fFilename);
 }
 
+TString ThomsonGUI::getFileFormat(TString fileName)
+{
+    int lastDot = fileName.Last('.');
+    if (lastDot == -1)
+        return "";
+    return fileName(lastDot + 1, fileName.Length() - lastDot - 1);;
+}
+
 void ThomsonGUI::DrawGraphs()
 {
-    if (!readSuccess)
-    {
-        std::cout << "нет прочитаных данных!\n";
-        return;
-    }
-
     uint nSpectrometer = spectrometerNumber->GetNumber();
     uint nTimePage = timeListNumber->GetNumber();
 
-    if (drawSRF->IsDown())
+    if (readSuccess)
     {
-        ThomsonCounter *counter = getThomsonCounter(0, nSpectrometer);
-        TString canvas_name = TString::Format("SRF_sp_%u", nSpectrometer);
-        TCanvas *c = ThomsonDraw::createCanvas(canvas_name);
-        TMultiGraph *mg = ThomsonDraw::createMultiGraph("mg_"+canvas_name, "");
-        ThomsonDraw::srf_draw(c, mg,counter->getSRF(), N_WORK_CHANNELS, counter->getLMin(), counter->getLMax(),
-        counter->getNLambda(), LAMBDA_REFERENCE, {}, {}, true, false);
-    }
-    if (drawConvolution->IsDown())
-    {
-        ThomsonCounter *counter = getThomsonCounter(0, nSpectrometer);
-        TString canvas_name = TString::Format("convolution_sp_%u", nSpectrometer);
-        TCanvas *c = ThomsonDraw::createCanvas(canvas_name);
-        TMultiGraph *mg = ThomsonDraw::createMultiGraph("mg_"+canvas_name, "");
-        ThomsonDraw::convolution_draw(c, mg, counter->getConvolution(), N_WORK_CHANNELS, counter->getTMin(), counter->getDT(), counter->getNTemperature(), true, true);
-    }
-    if (drawSignalsInChannels->IsDown()) 
-    {
-        TString canvas_name = TString::Format("signal_tp_%u_sp_%u", nTimePage, nSpectrometer);
-        TCanvas *c = ThomsonDraw::createCanvas(canvas_name);
-        TMultiGraph *mg = ThomsonDraw::createMultiGraph("mg_"+canvas_name, "");
-        ThomsonDraw::thomson_signal_draw(c, mg, getSignalProcessing(nTimePage, nSpectrometer), 0, true, true, false, N_WORK_CHANNELS, work_mask);
-    }
-    if (drawIntegralInChannels->IsDown())
-    {
-        TString canvas_name = TString::Format("signal_integral_tp_%u_sp_%u", nTimePage, nSpectrometer);
-        TCanvas *c = ThomsonDraw::createCanvas(canvas_name);
-        TMultiGraph *mg = ThomsonDraw::createMultiGraph("mg_"+canvas_name, "");
-        ThomsonDraw::thomson_signal_draw(c, mg, getSignalProcessing(nTimePage, nSpectrometer), 1, true, true, false, N_WORK_CHANNELS, work_mask);
+        if (drawSRF->IsDown())
+        {
+            ThomsonCounter *counter = getThomsonCounter(0, nSpectrometer);
+            TString canvas_name = TString::Format("SRF_sp_%u", nSpectrometer);
+            TCanvas *c = ThomsonDraw::createCanvas(canvas_name);
+            TMultiGraph *mg = ThomsonDraw::createMultiGraph("mg_"+canvas_name, "");
+            ThomsonDraw::srf_draw(c, mg,counter->getSRF(), N_WORK_CHANNELS, counter->getLMin(), counter->getLMax(),
+            counter->getNLambda(), LAMBDA_REFERENCE, {}, {}, true, false);
+        }
+        if (drawConvolution->IsDown())
+        {
+            ThomsonCounter *counter = getThomsonCounter(0, nSpectrometer);
+            TString canvas_name = TString::Format("convolution_sp_%u", nSpectrometer);
+            TCanvas *c = ThomsonDraw::createCanvas(canvas_name);
+            TMultiGraph *mg = ThomsonDraw::createMultiGraph("mg_"+canvas_name, "");
+            ThomsonDraw::convolution_draw(c, mg, counter->getConvolution(), N_WORK_CHANNELS, counter->getTMin(), counter->getDT(), counter->getNTemperature(), true, true);
+        }
+        if (drawSignalsInChannels->IsDown()) 
+        {
+            TString canvas_name = TString::Format("signal_tp_%u_sp_%u", nTimePage, nSpectrometer);
+            TCanvas *c = ThomsonDraw::createCanvas(canvas_name);
+            TMultiGraph *mg = ThomsonDraw::createMultiGraph("mg_"+canvas_name, "");
+            ThomsonDraw::thomson_signal_draw(c, mg, getSignalProcessing(nTimePage, nSpectrometer), 0, true, true, false, N_WORK_CHANNELS, work_mask);
+        }
+        if (drawIntegralInChannels->IsDown())
+        {
+            TString canvas_name = TString::Format("signal_integral_tp_%u_sp_%u", nTimePage, nSpectrometer);
+            TCanvas *c = ThomsonDraw::createCanvas(canvas_name);
+            TMultiGraph *mg = ThomsonDraw::createMultiGraph("mg_"+canvas_name, "");
+            ThomsonDraw::thomson_signal_draw(c, mg, getSignalProcessing(nTimePage, nSpectrometer), 1, true, true, false, N_WORK_CHANNELS, work_mask);
+        }
     }
     if (thomsonSuccess)
     {
@@ -767,44 +778,91 @@ void ThomsonGUI::DrawGraphs()
 void ThomsonGUI::PrintInfo()
 {
 
-    if (!readSuccess)
+    if (!thomsonSuccess || !readSuccess)
         return;
 
     uint nSpectrometer = spectrometerNumber->GetNumber();
     uint nTimePage = timeListNumber->GetNumber();
-    std::cout << "spectrometer: " << nSpectrometer << " time page: " << nTimePage << "\n"; 
+
+    bool isInfo = false;
+    for (uint i = 0; i < checkButtonInfo.size(); i++) {
+        if (checkButtonInfo[i]->IsDown())
+        {
+            isInfo = true;
+            break;
+        }
+    }
+
+    if (isInfo)
+        std::cout << "==================================================================================\n";
+
+    ThomsonCounter *counter = getThomsonCounter(nTimePage, nSpectrometer);
+
     if (infoSignal->IsDown())
     {
-
+        std::cout << "signals:\n";
+        for (uint i = 0; i < N_WORK_CHANNELS; i++)
+            std::cout << "\t" << counter->getSignal()[i] << " +/- " << counter->getSignalError()[i] << "\n"; 
     }
     if (infoWorkChannels->IsDown())
     {
-        
+        std::cout << "work channels: ";
+
+        for (uint i = 0; i < N_WORK_CHANNELS; i++)
+            std::cout << (counter->getWorkSignal()[i] ? "+" : "-");
+        std::cout << "\n";
     }
-    if (infoUseRatio->IsDown())
+    if (infoWorkChannels->IsDown())
     {
-        
+        std::cout << "use ratio:\n";
+
+        for (uint i = 0; i < counter->getNRatioUse(); i++)
+        {
+            uint index = counter->getUseRatio()[i];
+            uint ch1 = counter->getCh1(index);
+            uint ch2 = counter->getCh2(index);
+            std::cout << "\t" << "(" << ch1 << ", " << ch2 << ")\n"; 
+        }
     }
     if (infoUseChannelToNe->IsDown())
     {
-        
+        std::cout << "channel to count ne: " << counter->getChannelNeCount() << "\n";
+    }
+    if (infoTe0->IsDown())
+    {
+        std::cout << "Te0=" << counter->getTe0() << "\n";
     }
     if (infoTij->IsDown())
     {
+        std::cout << "Teij:\n";
+        uint N_RATIO = counter->getNRatioUse();
 
+        for (uint i = 0; i < N_RATIO; i++)
+        {
+            uint index_i = counter->getNumberRatioij(i);
+            if (counter->getWeight(i) != 0)
+                std::cout << "\t" << "Te" << counter->getCh1(index_i) << counter->getCh2(index_i) << "= " << counter->getTij(i) << " +/- " << counter->getSigmaTij(i) << "\n";
+            //else
+            //    std::cout << i << ") Te" << counter->getCh1(index_i) << counter->getCh2(index_i)+1 << "= " << counter->getTij(i) << " +/- " << counter->getSigmaTij(i) << " не используется!\n";
+        }
     }
     if (infoTe->IsDown())
     {
-
+        std::cout << "Te=" << counter->getT() << " +/- " << counter->getTError() << "\n";
     }
     if (infoNe->IsDown())
     {
-
+        std::cout << "ne=" << counter->getN() << " +/- " << counter->getNError() << "\n";
     }
     if (infoCountSignal->IsDown())
     {
-
+        std::cout << "count signals:\n";
+        for (uint i = 0; i < N_WORK_CHANNELS; i++)
+            std::cout  << "\t" << counter->getSignalResult()[i] << "\n";
     }
+
+    if (isInfo)
+        std::cout << "spectrometer: " << nSpectrometer << " time page: " << nTimePage << "\n" << "==================================================================================" << "\n\n"; 
 
 }
 
@@ -827,8 +885,8 @@ ThomsonGUI::~ThomsonGUI()
     delete[] xPositionCalibration;
     delete[] nCalibrationCoeff;
 
-    delete[] testChannelSignal;
-    delete[] testChannelSignalError;
+    //delete[] testChannelSignal;
+    //delete[] testChannelSignalError;
 
     app->Terminate();
     delete app;

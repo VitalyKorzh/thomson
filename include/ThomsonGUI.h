@@ -43,21 +43,24 @@ private:
                     *infoWorkChannels,
                     *infoUseRatio,
                     *infoUseChannelToNe,
+                    *infoTe0,
                     *infoTij,
                     *infoTe,
                     *infoNe,
                     *infoCountSignal;
 
 
+    std::vector <TGCheckButton *> checkButtonDraw;
+    std::vector <TGCheckButton *> checkButtonInfo;
 
     TGNumberEntry *calibrationShot;
     TGNumberEntryField **xPositionCalibration,
                         **thetaCalibration,
                         **nCalibrationCoeff;
     
-    TGTextEntry *testFile;
+    /*TGTextEntry *testFile;
     TGNumberEntryField **testChannelSignal;
-    TGNumberEntryField **testChannelSignalError;
+    TGNumberEntryField **testChannelSignalError;*/
 
     bool readSuccess;
     bool thomsonSuccess;
@@ -90,6 +93,8 @@ private:
 
     void OpenFileDialogTemplate(TGTextEntry *textEntry);
 
+    static TString getFileFormat(TString fileName);
+
 public:
     ThomsonGUI(const TGWindow *p, UInt_t width, UInt_t height, TApplication *app);
 
@@ -97,7 +102,7 @@ public:
     void ReadCalibration();
     void WriteCalibration();
     void OpenMainFileDialog() { OpenFileDialogTemplate(mainFileTextEntry); }
-    void OpenTestFileDialog() { OpenFileDialogTemplate(testFile); }
+    //void OpenTestFileDialog() { OpenFileDialogTemplate(testFile); }
     void DrawGraphs();
     void PrintInfo();
 
