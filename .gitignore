@@ -4,3 +4,4 @@ build
 *.t1
 *.t2
 *.root
+*.dat

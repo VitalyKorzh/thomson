@@ -89,10 +89,15 @@ void ThomsonDraw::srf_draw(TCanvas *c, TMultiGraph *mg, const darray &SRF, uint 
     color = 1;
     for (size_t i = 0; i < std::min(Te.size(), theta.size()); i++)
     {
-        darray S = countSArray(N_LAMBDA, lMin, dl, countA(Te[i]), 1., theta[i], lambda_reference);
+        if (Te[i] > 0)
+        {
+            darray S = countSArray(N_LAMBDA, lMin, dl, countA(Te[i]), 1., theta[i], lambda_reference);
 
-        mg->Add(createGraph(N_LAMBDA, lambda.data(), S.data(), color, 1, 1, TString::Format("Te=%.2f", Te[i])));
-        Color(color);
+            for (uint j = 0; j < S.size(); j++)
+                S[j] /= S.back();
+
+            mg->Add(createGraph(N_LAMBDA, lambda.data(), S.data(), color, 1, 1, TString::Format("Te=%.2f", Te[i])));
+        }
     }
 
     {
@@ -217,7 +222,7 @@ TGraph *ThomsonDraw::createSignalBox(double t1, double t2, double U, uint color,
     return createGraph(N_SIZE, x, y, color, lineStyle, lineWidth);
 }
 
-void ThomsonDraw::thomson_draw(TMultiGraph *mg, const SignalProcessing &sp, uint nPoints, const int integrate, bool draw, bool drawSigBox, bool drawFullLine, const std::vector<TString> &gTitle, const barray &work_mask)
+void ThomsonDraw::thomson_draw(TMultiGraph *mg, const SignalProcessing &sp, uint nPoints, const int integrate, bool draw, bool drawSigBox, const std::vector<TString> &gTitle, const barray &work_mask)
 {    
     uint color = 1;
 
@@ -254,15 +259,6 @@ void ThomsonDraw::thomson_draw(TMultiGraph *mg, const SignalProcessing &sp, uint
                 uint start = p*N_SIGNAL;
                 uint end = p*N_SIGNAL+N_SIGNAL-1;
 
-                if (!drawFullLine)
-                {
-                    start += sp.getSignalProcessingParameters().signal_point_start;
-                    end = std::min(start + sp.getSignalProcessingParameters().signal_point_step, end);
-                    if (start > end)
-                        start = end;
-                }
-
-
                 double x[] = {t[start], t[end]};
                 double y[] = {sp.getSignals()[p], sp.getSignals()[p]};
 
@@ -294,27 +290,36 @@ void ThomsonDraw::thomson_signal_draw(TCanvas *c, TMultiGraph *mg, SignalProcess
     for (uint i = 0; i < NChannels; i++)
         gTitle.push_back(TString::Format("ch%u", i+1));
 
-    thomson_draw(mg, *sp, NChannels, integrate, draw, drawSigBox, true, gTitle, work_mask);
+    thomson_draw(mg, *sp, NChannels, integrate, draw, drawSigBox, gTitle, work_mask);
     if (drawLegend)
         createLegend(mg, 0.12, 0.6, 0.35, 0.88);
 
 }
 
-void ThomsonDraw::draw_result_from_r(TCanvas *c, TMultiGraph *mg, const darray &xPosition, const darray &result, const darray &result_error, uint marker_style, float marker_size, bool draw)
+void ThomsonDraw::draw_result_from_r(TCanvas *c, TMultiGraph *mg, const darray &xPosition, const darray &result, const darray &result_error, uint marker_style, float marker_size, uint marker_color,
+                                        uint lineWidth, uint lineStyle, bool draw)
 {
     c->cd();
     TGraphErrors *g = (TGraphErrors*) createGraph(xPosition.size(), xPosition.data(), result.data(), 1, 1, 2, "", nullptr, result_error.data());
     g->SetMarkerStyle(marker_style);
     g->SetMarkerSize(marker_size);
+    g->SetMarkerColor(marker_color);
+    g->SetLineWidth(lineWidth);
+    g->SetLineStyle(lineStyle);
 
-    mg->Add(g);
+    TGraphErrors *gErrors = (TGraphErrors*) g->Clone("error");
+
+    gErrors->SetLineWidth(1);
+    gErrors->SetLineStyle(1);
+
+    mg->Add(gErrors, "PE");
+    mg->Add(g, "L");
 
     if (draw)
     {
         mg->GetXaxis()->CenterTitle();
         mg->GetYaxis()->CenterTitle();
-
-        mg->Draw("AP");
+        mg->Draw("A");
     }
 
 }

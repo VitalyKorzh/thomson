@@ -130,6 +130,7 @@ public:
     double getTError() const { return t_error; }
     double getN() const { return neResult; }
     double getNError() const { return ne_error; }
+    double getTheta() const { return theta; }
 
 
     const darray &getSRF() const { return SRF; }

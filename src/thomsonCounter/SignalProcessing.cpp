@@ -2,16 +2,21 @@
 #include <cmath>
 #include <iostream>
 
-void SignalProcessing::integrateSignal(const darray &t, const darray &U, uint channel, double UZero)
+void SignalProcessing::integrateSignal(const darray &t, const darray &U, uint channel, double UZero, uint point_integrate_start)
 {
     uint index_0 = channel*tSize;
     UTintegrate_full[index_0] = 0.;
     for (uint i = 1; i < tSize; i++)
     {
-        double dt = t[index_0+i] - t[index_0 + i-1];
-        double Umean = (U[index_0 + i] + U[index_0 + i-1]) / 2. - UZero;
-        
-        UTintegrate_full[index_0+i] = UTintegrate_full[index_0 + i-1] + dt * Umean;
+        if (i > point_integrate_start)
+        {
+            double dt = t[index_0+i] - t[index_0 + i-1];
+            double Umean = (U[index_0 + i] + U[index_0 + i-1]) / 2. - UZero;
+            
+            UTintegrate_full[index_0+i] = UTintegrate_full[index_0 + i-1] + dt * Umean;
+        }
+        else
+            UTintegrate_full[index_0+i] = 0;
     }
 }
 
@@ -121,15 +126,18 @@ bool SignalProcessing::checkSignal(const darray &t, const darray &U, uint channe
         return false;
 }
 
-SignalProcessing::SignalProcessing(const darray &t_full, const darray &U_full, uint N_CHANNELS, const SignalProcessingParameters &parameters, const barray &work_mask) : N_CHANNELS(N_CHANNELS),
-                                    signals(N_CHANNELS, 0), work_signal(N_CHANNELS, true), shifts(N_CHANNELS, 0.), UTintegrate_full(t_full.size()), t(t_full), UShift(t_full.size()), signal_box(3*N_CHANNELS), parameters(parameters)
+SignalProcessing::SignalProcessing(const darray &t_full, const darray &U_full, uint N_CHANNELS, const std::vector<SignalProcessingParameters> &paramtersArray, const barray &work_mask) : N_CHANNELS(N_CHANNELS),
+                                    signals(N_CHANNELS, 0), work_signal(N_CHANNELS, true), shifts(N_CHANNELS, 0.), UTintegrate_full(t_full.size()), t(t_full), UShift(t_full.size()), signal_box(3*N_CHANNELS), paramtersArray(paramtersArray)
 {
     tSize = t_full.size() / N_CHANNELS;
 
+    this->paramtersArray.resize(N_CHANNELS);
+
     for (uint i = 0; i < N_CHANNELS; i++)
     {
+        SignalProcessingParameters parameters = this->paramtersArray[i];
         double shift = findZeroLine(t_full, U_full, i, parameters.step_from_start_zero_line, parameters.step_from_end_zero_line, parameters.start_point_from_start_zero_line, parameters.start_point_from_end_zero_line);
-        integrateSignal(t_full, U_full, i, shift);
+        integrateSignal(t_full, U_full, i, shift, parameters.point_integrate_start);
         shiftSignal(U_full, i, shift);
         double signal = countChannelSignal(UTintegrate_full, i, parameters.signal_point_start, parameters.signal_point_step);
 

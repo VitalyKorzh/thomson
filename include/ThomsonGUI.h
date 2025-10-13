@@ -36,6 +36,8 @@ private:
                 *drawIntegralInChannels,
                 *drawTemepratureRDependes,
                 *drawConceterationRDependes,
+                *drawTemperatureRDependesAll,
+                *drawConceterationRDependesAll,
                 *drawCompareSingalAndResult;
 
 
@@ -102,6 +104,9 @@ private:
     void readT2Format(const std::string &fileName, const std::string &srf_file_folder, const std::string &convolution_file_folder);
 
     bool checkButton(TGCheckButton *ch, bool lookEnable=true) { return ch->IsDown() && (!lookEnable || ch->IsEnabled()); }
+
+
+    void readParametersToSignalProssecing(const char *fileName, SignalProcessingParameters &parameters, uint sp, uint ch, uint it, const darray &t);
 
 public:
     ThomsonGUI(const TGWindow *p, UInt_t width, UInt_t height, TApplication *app);
