@@ -9,7 +9,6 @@ typedef std::vector<uint> uiarray;
 typedef std::vector<bool> barray;
 typedef std::vector <std::pair<double, std::pair<uint, uint>>> d3group;
 
-
 struct SignalProcessingParameters 
 {
     uint start_point_from_start_zero_line;
@@ -40,6 +39,8 @@ struct SignalProcessingParameters
 
 };
 
+typedef std::vector <SignalProcessingParameters> parray;
+
 class SignalProcessing
 {
 private:
@@ -57,7 +58,7 @@ private:
     uint tSize; // число точек одного сигнала по времени
 
     darray signal_box;
-    std::vector <SignalProcessingParameters> paramtersArray;
+    parray paramtersArray;
 
     bool checkSignal(const darray &t, const darray &U, uint channel, double signal, double threshold=0., int increase_point=0, int decrease_point=0); // проверить был ли импульс в канале
     void integrateSignal(const darray &t, const darray &U, uint channel, double UZero, uint point_integrate_start);    
@@ -67,7 +68,7 @@ private:
     
 public:
     
-    SignalProcessing(const darray &t_full, const darray &U_full, uint N_CHANNELS, const std::vector<SignalProcessingParameters> &paramtersArray, const barray &work_mask={});
+    SignalProcessing(const darray &t_full, const darray &U_full, uint N_CHANNELS, const parray &paramtersArray, const barray &work_mask={});
     SignalProcessing(const darray &signals, const barray &work_signal={});
 
     const darray &getSignals() const { return signals; }

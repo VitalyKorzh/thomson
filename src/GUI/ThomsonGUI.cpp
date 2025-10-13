@@ -26,7 +26,6 @@ ClassImp(ThomsonGUI)
 #define N_TIME_SIZE 1000
 #define UNUSEFULL 48 // SIZE_ARCHIVE = N_TIME_LIST*(2*N_TIME_SIZE+UNUSEFULL) 
 
-
 #define N_SPECTROMETER_CALIBRATIONS 3 //число калибровок для спектрометра
 #define LAMBDA_REFERENCE 1064. 
 
@@ -95,7 +94,6 @@ bool ThomsonGUI::readDataFromArchive(const char *archive_name, const char *kust,
     {
         std::cout << "заполняем нулями\n";
         timeList = N_TIME_LIST;
-        //CloseArchive();
         for (int it = std::max(0, timePoint); it < timeList; it++)
         {
             if ((it == timePoint+1 && timePoint >= 0))
@@ -110,10 +108,7 @@ bool ThomsonGUI::readDataFromArchive(const char *archive_name, const char *kust,
                 }
             }
         }
-        //return false;
     }
-    
-    //std::cout << t.size() << " " << U.size() << "\n";
 
     if (signal != nullptr)
         delete signal;
@@ -210,15 +205,13 @@ bool ThomsonGUI::writeCalibration(const char *archive_name, const char *calibrat
     return true;
 }
 
-bool ThomsonGUI::processingSignalsData(const char *archive_name, int shot, const SignalProcessingParameters &parameters, bool clearArray)
+bool ThomsonGUI::processingSignalsData(const char *archive_name, int shot, const std::vector<parray> &parametersArray, bool clearArray)
 {
     bool successReadArchive = true;
     if (clearArray) 
         this->clearSpArray();
 
     spArray.reserve(spArray.size()+N_SPECTROMETERS*N_TIME_LIST);
-
-    std::vector <SignalProcessingParameters> parametersArray(N_CHANNELS, parameters);
 
     for (uint sp = 0; sp < N_SPECTROMETERS; sp++)
     {
@@ -229,7 +222,6 @@ bool ThomsonGUI::processingSignalsData(const char *archive_name, int shot, const
             t.reserve(N_TIME_SIZE*N_CHANNELS);
             U.reserve(N_TIME_SIZE*N_CHANNELS);
 
-
             for (uint ch = 0; ch < N_CHANNELS; ch++)
             {
                 TString signal_name = getSignalName(sp, ch);
@@ -239,7 +231,7 @@ bool ThomsonGUI::processingSignalsData(const char *archive_name, int shot, const
                     break;
                 }
             }
-            spArray.push_back(new SignalProcessing(t, U, N_CHANNELS, parametersArray, work_mask));
+            spArray.push_back(new SignalProcessing(t, U, N_CHANNELS, parametersArray[sp], work_mask));
         }
     }
     return successReadArchive;
@@ -384,7 +376,7 @@ int &ThomsonGUI::getShot(int &shot) const
     return shot;
 }
 
-void ThomsonGUI::readParametersToSignalProssecing(const char *fileName, SignalProcessingParameters &parameters, uint sp, uint ch, uint it, const darray &t)
+/*void ThomsonGUI::readParametersToSignalProssecing(const char *fileName, SignalProcessingParameters &parameters, uint sp, uint ch, uint it, const darray &t)
 {
     std::ifstream fin;
     fin.open(fileName);
@@ -453,6 +445,40 @@ void ThomsonGUI::readParametersToSignalProssecing(const char *fileName, SignalPr
     }
 
     fin.close();
+}*/
+
+std::vector<parray> ThomsonGUI::readParametersToSignalProssecong(const std::string &file_name)
+{
+    std::vector <parray> parametersArray(N_SPECTROMETERS, parray(N_CHANNELS));
+
+    std::ifstream fin;
+    fin.open(file_name);
+    if (fin.is_open())
+    {
+        std::string line;
+        for (uint sp = 0; sp < N_SPECTROMETERS; sp++)
+        {
+            fin >> line;
+            for (uint ch = 0; ch < N_CHANNELS; ch++)
+            {
+
+                SignalProcessingParameters pr;
+
+                fin >> line >> pr.start_point_from_start_zero_line >> pr.step_from_start_zero_line >>
+                pr.start_point_from_end_zero_line >> pr.step_from_end_zero_line
+                >> pr.signal_point_start >> pr.signal_point_step >> pr.point_integrate_start >>
+                pr.threshold >> pr.increase_point >> pr.decrease_point;
+
+                parametersArray[sp][ch] = pr;
+            }
+        }
+    }
+    else {
+        std::cerr << "не удалось открыть файл с параметрами!\n";
+    }
+    fin.close();
+
+    return parametersArray;
 }
 
 ThomsonGUI::ThomsonGUI(const TGWindow *p, UInt_t width, UInt_t height, TApplication *app) : TGMainFrame(p, width, height),
@@ -806,13 +832,16 @@ void ThomsonGUI::addToArrayTFormat(const std::string &srf_file, const std::strin
 
 void ThomsonGUI::readROOTFormat(const std::string &fileName, const std::string &srf_file_folder, const std::string &convolution_file_folder, std::ifstream &fin)
 {
-    SignalProcessingParameters parameters;
-    
-    fin >> shot >> parameters.start_point_from_start_zero_line >> parameters.step_from_start_zero_line >> parameters.start_point_from_end_zero_line >> 
-    parameters.step_from_end_zero_line >> parameters.signal_point_start >> 
-    parameters.signal_point_step >> parameters.point_integrate_start >> parameters.threshold >> parameters.increase_point >> parameters.decrease_point;
+    std::string parameters_file_name;
+    fin >> shot >> parameters_file_name;
 
-    if (fin.fail() || !processingSignalsData(archive_name.c_str(), shot, parameters, true) || !countThomson(srf_file_folder, convolution_file_folder, shot, true)) {
+    std::vector <parray> parametersArray = readParametersToSignalProssecong(parameters_file_name);
+
+    /*fin >> shot >> parameters.start_point_from_start_zero_line >> parameters.step_from_start_zero_line >> parameters.start_point_from_end_zero_line >> 
+    parameters.step_from_end_zero_line >> parameters.signal_point_start >> 
+    parameters.signal_point_step >> parameters.point_integrate_start >> parameters.threshold >> parameters.increase_point >> parameters.decrease_point;*/
+
+    if (fin.fail() || !processingSignalsData(archive_name.c_str(), shot, parametersArray, true) || !countThomson(srf_file_folder, convolution_file_folder, shot, true)) {
         std::cerr << "ошибка чтения файла!\n";
         fileType = -1;
     }
@@ -1011,11 +1040,16 @@ void ThomsonGUI::DrawGraphs()
                 TeError[i] = getThomsonCounter(it, i)->getTError();
             }
 
-            ThomsonDraw::draw_result_from_r(c, mg, xPosition, Te, TeError, 21, 1.5, color, 1, 10, false);
+            ThomsonDraw::draw_result_from_r(c, mg, xPosition, Te, TeError, 21, 1.5, color, 1, 7, color, TString::Format("%u", it), false);
             ThomsonDraw::Color(color);
         }
 
+        mg->GetXaxis()->CenterTitle();
+        mg->GetYaxis()->CenterTitle();
         mg->Draw("A");
+
+
+        ThomsonDraw::createLegend(mg);
 
     }
     if (checkButton(drawConceterationRDependesAll) && fileType == isROOT)
@@ -1041,11 +1075,14 @@ void ThomsonGUI::DrawGraphs()
                 neError[i] = getThomsonCounter(it, i)->getTError();
             }
 
-            ThomsonDraw::draw_result_from_r(c, mg, xPosition, ne, neError, 21, 1.5, color, 1, 10, false);
+            ThomsonDraw::draw_result_from_r(c, mg, xPosition, ne, neError, 21, 1.5, color, 1, 7, color, TString::Format("%u", it), false);
             ThomsonDraw::Color(color);
         }
 
+        mg->GetXaxis()->CenterTitle();
+        mg->GetYaxis()->CenterTitle();
         mg->Draw("A");
+        ThomsonDraw::createLegend(mg);
     }
     if (checkButton(drawCompareSingalAndResult))
     {

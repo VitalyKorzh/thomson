@@ -29,6 +29,7 @@ TCanvas *ThomsonDraw::createCanvas(const char *canvas_name, uint width, uint hei
 	c->SetBit(kCanDelete);
 	c->SetGrid();
 	c->cd();
+    gPad->SetLeftMargin(0.15);
 	return c;
 }
 
@@ -117,7 +118,7 @@ void ThomsonDraw::srf_draw(TCanvas *c, TMultiGraph *mg, const darray &SRF, uint 
     }
 
     if (drawLegend && std::min(Te.size(), theta.size()) != 0)
-        createLegend(mg, 0.12, 0.6, 0.35, 0.88);
+        createLegend(mg);
 
 }
 
@@ -158,6 +159,7 @@ TGraph *ThomsonDraw::createGraph(uint points, const double *const x, const doubl
     TGraph *g = new TGraphErrors(points, x, y, errorX, errorY);
     g->SetTitle(title);
     g->SetBit(kCanDelete);
+    g->SetEditable(kFALSE);
     g->SetLineWidth(lineWidth);
     g->SetLineStyle(lineStyle);
     g->SetLineColor(color);
@@ -292,28 +294,24 @@ void ThomsonDraw::thomson_signal_draw(TCanvas *c, TMultiGraph *mg, SignalProcess
 
     thomson_draw(mg, *sp, NChannels, integrate, draw, drawSigBox, gTitle, work_mask);
     if (drawLegend)
-        createLegend(mg, 0.12, 0.6, 0.35, 0.88);
+        createLegend(mg);
 
 }
 
 void ThomsonDraw::draw_result_from_r(TCanvas *c, TMultiGraph *mg, const darray &xPosition, const darray &result, const darray &result_error, uint marker_style, float marker_size, uint marker_color,
-                                        uint lineWidth, uint lineStyle, bool draw)
+                                        uint lineWidth, uint lineStyle, uint lineColor, TString title, bool draw)
 {
     c->cd();
-    TGraphErrors *g = (TGraphErrors*) createGraph(xPosition.size(), xPosition.data(), result.data(), 1, 1, 2, "", nullptr, result_error.data());
+    TGraph *g = createGraph(xPosition.size(), xPosition.data(), result.data(), lineColor, lineStyle, lineWidth, title, nullptr, nullptr);
     g->SetMarkerStyle(marker_style);
     g->SetMarkerSize(marker_size);
     g->SetMarkerColor(marker_color);
-    g->SetLineWidth(lineWidth);
-    g->SetLineStyle(lineStyle);
+    g->SetBit(kCannotPick);
 
-    TGraphErrors *gErrors = (TGraphErrors*) g->Clone("error");
+    TGraphErrors *gErrors = (TGraphErrors*) createGraph(xPosition.size(), xPosition.data(), result.data(), 1, 1, 1, "", nullptr, result_error.data());
 
-    gErrors->SetLineWidth(1);
-    gErrors->SetLineStyle(1);
-
-    mg->Add(gErrors, "PE");
-    mg->Add(g, "L");
+    mg->Add(gErrors, "E");
+    mg->Add(g, "PL");
 
     if (draw)
     {

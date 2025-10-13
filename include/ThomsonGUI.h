@@ -80,7 +80,7 @@ private:
     darray readCalibration(const char *archive_name, const char *calibration_name, int shot) const;
     bool isCalibrationNew(TFile *f, const char *calibration_name) const;
     bool writeCalibration(const char *archive_name, const char *calibration_name, darray &calibration) const;
-    bool processingSignalsData(const char *archive_name, int shot, const SignalProcessingParameters &parameters, bool clearArray=true);
+    bool processingSignalsData(const char *archive_name, int shot, const std::vector<parray> &parametersArray, bool clearArray=true);
     bool countThomson(const std::string &srf_file_folder, const std::string &convolution_file_folder, int shot, bool clearArray=true);
     SignalProcessing * getSignalProcessing(uint it, uint sp) const;
     ThomsonCounter * getThomsonCounter(uint it, uint sp) const;
@@ -104,9 +104,9 @@ private:
     void readT2Format(const std::string &fileName, const std::string &srf_file_folder, const std::string &convolution_file_folder);
 
     bool checkButton(TGCheckButton *ch, bool lookEnable=true) { return ch->IsDown() && (!lookEnable || ch->IsEnabled()); }
+    //void readParametersToSignalProssecing(const char *fileName, SignalProcessingParameters &parameters, uint sp, uint ch, uint it, const darray &t);
 
-
-    void readParametersToSignalProssecing(const char *fileName, SignalProcessingParameters &parameters, uint sp, uint ch, uint it, const darray &t);
+    std::vector <parray> readParametersToSignalProssecong(const std::string &file_name);
 
 public:
     ThomsonGUI(const TGWindow *p, UInt_t width, UInt_t height, TApplication *app);

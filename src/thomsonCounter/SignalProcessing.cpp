@@ -126,7 +126,7 @@ bool SignalProcessing::checkSignal(const darray &t, const darray &U, uint channe
         return false;
 }
 
-SignalProcessing::SignalProcessing(const darray &t_full, const darray &U_full, uint N_CHANNELS, const std::vector<SignalProcessingParameters> &paramtersArray, const barray &work_mask) : N_CHANNELS(N_CHANNELS),
+SignalProcessing::SignalProcessing(const darray &t_full, const darray &U_full, uint N_CHANNELS, const parray &paramtersArray, const barray &work_mask) : N_CHANNELS(N_CHANNELS),
                                     signals(N_CHANNELS, 0), work_signal(N_CHANNELS, true), shifts(N_CHANNELS, 0.), UTintegrate_full(t_full.size()), t(t_full), UShift(t_full.size()), signal_box(3*N_CHANNELS), paramtersArray(paramtersArray)
 {
     tSize = t_full.size() / N_CHANNELS;
