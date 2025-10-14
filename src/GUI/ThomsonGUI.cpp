@@ -231,7 +231,7 @@ bool ThomsonGUI::processingSignalsData(const char *archive_name, int shot, const
                     break;
                 }
             }
-            spArray.push_back(new SignalProcessing(t, U, N_CHANNELS, parametersArray[sp], work_mask));
+            spArray.push_back(new SignalProcessing(t, U, N_CHANNELS, parametersArray[sp], work_mask[sp]));
         }
     }
     return successReadArchive;
@@ -448,7 +448,7 @@ int &ThomsonGUI::getShot(int &shot) const
     fin.close();
 }*/
 
-std::vector<parray> ThomsonGUI::readParametersToSignalProssecong(const std::string &file_name)
+std::vector<parray> ThomsonGUI::readParametersToSignalProssecong(const std::string &file_name) const
 {
     std::vector <parray> parametersArray(N_SPECTROMETERS, parray(N_CHANNELS));
 
@@ -482,8 +482,40 @@ std::vector<parray> ThomsonGUI::readParametersToSignalProssecong(const std::stri
     return parametersArray;
 }
 
+void ThomsonGUI::writeResultTableToFile(const char *file_name) const
+{
+    if (fileType != isROOT)
+        return;
+
+    std::ofstream fout;
+    fout.open(file_name);
+
+    if (fout.is_open())
+    {
+        darray xPosition(N_SPECTROMETERS);
+        for (uint i = 0; i < N_SPECTROMETERS; i++)
+            xPosition[i] = calibrations[i*N_SPECTROMETER_CALIBRATIONS+ID_X];
+        fout << std::scientific;
+        fout.precision(10);
+        fout << "X\tTe\tTeError\tne\tneError\n";
+        fout << "mm\teV\teV\tcm^-3\tcm^-3\n";
+        fout << "Radius\tTe\tTe error\tne\t ne error\n";
+        for (uint it = 0; it < N_TIME_LIST; it++)
+        {
+            for (uint sp = 0; sp < N_SPECTROMETERS; sp++)
+            {
+                ThomsonCounter *counter = getThomsonCounter(it, sp);
+                fout << xPosition[sp] << "\t" << counter->getT() << "\t" << counter->getTError() << "\t" << counter->getN() << "\t" << counter->getNError() << "\n";
+            }
+        }
+
+    }
+
+    fout.close();
+}
+
 ThomsonGUI::ThomsonGUI(const TGWindow *p, UInt_t width, UInt_t height, TApplication *app) : TGMainFrame(p, width, height),
-                                                                                            app(app), fileType(-1)
+                                                                                            app(app), fileType(-1), work_mask(N_SPECTROMETERS, barray(N_CHANNELS))
 {
     SetCleanup(kDeepCleanup);
 
@@ -656,13 +688,23 @@ void ThomsonGUI::ReadMainFile()
         std::getline(fin, convolution_file_folder);
         std::getline(fin, archive_name);
         
-        std::string work_mask_string;
-        std::getline(fin, work_mask_string);
+        std::string work_mask_string[N_SPECTROMETERS];
+        for (uint i = 0; i < N_SPECTROMETERS; i++)
+           std::getline(fin, work_mask_string[i]);
         
+
         if (!fin.fail())
         {
             TString file_format = getFileFormat(archive_name);
-            work_mask = createWorkMask(work_mask_string);
+
+
+            for (uint i = 0; i < N_SPECTROMETERS; i++)
+            {
+                barray mask = createWorkMask(work_mask_string[i]);
+                for (uint j = 0; j < N_CHANNELS; j++)
+                    work_mask[i][j] = mask[j];
+            }
+
             if (file_format == "root")
             {
                 setDrawEnable(0, 0);
@@ -688,8 +730,10 @@ void ThomsonGUI::ReadMainFile()
     }
     fin.close();
 
-    if (fileType == isROOT)
+    if (fileType == isROOT) {
         setDrawEnable(1, 1);
+        writeResultTableToFile("last_result_table.dat");
+    }
     else if (fileType == isT1)
     {
         drawCompareSingalAndResult->SetEnabled(true);
@@ -769,7 +813,7 @@ TString ThomsonGUI::getFileFormat(TString fileName)
     return fileName(lastDot + 1, fileName.Length() - lastDot - 1);;
 }
 
-double ThomsonGUI::gaussian_noise(double sigma)
+double ThomsonGUI::gaussian_noise(double sigma) const
 {
     std::random_device rd;
     std::mt19937 gen(rd());
@@ -777,7 +821,7 @@ double ThomsonGUI::gaussian_noise(double sigma)
     return dist(gen);
 }
 
-darray ThomsonGUI::createSignal(const darray &SRF, double lMin, double lMax, double dl, uint N_LAMBDA, double Te_true, double theta, double Aampl, const darray &sigma_noise)
+darray ThomsonGUI::createSignal(const darray &SRF, double lMin, double lMax, double dl, uint N_LAMBDA, double Te_true, double theta, double Aampl, const darray &sigma_noise) const
 {
     darray signal(N_CHANNELS);
 
@@ -800,7 +844,7 @@ darray ThomsonGUI::createSignal(const darray &SRF, double lMin, double lMax, dou
     return signal;
 }
 
-darray ThomsonGUI::createSignal(const std::string &srf_name, const darray &sigma_channel, double Te, double ne, double theta)
+darray ThomsonGUI::createSignal(const std::string &srf_name, const darray &sigma_channel, double Te, double ne, double theta) const
 {
     darray SRF;
     double lMin, lMax, dl;
@@ -817,7 +861,7 @@ void ThomsonGUI::addToArrayTFormat(const std::string &srf_file, const std::strin
 {
     clearSpArray();
     clearCounterArray();
-    SignalProcessing *sp = new SignalProcessing(signal, work_mask);
+    SignalProcessing *sp = new SignalProcessing(signal, work_mask[0]);
     ThomsonCounter *counter = new ThomsonCounter(srf_file, convolution_file, *sp, signal_error, theta, LAMBDA_REFERENCE);
     if (counter->isWork())
     {
@@ -949,6 +993,8 @@ void ThomsonGUI::DrawGraphs()
         nSpectrometer = spectrometerNumber->GetNumber();
         nTimePage = timeListNumber->GetNumber();
     }
+
+    const barray &work_mask = this->work_mask[nSpectrometer];
 
     if (checkButton(drawSRF))
     {
