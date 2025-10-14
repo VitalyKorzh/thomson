@@ -34,6 +34,7 @@ private:
                 *drawConvolution,
                 *drawSignalsInChannels,
                 *drawIntegralInChannels,
+                *drawSignalsAndIntegralsInChannels,
                 *drawTemepratureRDependes,
                 *drawConceterationRDependes,
                 *drawTemperatureRDependesAll,

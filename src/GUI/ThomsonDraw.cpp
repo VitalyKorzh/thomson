@@ -224,7 +224,7 @@ TGraph *ThomsonDraw::createSignalBox(double t1, double t2, double U, uint color,
     return createGraph(N_SIZE, x, y, color, lineStyle, lineWidth);
 }
 
-void ThomsonDraw::thomson_draw(TMultiGraph *mg, const SignalProcessing &sp, uint nPoints, const int integrate, bool draw, bool drawSigBox, const std::vector<TString> &gTitle, const barray &work_mask)
+void ThomsonDraw::thomson_draw(TMultiGraph *mg, const SignalProcessing &sp, uint nPoints, const int integrate, bool draw, bool drawSigBox, const std::vector<TString> &gTitle, const barray &work_mask, double scale)
 {    
     uint color = 1;
 
@@ -250,7 +250,12 @@ void ThomsonDraw::thomson_draw(TMultiGraph *mg, const SignalProcessing &sp, uint
         }
 
         if (!integrate) {
-            mg->Add(createGraph(N_SIGNAL, t.data()+p*N_SIGNAL, U.data()+p*N_SIGNAL, color, 1, 2, title));
+            TGraph *g = createGraph(N_SIGNAL, t.data()+p*N_SIGNAL, U.data()+p*N_SIGNAL, color, 1, 2, title);
+
+            for (uint i = 0; i < N_SIGNAL; i++)
+                g->SetPointY(i, scale*g->GetPointY(i));
+
+            mg->Add(g);
         }
         else if (integrate > 0) {
 
@@ -282,17 +287,19 @@ void ThomsonDraw::thomson_draw(TMultiGraph *mg, const SignalProcessing &sp, uint
     } 
 }
 
-void ThomsonDraw::thomson_signal_draw(TCanvas *c, TMultiGraph *mg, SignalProcessing *sp, int integrate, bool draw, bool drawLegend, bool drawSigBox, uint NChannels, const barray &work_mask) 
+void ThomsonDraw::thomson_signal_draw(TCanvas *c, TMultiGraph *mg, SignalProcessing *sp, int integrate, bool draw, bool drawLegend, bool drawSigBox, uint NChannels, const barray &work_mask, double scale, bool title) 
 {
     c->cd();
     mg->SetTitle(!integrate ? ";t, ns;U, V" : ";t, ns;Ut, V*ns");
 
     std::vector <TString> gTitle;
-    gTitle.reserve(NChannels);
-    for (uint i = 0; i < NChannels; i++)
-        gTitle.push_back(TString::Format("ch%u", i+1));
+    if (title) {
+        gTitle.reserve(NChannels);
+        for (uint i = 0; i < NChannels; i++)
+            gTitle.push_back(TString::Format("ch%u", i+1));
+    }
 
-    thomson_draw(mg, *sp, NChannels, integrate, draw, drawSigBox, gTitle, work_mask);
+    thomson_draw(mg, *sp, NChannels, integrate, draw, drawSigBox, gTitle, work_mask, scale);
     if (drawLegend)
         createLegend(mg);
 

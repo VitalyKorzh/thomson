@@ -347,6 +347,7 @@ void ThomsonGUI::setDrawEnable(int signal, int thomson)
     {
         drawSignalsInChannels->SetEnabled(signal);
         drawIntegralInChannels->SetEnabled(signal);
+        drawSignalsAndIntegralsInChannels->SetEnabled(signal);
 
         infoSignal->SetEnabled(signal);
         infoWorkChannels->SetEnabled(signal);
@@ -521,6 +522,7 @@ ThomsonGUI::ThomsonGUI(const TGWindow *p, UInt_t width, UInt_t height, TApplicat
         checkButtonDraw.push_back(drawConvolution = new TGCheckButton(vframeDraw, "draw convolution"));
         checkButtonDraw.push_back(drawSignalsInChannels = new TGCheckButton(vframeDraw, "draw signals in channels"));
         checkButtonDraw.push_back(drawIntegralInChannels = new TGCheckButton(vframeDraw, "draw integral of signal in channels"));
+        checkButtonDraw.push_back(drawSignalsAndIntegralsInChannels = new TGCheckButton(vframeDraw, "draw integral and signal in channels"));
         checkButtonDraw.push_back(drawTemepratureRDependes = new TGCheckButton(vframeDraw, "draw Te(r)"));
         checkButtonDraw.push_back(drawConceterationRDependes = new TGCheckButton(vframeDraw, "draw ne(r)"));
         checkButtonDraw.push_back(drawTemperatureRDependesAll = new TGCheckButton(vframeDraw, "draw Te(r) all"));
@@ -978,6 +980,15 @@ void ThomsonGUI::DrawGraphs()
         TCanvas *c = ThomsonDraw::createCanvas(canvas_name);
         TMultiGraph *mg = ThomsonDraw::createMultiGraph("mg_"+canvas_name, "");
         ThomsonDraw::thomson_signal_draw(c, mg, getSignalProcessing(nTimePage, nSpectrometer), 1, true, true, false, N_WORK_CHANNELS, work_mask);
+    }
+    if (checkButton(drawSignalsAndIntegralsInChannels) && fileType == isROOT)
+    {
+        TString canvas_name = TString::Format("signal_integral_tp_%u_sp_%u", nTimePage, nSpectrometer);
+        TCanvas *c = ThomsonDraw::createCanvas(canvas_name);
+        TMultiGraph *mg = ThomsonDraw::createMultiGraph("mg_"+canvas_name, "");
+        ThomsonDraw::thomson_signal_draw(c, mg, getSignalProcessing(nTimePage, nSpectrometer), 0, false, true, false, N_WORK_CHANNELS, work_mask, 10., false);
+        ThomsonDraw::thomson_signal_draw(c, mg, getSignalProcessing(nTimePage, nSpectrometer), 1, true, true, false, N_WORK_CHANNELS, work_mask);
+
     }
     if (checkButton(drawTemepratureRDependes) && fileType == isROOT)
     {
