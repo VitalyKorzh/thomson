@@ -321,25 +321,39 @@ bool ThomsonCounter::count(const double alpha, const uint iter_limit, const doub
 
 
     {
+        barray is_channel_use(N_CHANNELS, false);
+        uint number_use_channels = 0;
+
         uint step_count = 0;
         for (const auto &it : devTijZeroArray)
         {
             uint ch1 = channels_number[it.first].first;
             uint ch2 = channels_number[it.first].second;
 
-            double Tij = countTij(ch1, ch2);
-            double devTij = devFij(ch1, ch2, Tij);
-            double sigmaTij = countSigmaTij(ch1, ch2, devTij);
+            if (!is_channel_use[ch1] || !is_channel_use[ch2] || number_use_channels == N_CHANNELS_WORK)
+            {
+                if (!is_channel_use[ch1])
+                    number_use_channels++;
+                if (!is_channel_use[ch2])
+                    number_use_channels++;
 
-            TijArray.push_back(Tij);
-            devTijArray.push_back(devTij);
-            sigmaTijArray.push_back(sigmaTij);
-            number_ratio.push_back(it.first);
+                is_channel_use[ch1] = true;
+                is_channel_use[ch2] = true;
 
-            step_count++;
-            use_ratio.push_back(it.first);
-            if(step_count >= N_CHANNELS_WORK)
-               break;
+                double Tij = countTij(ch1, ch2);
+                double devTij = devFij(ch1, ch2, Tij);
+                double sigmaTij = countSigmaTij(ch1, ch2, devTij);
+
+                TijArray.push_back(Tij);
+                devTijArray.push_back(devTij);
+                sigmaTijArray.push_back(sigmaTij);
+                number_ratio.push_back(it.first);
+
+                step_count++;
+                use_ratio.push_back(it.first);
+                if(step_count >= N_CHANNELS_WORK)
+                    break;
+            }
         }
     }
 
