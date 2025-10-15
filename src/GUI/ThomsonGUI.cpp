@@ -601,7 +601,17 @@ ThomsonGUI::ThomsonGUI(const TGWindow *p, UInt_t width, UInt_t height, TApplicat
         
         hframe_bottom->AddFrame(drawButton, new TGLayoutHints(kLHintsLeft, 5, 5, 5, 5));
         hframe_bottom->AddFrame(timeListNumber, new TGLayoutHints(kLHintsLeft, 5, 5, 5, 5));
-        hframe_bottom->AddFrame(spectrometerNumber, new TGLayoutHints(kLHintsLeft, 5, 5, 5, 5));
+        hframe_bottom->AddFrame(spectrometerNumber, new TGLayoutHints(kLHintsLeft, 5, 10, 5, 5));
+
+
+        for (uint i = 1; i < N_TIME_LIST; i++)
+        {
+            checkButtonDrawTime.push_back(new TGCheckButton(hframe_bottom));
+            checkButtonDrawTime.back()->SetState(kButtonDown);
+            checkButtonDrawTime.back()->SetToolTipText("time page draw");
+            hframe_bottom->AddFrame(checkButtonDrawTime.back(), new TGLayoutHints(kLHintsLeft, 1,1,7,7));
+        }
+
     }
 
     {
@@ -1092,6 +1102,9 @@ void ThomsonGUI::DrawGraphs()
         uint color = 1;
         for (uint it = 1; it < N_TIME_LIST; it++)
         {
+            if (!checkButtonDrawTime[it-1]->IsDown())
+                continue;
+
             for (uint i = 0; i < N_SPECTROMETERS; i++) {
                 Te[i] = getThomsonCounter(it, i)->getT();
                 TeError[i] = getThomsonCounter(it, i)->getTError();
@@ -1127,6 +1140,9 @@ void ThomsonGUI::DrawGraphs()
         uint color = 1;
         for (uint it = 1; it < N_TIME_LIST; it++)
         {
+            if (!checkButtonDrawTime[it-1]->IsDown())
+                continue;
+
             for (uint i = 0; i < N_SPECTROMETERS; i++) {
                 ne[i] = getThomsonCounter(it, i)->getT();
                 neError[i] = getThomsonCounter(it, i)->getTError();

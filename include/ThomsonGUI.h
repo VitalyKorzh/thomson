@@ -55,6 +55,8 @@ private:
 
     std::vector <TGCheckButton *> checkButtonDraw;
     std::vector <TGCheckButton *> checkButtonInfo;
+    std::vector <TGCheckButton *> checkButtonDrawTime;
+
 
     TGNumberEntry *calibrationShot;
     TGNumberEntryField **xPositionCalibration,
