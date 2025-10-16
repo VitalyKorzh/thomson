@@ -578,6 +578,15 @@ ThomsonGUI::ThomsonGUI(const TGWindow *p, UInt_t width, UInt_t height, TApplicat
     {
         TGCompositeFrame *fTTu = fTap->AddTab("Diagnostic.");
 
+        TGHorizontalFrame *hframe = new TGHorizontalFrame(fTTu, width, 40);
+        fTTu->AddFrame(hframe, new TGLayoutHints(kLHintsTop,5,5,5,5));
+
+        TGLabel *labelShot = new TGLabel(hframe, "shot");
+        shotNumber = new TGNumberEntry(hframe, 0, 12, -1, TGNumberFormat::kNESInteger, TGNumberFormat::kNEAAnyNumber, TGNumberFormat::kNELNoLimits);
+
+        hframe->AddFrame(labelShot, new TGLayoutHints(kLHintsLeft, 5,5,10,10));
+        hframe->AddFrame(shotNumber, new TGLayoutHints(kLHintsLeft, 5,5,5,5));
+
         TGHorizontalFrame *hframeGroups = new TGHorizontalFrame(fTTu, width, 40);
         fTTu->AddFrame(hframeGroups, new TGLayoutHints(kLHintsTop|kLHintsLeft));
 
@@ -650,6 +659,10 @@ ThomsonGUI::ThomsonGUI(const TGWindow *p, UInt_t width, UInt_t height, TApplicat
             hframe_bottom->AddFrame(checkButtonDrawTime.back(), new TGLayoutHints(kLHintsLeft, 1,1,7,7));
         }
 
+    }
+
+    {
+        TGCompositeFrame *fTTu = fTap->AddTab("Set of shots");
     }
 
     {
@@ -928,8 +941,9 @@ void ThomsonGUI::addToArrayTFormat(const std::string &srf_file, const std::strin
 
 void ThomsonGUI::readROOTFormat(const std::string &fileName, const std::string &srf_file_folder, const std::string &convolution_file_folder, std::ifstream &fin)
 {
+    shot = shotNumber->GetNumber();
     std::string parameters_file_name;
-    fin >> shot >> parameters_file_name;
+    fin >> parameters_file_name;
 
     std::vector <parray> parametersArray = readParametersToSignalProssecong(parameters_file_name);
 

@@ -30,6 +30,8 @@ private:
     TGNumberEntry *timeListNumber;
     TGNumberEntry *spectrometerNumber;
 
+    TGNumberEntry *shotNumber;
+
     TGCheckButton *drawSRF,
                 *drawConvolution,
                 *drawSignalsInChannels,
