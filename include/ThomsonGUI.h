@@ -15,6 +15,8 @@
 #include <TQObject.h>
 #include <RQ_OBJECT.h>
 #include <TFile.h>
+#include <TGCanvas.h>
+#include <TGScrollBar.h>
 
 #include "thomsonCounter/SignalProcessing.h"
 #include "thomsonCounter/ThomsonCounter.h"
@@ -66,6 +68,14 @@ private:
     TGNumberEntryField **xPositionCalibration,
                         **thetaCalibration,
                         **nCalibrationCoeff;
+
+
+    uint nrow;
+    TGCanvas *fCanvas;
+    TGVerticalFrame *fContainer;
+    TList fNumberEntryShotStart;
+    TList fNumberEntryShotEnd;
+
 
     int fileType;
     int shot;
@@ -130,6 +140,7 @@ public:
     void OpenMainFileDialog() { OpenFileDialogTemplate(mainFileTextEntry); }
     void DrawGraphs();
     void PrintInfo();
+    void AddShotRange();
 
     void run();
     ~ThomsonGUI();

@@ -631,38 +631,60 @@ ThomsonGUI::ThomsonGUI(const TGWindow *p, UInt_t width, UInt_t height, TApplicat
         
         setDrawEnable(0,0);
 
-        TGHorizontalFrame *hframe_bottom = new TGHorizontalFrame(fTTu, width, 80);
-        fTTu->AddFrame(hframe_bottom, new TGLayoutHints(kLHintsExpandX| kLHintsBottom, 5, 5, 5,  10));
-        TGButton *drawButton = new TGTextButton(hframe_bottom, "Draw");
+        TGHorizontalFrame *hframe_button = new TGHorizontalFrame(fTTu, width, 80);
+        fTTu->AddFrame(hframe_button, new TGLayoutHints(kLHintsExpandX| kLHintsBottom, 5, 5, 5,  10));
+        TGButton *drawButton = new TGTextButton(hframe_button, "Draw");
         drawButton->Connect("Clicked()", CLASS_NAME, this, "DrawGraphs()");
         drawButton->Connect("Clicked()", CLASS_NAME, this, "PrintInfo()");
 
-        timeListNumber = new TGNumberEntry(hframe_bottom, 1, 4, -1, TGNumberFormat::kNESInteger,
+        timeListNumber = new TGNumberEntry(hframe_button, 1, 4, -1, TGNumberFormat::kNESInteger,
                                             TGNumberFormat::kNEANonNegative, TGNumberEntry::kNELLimitMinMax, 0, N_TIME_LIST-1);
-        spectrometerNumber = new TGNumberEntry(hframe_bottom, 0, 4, -1, TGNumberFormat::kNESInteger,
+        spectrometerNumber = new TGNumberEntry(hframe_button, 0, 4, -1, TGNumberFormat::kNESInteger,
                                             TGNumberFormat::kNEANonNegative, TGNumberEntry::kNELLimitMinMax, 0, N_SPECTROMETERS-1);
 
         drawButton->SetToolTipText("draw selected graphs");
         timeListNumber->GetNumberEntry()->SetToolTipText("time page number");
         spectrometerNumber->GetNumberEntry()->SetToolTipText("spectrometer number");
         
-        hframe_bottom->AddFrame(drawButton, new TGLayoutHints(kLHintsLeft, 5, 5, 5, 5));
-        hframe_bottom->AddFrame(timeListNumber, new TGLayoutHints(kLHintsLeft, 5, 5, 5, 5));
-        hframe_bottom->AddFrame(spectrometerNumber, new TGLayoutHints(kLHintsLeft, 5, 10, 5, 5));
+        hframe_button->AddFrame(drawButton, new TGLayoutHints(kLHintsLeft, 5, 5, 5, 5));
+        hframe_button->AddFrame(timeListNumber, new TGLayoutHints(kLHintsLeft, 5, 5, 5, 5));
+        hframe_button->AddFrame(spectrometerNumber, new TGLayoutHints(kLHintsLeft, 5, 10, 5, 5));
 
 
         for (uint i = 1; i < N_TIME_LIST; i++)
         {
-            checkButtonDrawTime.push_back(new TGCheckButton(hframe_bottom));
+            checkButtonDrawTime.push_back(new TGCheckButton(hframe_button));
             checkButtonDrawTime.back()->SetState(kButtonDown);
             checkButtonDrawTime.back()->SetToolTipText("time page draw");
-            hframe_bottom->AddFrame(checkButtonDrawTime.back(), new TGLayoutHints(kLHintsLeft, 1,1,7,7));
+            hframe_button->AddFrame(checkButtonDrawTime.back(), new TGLayoutHints(kLHintsLeft, 1,1,7,7));
         }
 
     }
 
+
     {
+        nrow = 0;
         TGCompositeFrame *fTTu = fTap->AddTab("Set of shots");
+        
+        TGHorizontalFrame *hframe_button = new TGHorizontalFrame(fTTu, width, 40);
+
+        fTTu->AddFrame(hframe_button, new TGLayoutHints(kLHintsLeft|kLHintsTop,5,5,5,5));
+
+        TGButton *addButton = new TGTextButton(hframe_button, "Add");
+        addButton->Connect("Clicked()", CLASS_NAME, this, "AddShotRange()");
+        TGButton *removeButton = new TGTextButton(hframe_button, "Remove");
+        TGButton *removeAllButton = new TGTextButton(hframe_button, "RemoveAll");
+        hframe_button->AddFrame(addButton, new TGLayoutHints(kLHintsLeft|kLHintsTop,5,5,5,5));
+        hframe_button->AddFrame(removeButton, new TGLayoutHints(kLHintsLeft|kLHintsTop,5,5,5,5));
+        hframe_button->AddFrame(removeAllButton, new TGLayoutHints(kLHintsLeft|kLHintsTop,5,5,5,5));
+        
+        fCanvas = new TGCanvas(fTTu, 380, 220, kSunkenFrame|kDoubleBorder);
+        fTTu->AddFrame(fCanvas, new TGLayoutHints(kLHintsTop|kLHintsLeft,5,5,5,5));
+
+        fContainer = new TGVerticalFrame(fCanvas->GetViewPort(), 360, 10, kVerticalFrame);
+        fCanvas->SetContainer(fContainer);
+
+        AddShotRange();
     }
 
     {
@@ -1329,6 +1351,26 @@ void ThomsonGUI::PrintInfo()
     if (isInfo)
         std::cout << "spectrometer: " << nSpectrometer << " time page: " << nTimePage << "\n" << "==================================================================================" << "\n\n"; 
 
+}
+
+void ThomsonGUI::AddShotRange()
+{
+    nrow++;
+
+    TGHorizontalFrame *hframe = new TGHorizontalFrame(fContainer, 360, 40);
+
+    TGNumberEntry *start = new TGNumberEntry(fContainer, 0, 9, -1, TGNumberFormat::kNESInteger, TGNumberFormat::kNEANonNegative, TGNumberFormat::kNELNoLimits);
+    TGNumberEntry *end = new TGNumberEntry(fContainer, 0, 9, -1, TGNumberFormat::kNESInteger, TGNumberFormat::kNEANonNegative, TGNumberFormat::kNELNoLimits);
+    
+    hframe->AddFrame(start, new TGLayoutHints(kLHintsLeft,5,5,5,5));
+    hframe->AddFrame(end, new TGLayoutHints(kLHintsLeft,5,5,5,5));
+
+    fContainer->AddFrame(hframe, new TGLayoutHints(kLHintsTop,5,5,5,5));
+
+    fContainer->MapSubwindows();
+    fContainer->Layout();
+    fContainer->Resize(fContainer->GetDefaultWidth(), 35);
+    fCanvas->Layout();
 }
 
 void ThomsonGUI::run()
