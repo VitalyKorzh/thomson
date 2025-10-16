@@ -674,14 +674,15 @@ ThomsonGUI::ThomsonGUI(const TGWindow *p, UInt_t width, UInt_t height, TApplicat
         addButton->Connect("Clicked()", CLASS_NAME, this, "AddShotRange()");
         TGButton *removeButton = new TGTextButton(hframe_button, "Remove");
         TGButton *removeAllButton = new TGTextButton(hframe_button, "RemoveAll");
+        removeAllButton->Connect("Clicked()", CLASS_NAME, this, "RemoveAll()");
         hframe_button->AddFrame(addButton, new TGLayoutHints(kLHintsLeft|kLHintsTop,5,5,5,5));
         hframe_button->AddFrame(removeButton, new TGLayoutHints(kLHintsLeft|kLHintsTop,5,5,5,5));
         hframe_button->AddFrame(removeAllButton, new TGLayoutHints(kLHintsLeft|kLHintsTop,5,5,5,5));
         
-        fCanvas = new TGCanvas(fTTu, 380, 220, kSunkenFrame|kDoubleBorder);
+        fCanvas = new TGCanvas(fTTu, 270, 220, kSunkenFrame|kDoubleBorder);
         fTTu->AddFrame(fCanvas, new TGLayoutHints(kLHintsTop|kLHintsLeft,5,5,5,5));
 
-        fContainer = new TGVerticalFrame(fCanvas->GetViewPort(), 360, 10, kVerticalFrame);
+        fContainer = new TGVerticalFrame(fCanvas->GetViewPort(), 250, 5000, kVerticalFrame);
         fCanvas->SetContainer(fContainer);
 
         AddShotRange();
@@ -1356,21 +1357,50 @@ void ThomsonGUI::PrintInfo()
 void ThomsonGUI::AddShotRange()
 {
     nrow++;
+ 
+    TGHorizontalFrame *hframe = new TGHorizontalFrame(fContainer, 250, 40);
 
-    TGHorizontalFrame *hframe = new TGHorizontalFrame(fContainer, 360, 40);
-
-    TGNumberEntry *start = new TGNumberEntry(fContainer, 0, 9, -1, TGNumberFormat::kNESInteger, TGNumberFormat::kNEANonNegative, TGNumberFormat::kNELNoLimits);
-    TGNumberEntry *end = new TGNumberEntry(fContainer, 0, 9, -1, TGNumberFormat::kNESInteger, TGNumberFormat::kNEANonNegative, TGNumberFormat::kNELNoLimits);
+    TGLabel *text0 = new TGLabel(hframe, "from");
+    TGNumberEntry *start = new TGNumberEntry(hframe, nrow, 9, -1, TGNumberFormat::kNESInteger, TGNumberFormat::kNEANonNegative, TGNumberFormat::kNELNoLimits);
+    TGLabel *text1 = new TGLabel(hframe, "to");
+    TGNumberEntry *end = new TGNumberEntry(hframe, 0, 9, -1, TGNumberFormat::kNESInteger, TGNumberFormat::kNEANonNegative, TGNumberFormat::kNELNoLimits);
     
-    hframe->AddFrame(start, new TGLayoutHints(kLHintsLeft,5,5,5,5));
-    hframe->AddFrame(end, new TGLayoutHints(kLHintsLeft,5,5,5,5));
+    hframe->AddFrame(text0, new TGLayoutHints(kLHintsLeft,2,2,7,7));
+    hframe->AddFrame(start, new TGLayoutHints(kLHintsLeft,5,5,3,3));
+    hframe->AddFrame(text1, new TGLayoutHints(kLHintsLeft,2,2,7,7));
+    hframe->AddFrame(end, new TGLayoutHints(kLHintsLeft,5,5,3,3));
 
-    fContainer->AddFrame(hframe, new TGLayoutHints(kLHintsTop,5,5,5,5));
+    fContainer->AddFrame(hframe, new TGLayoutHints(kLHintsTop,5,5,1,1));
 
     fContainer->MapSubwindows();
     fContainer->Layout();
-    fContainer->Resize(fContainer->GetDefaultWidth(), 35);
+    fCanvas->MapSubwindows();
     fCanvas->Layout();
+
+    fNumberEntryShotStart.Add(start);
+    fNumberEntryShotEnd.Add(end);
+    fHframe.Add(hframe);
+}
+
+void ThomsonGUI::RemoveAll()
+{
+    if (!fCanvas) return;
+    
+    if (!fContainer) return;
+
+    while (fHframe.GetSize() != 0)
+    {
+        TGFrame *frame = (TGFrame*) fHframe.First();
+        fContainer->RemoveFrame(frame);
+        fHframe.Remove(frame);
+        frame->Delete();
+        std::cout << fHframe.GetSize() << "\n";
+    }
+    fContainer->MapSubwindows();
+    fContainer->Layout();
+    fCanvas->MapSubwindows();
+    fCanvas->Layout();
+
 }
 
 void ThomsonGUI::run()
