@@ -78,6 +78,7 @@ public:
     const darray &getT() const { return t; }
     const darray &getUTintegrateSignal() const { return UTintegrate_full; }
     const darray &getSignalBox() const { return signal_box; }
+    const parray &getParameters() const { return paramtersArray; }
     uint getNChannels() const { return N_CHANNELS; }
     uint getTSize() const { return tSize; }
 };

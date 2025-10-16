@@ -224,7 +224,7 @@ TGraph *ThomsonDraw::createSignalBox(double t1, double t2, double U, uint color,
     return createGraph(N_SIZE, x, y, color, lineStyle, lineWidth);
 }
 
-void ThomsonDraw::thomson_draw(TMultiGraph *mg, const SignalProcessing &sp, uint nPoints, const int integrate, bool draw, bool drawSigBox, const std::vector<TString> &gTitle, const barray &work_mask, double scale)
+void ThomsonDraw::thomson_draw(TMultiGraph *mg, const SignalProcessing &sp, uint nPoints, const int integrate, bool draw, bool drawSigBox, const std::vector<TString> &gTitle, const barray &work_mask, double scale, bool drawTimePoints, int channel)
 {    
     uint color = 1;
 
@@ -234,7 +234,17 @@ void ThomsonDraw::thomson_draw(TMultiGraph *mg, const SignalProcessing &sp, uint
     const darray &UT = sp.getUTintegrateSignal();
     const darray &signal_box = sp.getSignalBox();
 
-    for (uint p = 0; p < nPoints; p++) 
+    uint p0 = 0;
+    uint p1 = nPoints;
+
+    if (channel >= 0)
+    {
+        p0 = channel;
+        p1 = channel+1;
+    }
+
+
+    for (uint p = p0; p < p1; p++) 
     {
         if (p < work_mask.size() && !work_mask[p])
             continue;
@@ -246,7 +256,7 @@ void ThomsonDraw::thomson_draw(TMultiGraph *mg, const SignalProcessing &sp, uint
             double U0 = signal_box[3*p];
             double t1 = signal_box[3*p+1];
             double t2 = signal_box[3*p+2];
-            mg->Add(createSignalBox(t1, t2, U0));
+            mg->Add(createSignalBox(t1, t2, U0), "L");
         }
 
         if (!integrate) {
@@ -255,26 +265,43 @@ void ThomsonDraw::thomson_draw(TMultiGraph *mg, const SignalProcessing &sp, uint
             for (uint i = 0; i < N_SIGNAL; i++)
                 g->SetPointY(i, scale*g->GetPointY(i));
 
-            mg->Add(g);
+            mg->Add(g, "L");
         }
         else if (integrate > 0) {
 
-            mg->Add(createGraph(N_SIGNAL, t.data()+p*N_SIGNAL, UT.data()+p*N_SIGNAL, color, 1, 2, title));
+            mg->Add(createGraph(N_SIGNAL, t.data()+p*N_SIGNAL, UT.data()+p*N_SIGNAL, color, 1, 2, title), "L");
 
-            if (sp.getWorkSignals()[p])
+            if (sp.getWorkSignals()[p] || channel >= 0)
             {
-                uint start = p*N_SIGNAL;
-                uint end = p*N_SIGNAL+N_SIGNAL-1;
+                {
+                    uint start = p*N_SIGNAL;
+                    uint end = p*N_SIGNAL+N_SIGNAL-1;
 
-                double x[] = {t[start], t[end]};
-                double y[] = {sp.getSignals()[p], sp.getSignals()[p]};
+                    double x[] = {t[start], t[end]};
+                    double y[] = {sp.getSignals()[p], sp.getSignals()[p]};
 
-                mg->Add(createGraph(2, x, y, color, 9));
+                    mg->Add(createGraph(2, x, y, color, 9), "L");
+                }
+                if (drawTimePoints)
+                {
+                    SignalProcessingParameters parameters = sp.getParameters()[p];
+                    if (parameters.signal_point_step != 0) {
+                        double x[] = {t[p*N_SIGNAL+parameters.signal_point_start], t[p*N_SIGNAL+parameters.signal_point_start+parameters.signal_point_step-1]}; 
+                        double y[] = {UT[p*N_SIGNAL+parameters.signal_point_start], UT[p*N_SIGNAL+parameters.signal_point_start+parameters.signal_point_step-1]};
+                        TGraph *g = createGraph(2, x, y, color, 0, 0);
+                        g->SetMarkerStyle(29);
+                        g->SetMarkerSize(2);
+                        g->SetMarkerColor(color);
+                        mg->Add(g, "P");
+                    }
+                }
+
+
             }
         }
         else {
-            mg->Add(createGraph(N_SIGNAL, t.data()+p*N_SIGNAL, U.data()+p*N_SIGNAL, color, 1, 2, title));
-            mg->Add(createGraph(N_SIGNAL, t.data()+p*N_SIGNAL, UT.data()+p*N_SIGNAL, color));
+            mg->Add(createGraph(N_SIGNAL, t.data()+p*N_SIGNAL, U.data()+p*N_SIGNAL, color, 1, 2, title), "L");
+            mg->Add(createGraph(N_SIGNAL, t.data()+p*N_SIGNAL, UT.data()+p*N_SIGNAL, color), "L");
         }
 
         Color(color);
@@ -283,11 +310,11 @@ void ThomsonDraw::thomson_draw(TMultiGraph *mg, const SignalProcessing &sp, uint
     if (draw) {
         mg->GetXaxis()->CenterTitle();
         mg->GetYaxis()->CenterTitle();
-        mg->Draw("AL");
+        mg->Draw("A");
     } 
 }
 
-void ThomsonDraw::thomson_signal_draw(TCanvas *c, TMultiGraph *mg, SignalProcessing *sp, int integrate, bool draw, bool drawLegend, bool drawSigBox, uint NChannels, const barray &work_mask, double scale, bool title) 
+void ThomsonDraw::thomson_signal_draw(TCanvas *c, TMultiGraph *mg, SignalProcessing *sp, int integrate, bool draw, bool drawLegend, bool drawSigBox, uint NChannels, const barray &work_mask, double scale, bool title, bool drawTimePoint, int channel) 
 {
     c->cd();
     mg->SetTitle(!integrate ? ";t, ns;U, V" : ";t, ns;Ut, V*ns");
@@ -299,7 +326,7 @@ void ThomsonDraw::thomson_signal_draw(TCanvas *c, TMultiGraph *mg, SignalProcess
             gTitle.push_back(TString::Format("ch%u", i+1));
     }
 
-    thomson_draw(mg, *sp, NChannels, integrate, draw, drawSigBox, gTitle, work_mask, scale);
+    thomson_draw(mg, *sp, NChannels, integrate, draw, drawSigBox, gTitle, work_mask, scale, drawTimePoint, channel);
     if (drawLegend)
         createLegend(mg);
 

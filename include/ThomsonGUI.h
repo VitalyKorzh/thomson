@@ -35,6 +35,7 @@ private:
                 *drawSignalsInChannels,
                 *drawIntegralInChannels,
                 *drawSignalsAndIntegralsInChannels,
+                *drawEnergySignals,
                 *drawTemepratureRDependes,
                 *drawConceterationRDependes,
                 *drawTemperatureRDependesAll,
@@ -50,7 +51,8 @@ private:
                     *infoTij,
                     *infoTe,
                     *infoNe,
-                    *infoCountSignal;
+                    *infoCountSignal,
+                    *infoLaserEnery;
 
 
     std::vector <TGCheckButton *> checkButtonDraw;
@@ -72,6 +74,8 @@ private:
 
     std::vector <SignalProcessing*> spArray;
     std::vector <ThomsonCounter *> counterArray;
+
+    darray energy;
 
     void setDrawEnable(int signal, int thomson);
 
@@ -112,6 +116,8 @@ private:
     std::vector <parray> readParametersToSignalProssecong(const std::string &file_name) const;
 
     void writeResultTableToFile(const char *file_name) const;
+
+    std::string readArchiveName(const char *file_name) const;
 
 public:
     ThomsonGUI(const TGWindow *p, UInt_t width, UInt_t height, TApplication *app);

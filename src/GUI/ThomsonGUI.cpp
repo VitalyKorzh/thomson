@@ -33,6 +33,9 @@ ClassImp(ThomsonGUI)
 #define CALIBRATION_NAME "thomson"
 #define CLASS_NAME "ThomsonGUI"
 
+#define NUMBER_ENERGY_SPECTROMETER 2
+#define NUMBER_ENERGY_CHANNEL 7
+
 // калибровка записана X THETA COEFF
 #define ID_X 0 
 #define ID_THETA 1
@@ -234,6 +237,14 @@ bool ThomsonGUI::processingSignalsData(const char *archive_name, int shot, const
             spArray.push_back(new SignalProcessing(t, U, N_CHANNELS, parametersArray[sp], work_mask[sp]));
         }
     }
+
+
+    if (successReadArchive)
+    {
+        for (uint i = 0; i < N_TIME_LIST; i++)
+            energy[i] = getSignalProcessing(i, NUMBER_ENERGY_SPECTROMETER)->getSignals()[NUMBER_ENERGY_CHANNEL];
+    }
+
     return successReadArchive;
 }
 
@@ -342,12 +353,14 @@ void ThomsonGUI::setDrawEnable(int signal, int thomson)
         infoTe->SetEnabled(thomson);
         infoNe->SetEnabled(thomson);
         infoCountSignal->SetEnabled(thomson);
+        infoLaserEnery->SetEnabled(thomson);
     }
     if (signal >= 0)
     {
         drawSignalsInChannels->SetEnabled(signal);
         drawIntegralInChannels->SetEnabled(signal);
         drawSignalsAndIntegralsInChannels->SetEnabled(signal);
+        drawEnergySignals->SetEnabled(signal);
 
         infoSignal->SetEnabled(signal);
         infoWorkChannels->SetEnabled(signal);
@@ -498,14 +511,14 @@ void ThomsonGUI::writeResultTableToFile(const char *file_name) const
         fout << std::scientific;
         fout.precision(10);
         fout << "X\tTe\tTeError\tne\tneError\n";
-        fout << "mm\teV\teV\tcm^-3\tcm^-3\n";
+        fout << "mm\teV\teV\t10^13 cm^-3\t10^13 cm^-3\n";
         fout << "Radius\tTe\tTe error\tne\t ne error\n";
         for (uint it = 0; it < N_TIME_LIST; it++)
         {
             for (uint sp = 0; sp < N_SPECTROMETERS; sp++)
             {
                 ThomsonCounter *counter = getThomsonCounter(it, sp);
-                fout << xPosition[sp] << "\t" << counter->getT() << "\t" << counter->getTError() << "\t" << counter->getN() << "\t" << counter->getNError() << "\n";
+                fout << xPosition[sp] << "\t" << counter->getT() << "\t" << counter->getTError() << "\t" << counter->getN()*calibrations[sp*N_SPECTROMETER_CALIBRATIONS+ID_N_COEFF]/energy[it] << "\t" << counter->getNError()*calibrations[sp*N_SPECTROMETER_CALIBRATIONS+ID_N_COEFF]/energy[it] << "\n";
             }
         }
 
@@ -514,8 +527,31 @@ void ThomsonGUI::writeResultTableToFile(const char *file_name) const
     fout.close();
 }
 
+std::string ThomsonGUI::readArchiveName(const char *file_name) const
+{
+    std::ifstream fin;
+    fin.open(file_name);
+    std::string archive_name = "";
+    if (fin.is_open())
+    {
+        std::string line;
+        std::getline(fin, line);
+        std::getline(fin, line);
+        std::getline(fin, line);
+
+        if (!fin.fail())
+        {
+            if (line != "")
+                archive_name = line;
+        }
+
+    }
+    fin.close();
+    return archive_name;
+}
+
 ThomsonGUI::ThomsonGUI(const TGWindow *p, UInt_t width, UInt_t height, TApplication *app) : TGMainFrame(p, width, height),
-                                                                                            app(app), fileType(-1), work_mask(N_SPECTROMETERS, barray(N_CHANNELS))
+                                                                                            app(app), fileType(-1), work_mask(N_SPECTROMETERS, barray(N_CHANNELS)), calibrations(N_SPECTROMETER_CALIBRATIONS*N_SPECTROMETERS, 0.), energy(N_TIME_LIST, 1.)
 {
     SetCleanup(kDeepCleanup);
 
@@ -555,6 +591,7 @@ ThomsonGUI::ThomsonGUI(const TGWindow *p, UInt_t width, UInt_t height, TApplicat
         checkButtonDraw.push_back(drawSignalsInChannels = new TGCheckButton(vframeDraw, "draw signals in channels"));
         checkButtonDraw.push_back(drawIntegralInChannels = new TGCheckButton(vframeDraw, "draw integral of signal in channels"));
         checkButtonDraw.push_back(drawSignalsAndIntegralsInChannels = new TGCheckButton(vframeDraw, "draw integral and signal in channels"));
+        checkButtonDraw.push_back(drawEnergySignals = new TGCheckButton(vframeDraw, "draw energy Laser signal"));
         checkButtonDraw.push_back(drawTemepratureRDependes = new TGCheckButton(vframeDraw, "draw Te(r)"));
         checkButtonDraw.push_back(drawConceterationRDependes = new TGCheckButton(vframeDraw, "draw ne(r)"));
         checkButtonDraw.push_back(drawTemperatureRDependesAll = new TGCheckButton(vframeDraw, "draw Te(r) all"));
@@ -575,6 +612,7 @@ ThomsonGUI::ThomsonGUI(const TGWindow *p, UInt_t width, UInt_t height, TApplicat
         checkButtonInfo.push_back(infoTe = new TGCheckButton(vframeInfo, "print Te"));
         checkButtonInfo.push_back(infoNe = new TGCheckButton(vframeInfo, "print ne"));
         checkButtonInfo.push_back(infoCountSignal = new TGCheckButton(vframeInfo, "print count signals"));
+        checkButtonInfo.push_back(infoLaserEnery = new TGCheckButton(vframeInfo, "print Laser enery"));
         
         
         for (uint i = 0; i < checkButtonInfo.size(); i++)
@@ -763,7 +801,8 @@ void ThomsonGUI::ReadMainFile()
 
 void ThomsonGUI::ReadCalibration()
 {
-    if (fileType != isROOT || archive_name == "")
+    std::string archive_name = readArchiveName(mainFileTextEntry->GetText());
+    if (archive_name == "" || getFileFormat(archive_name) != "root")
         return;
 
     int shot = calibrationShot->GetNumber();
@@ -786,7 +825,8 @@ void ThomsonGUI::ReadCalibration()
 
 void ThomsonGUI::WriteCalibration()
 {
-    if (fileType != isROOT || archive_name == "")
+    std::string archive_name = readArchiveName(mainFileTextEntry->GetText());
+    if (archive_name == "" || getFileFormat(archive_name) != "root")
         return;
 
     darray calibration(N_SPECTROMETERS*N_SPECTROMETER_CALIBRATIONS);
@@ -1042,9 +1082,19 @@ void ThomsonGUI::DrawGraphs()
         TString canvas_name = TString::Format("signal_integral_tp_%u_sp_%u", nTimePage, nSpectrometer);
         TCanvas *c = ThomsonDraw::createCanvas(canvas_name);
         TMultiGraph *mg = ThomsonDraw::createMultiGraph("mg_"+canvas_name, "");
-        ThomsonDraw::thomson_signal_draw(c, mg, getSignalProcessing(nTimePage, nSpectrometer), 0, false, true, false, N_WORK_CHANNELS, work_mask, 10., false);
+        ThomsonDraw::thomson_signal_draw(c, mg, getSignalProcessing(nTimePage, nSpectrometer), 0, false, false, false, N_WORK_CHANNELS, work_mask, 10., false);
         ThomsonDraw::thomson_signal_draw(c, mg, getSignalProcessing(nTimePage, nSpectrometer), 1, true, true, false, N_WORK_CHANNELS, work_mask);
+    }
+    if (checkButton(drawEnergySignals) && fileType == isROOT)
+    {
+        TString canvas_name = TString::Format("signal_laser_energy_tp_%u", nTimePage);
+        TCanvas *c = ThomsonDraw::createCanvas(canvas_name);
+        TMultiGraph *mg = ThomsonDraw::createMultiGraph("mg_"+canvas_name, "");
 
+        barray mask(N_CHANNELS, true);
+
+        ThomsonDraw::thomson_signal_draw(c, mg, getSignalProcessing(nTimePage, NUMBER_ENERGY_SPECTROMETER), 0, false, false, false, 8, mask, 10., false, false, NUMBER_ENERGY_CHANNEL); 
+        ThomsonDraw::thomson_signal_draw(c, mg, getSignalProcessing(nTimePage, NUMBER_ENERGY_SPECTROMETER), 1, true, false, false, 8, mask, 1., true, true, NUMBER_ENERGY_CHANNEL); 
     }
     if (checkButton(drawTemepratureRDependes) && fileType == isROOT)
     {
@@ -1077,11 +1127,11 @@ void ThomsonGUI::DrawGraphs()
 
         for (uint i = 0; i < N_SPECTROMETERS; i++) {
             xPosition[i] = calibrations[i*N_SPECTROMETER_CALIBRATIONS + ID_X];
-            ne[i] = getThomsonCounter(nTimePage, i)->getN()*calibrations[i*N_SPECTROMETER_CALIBRATIONS+ID_THETA];
-            neError[i] = getThomsonCounter(nTimePage, i)->getNError()*calibrations[i*N_SPECTROMETER_CALIBRATIONS+ID_N_COEFF];
+            ne[i] = getThomsonCounter(nTimePage, i)->getN()*calibrations[i*N_SPECTROMETER_CALIBRATIONS+ID_THETA]/energy[nTimePage];
+            neError[i] = getThomsonCounter(nTimePage, i)->getNError()*calibrations[i*N_SPECTROMETER_CALIBRATIONS+ID_N_COEFF]/energy[nTimePage];
         }
 
-        mg->SetTitle(";x, mm;n_{e}, cm^{-3}");
+        mg->SetTitle(";x, mm;n_{e}, 10^{13} cm^{-3}");
         ThomsonDraw::draw_result_from_r(c, mg, xPosition, ne, neError);
     }
     if (checkButton(drawTemperatureRDependesAll) && fileType == isROOT)
@@ -1127,7 +1177,7 @@ void ThomsonGUI::DrawGraphs()
         TString canvas_name = TString::Format("ne_from_r_all");
         TCanvas *c = ThomsonDraw::createCanvas(canvas_name);
         TMultiGraph *mg = ThomsonDraw::createMultiGraph("mg_"+canvas_name, "");
-        mg->SetTitle(";x, mm;T_{e}, eV");
+        mg->SetTitle(";x, mm;n_{e}, 10^{13} cm^{-3}");
 
         darray xPosition(N_SPECTROMETERS);
         darray ne(N_SPECTROMETERS);
@@ -1144,8 +1194,8 @@ void ThomsonGUI::DrawGraphs()
                 continue;
 
             for (uint i = 0; i < N_SPECTROMETERS; i++) {
-                ne[i] = getThomsonCounter(it, i)->getT();
-                neError[i] = getThomsonCounter(it, i)->getTError();
+                ne[i] = getThomsonCounter(it, i)->getN()*calibrations[i*N_SPECTROMETER_CALIBRATIONS+ID_N_COEFF]/energy[nTimePage];
+                neError[i] = getThomsonCounter(it, i)->getNError()*calibrations[i*N_SPECTROMETER_CALIBRATIONS+ID_N_COEFF]/energy[nTimePage];
             }
 
             ThomsonDraw::draw_result_from_r(c, mg, xPosition, ne, neError, 21, 1.5, color, 1, 7, color, TString::Format("%u", it), false);
@@ -1254,6 +1304,12 @@ void ThomsonGUI::PrintInfo()
         std::cout << "count signals:\n";
         for (uint i = 0; i < N_WORK_CHANNELS; i++)
             std::cout  << "\t" << counter->getSignalResult()[i] << "\n";
+    }
+    if (checkButton(infoLaserEnery))
+    {
+        std::cout << "LASER energy:\n";
+        for (uint it = 0; it < N_TIME_LIST; it++)
+            std::cout << "\t" << energy[it] << "\n";
     }
 
     if (isInfo)
