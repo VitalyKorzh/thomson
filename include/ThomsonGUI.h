@@ -73,12 +73,15 @@ private:
     uint nrow;
     TGCanvas *fCanvas;
     TGVerticalFrame *fContainer;
-    //TList fNumberEntryShotStart;
-    //TList fNumberEntryShotEnd;
     std::list <std::pair<TGNumberEntry*, TGNumberEntry*>> fNumberShot;
 
+    TGNumberEntry *spectrometrNumberSetofShots;
+    TGNumberEntry *timePageNumberSetofShots;
+    std::vector <TGCheckButton*> checkButtonDrawTimeSetOfShots;
+
+    uint N_SHOTS;
+
     int fileType;
-    int shot;
     std::string archive_name;
 
     std::vector<barray> work_mask;
@@ -95,14 +98,14 @@ private:
 
     TString getSignalName(uint nSpectrometer, uint nChannel) const;
     int& getShot(int &shot) const;
-    bool readDataFromArchive(const char* archive_name, const char* kust, const char *signal_name, int shot, darray &t, darray &U, int timePoint=-1, int timeList=11, const uint N_INFORM=2000, const uint N_UNUSEFULL=48) const;
+    void readDataFromArchive(const char* archive_name, const char* kust, const char *signal_name, int shot, darray &t, darray &U, int timePoint=-1, int timeList=11, const uint N_INFORM=2000, const uint N_UNUSEFULL=48) const;
     darray readCalibration(const char *archive_name, const char *calibration_name, int shot) const;
     bool isCalibrationNew(TFile *f, const char *calibration_name) const;
     bool writeCalibration(const char *archive_name, const char *calibration_name, darray &calibration) const;
-    bool processingSignalsData(const char *archive_name, int shot, const std::vector<parray> &parametersArray, bool clearArray=true);
+    void processingSignalsData(const char *archive_name, int shot, const std::vector<parray> &parametersArray, bool clearArray=true);
     bool countThomson(const std::string &srf_file_folder, const std::string &convolution_file_folder, int shot, bool clearArray=true);
-    SignalProcessing * getSignalProcessing(uint it, uint sp) const;
-    ThomsonCounter * getThomsonCounter(uint it, uint sp) const;
+    SignalProcessing * getSignalProcessing(uint it, uint sp, uint nShot=0) const;
+    ThomsonCounter * getThomsonCounter(uint it, uint sp, uint nShot=0) const;
 
     void clearSpArray();
     void clearCounterArray();
@@ -146,6 +149,7 @@ public:
     void AddShotRange();
     void Remove();
     void RemoveAll();
+    void CountSeveralShot();
 
     void run();
     ~ThomsonGUI();
