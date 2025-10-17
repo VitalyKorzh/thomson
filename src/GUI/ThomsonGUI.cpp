@@ -1432,8 +1432,9 @@ void ThomsonGUI::Remove()
 
 void ThomsonGUI::RemoveAll()
 {
-    for (uint i = 0; i < nrow; i++)
+    while (nrow > 1)
         Remove();
+    
 }
 
 void ThomsonGUI::run()
