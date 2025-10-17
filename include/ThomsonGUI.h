@@ -73,9 +73,9 @@ private:
     uint nrow;
     TGCanvas *fCanvas;
     TGVerticalFrame *fContainer;
-    TList fNumberEntryShotStart;
-    TList fNumberEntryShotEnd;
-
+    //TList fNumberEntryShotStart;
+    //TList fNumberEntryShotEnd;
+    std::list <std::pair<TGNumberEntry*, TGNumberEntry*>> fNumberShot;
 
     int fileType;
     int shot;
@@ -130,6 +130,9 @@ private:
     void writeResultTableToFile(const char *file_name) const;
 
     std::string readArchiveName(const char *file_name) const;
+
+
+    uiarray createArrayShots();
 
 public:
     ThomsonGUI(const TGWindow *p, UInt_t width, UInt_t height, TApplication *app);

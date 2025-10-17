@@ -551,6 +551,39 @@ std::string ThomsonGUI::readArchiveName(const char *file_name) const
     return archive_name;
 }
 
+uiarray ThomsonGUI::createArrayShots()
+{
+    uiarray shotArray;
+    if (getFileFormat(archive_name) == "root")
+    {
+        OpenArchive(archive_name.c_str());
+        uint lastShot = GetLastShot();
+        CloseArchive();
+
+        for (auto &it : fNumberShot)
+        {
+            uint shot_start = it.first->GetNumber();
+            uint shot_end = it.second->GetNumber();
+
+            if (shot_start > lastShot) {
+                shot_start = lastShot;
+            }
+            if (shot_end > lastShot) {
+                shot_end = lastShot;
+            }
+
+            for (uint i = shot_start; i <= shot_end; i++)
+            {
+                if (shotArray.size() == 0 || shotArray.back() < i)
+                    shotArray.push_back(i);
+            }
+
+        }
+
+    }
+    return shotArray;
+}
+
 ThomsonGUI::ThomsonGUI(const TGWindow *p, UInt_t width, UInt_t height, TApplication *app) : TGMainFrame(p, width, height),
                                                                                             app(app), fileType(-1), work_mask(N_SPECTROMETERS, barray(N_CHANNELS)), calibrations(N_SPECTROMETER_CALIBRATIONS*N_SPECTROMETERS, 0.), energy(N_TIME_LIST, 1.)
 {
@@ -652,13 +685,15 @@ ThomsonGUI::ThomsonGUI(const TGWindow *p, UInt_t width, UInt_t height, TApplicat
         hframe_button->AddFrame(spectrometerNumber, new TGLayoutHints(kLHintsLeft, 5, 10, 5, 5));
 
 
-        for (uint i = 1; i < N_TIME_LIST; i++)
+        for (uint i = 0; i < N_TIME_LIST; i++)
         {
             checkButtonDrawTime.push_back(new TGCheckButton(hframe_button));
             checkButtonDrawTime.back()->SetState(kButtonDown);
-            checkButtonDrawTime.back()->SetToolTipText("time page draw");
+            checkButtonDrawTime.back()->SetToolTipText(TString::Format("time page %u draw", i));
             hframe_button->AddFrame(checkButtonDrawTime.back(), new TGLayoutHints(kLHintsLeft, 1,1,7,7));
         }
+        checkButtonDrawTime.front()->SetState(kButtonUp);
+        checkButtonDrawTime.front()->SetEnabled(false);
 
     }
 
@@ -1191,7 +1226,7 @@ void ThomsonGUI::DrawGraphs()
         uint color = 1;
         for (uint it = 1; it < N_TIME_LIST; it++)
         {
-            if (!checkButtonDrawTime[it-1]->IsDown())
+            if (!checkButtonDrawTime[it]->IsDown())
                 continue;
 
             for (uint i = 0; i < N_SPECTROMETERS; i++) {
@@ -1229,7 +1264,7 @@ void ThomsonGUI::DrawGraphs()
         uint color = 1;
         for (uint it = 1; it < N_TIME_LIST; it++)
         {
-            if (!checkButtonDrawTime[it-1]->IsDown())
+            if (!checkButtonDrawTime[it]->IsDown())
                 continue;
 
             for (uint i = 0; i < N_SPECTROMETERS; i++) {
@@ -1379,8 +1414,7 @@ void ThomsonGUI::AddShotRange()
     fCanvas->MapSubwindows();
     fCanvas->Layout();
 
-    fNumberEntryShotStart.Add(start);
-    fNumberEntryShotEnd.Add(end);
+    fNumberShot.push_back(std::pair<TGNumberEntry*, TGNumberEntry*> (start, end));
 
 }
 
@@ -1410,10 +1444,9 @@ void ThomsonGUI::Remove()
             TGHorizontalFrame *hframe = (TGHorizontalFrame*)lastElement->fFrame;
             TList *hframeChildren = hframe->GetList();
             
-            fNumberEntryShotStart.RemoveLast();
-            fNumberEntryShotEnd.RemoveLast();
+            fNumberShot.pop_back();
 
-            std::cout << fNumberEntryShotStart.GetSize() << " " << fNumberEntryShotEnd.GetSize() << "\n";
+            std::cout << fNumberShot.size() << "\n";
 
             while (hframeChildren->GetSize() > 0) {
                 TGFrameElement *childEl = (TGFrameElement*)hframeChildren->First();
