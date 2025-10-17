@@ -73,9 +73,9 @@ private:
     uint nrow;
     TGCanvas *fCanvas;
     TGVerticalFrame *fContainer;
-    TList fNumberEntryShotStart;
-    TList fNumberEntryShotEnd;
-    TList fHframe;
+    //TList fNumberEntryShotStart;
+    //TList fNumberEntryShotEnd;
+    //TList fHframe;
 
 
     int fileType;

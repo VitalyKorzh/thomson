@@ -11,6 +11,7 @@
 #include <TGTab.h>
 #include <TGText.h>
 #include <TGLabel.h>
+#include <TVirtualX.h>
 
 #include "thomsonCounter/SRF.h"
 #include "ThomsonDraw.h"
@@ -679,12 +680,13 @@ ThomsonGUI::ThomsonGUI(const TGWindow *p, UInt_t width, UInt_t height, TApplicat
         hframe_button->AddFrame(removeButton, new TGLayoutHints(kLHintsLeft|kLHintsTop,5,5,5,5));
         hframe_button->AddFrame(removeAllButton, new TGLayoutHints(kLHintsLeft|kLHintsTop,5,5,5,5));
         
-        fCanvas = new TGCanvas(fTTu, 270, 220, kSunkenFrame|kDoubleBorder);
+        fCanvas = new TGCanvas(fTTu, 260, 100, kSunkenFrame|kDoubleBorder);
         fTTu->AddFrame(fCanvas, new TGLayoutHints(kLHintsTop|kLHintsLeft,5,5,5,5));
 
         fContainer = new TGVerticalFrame(fCanvas->GetViewPort(), 250, 5000, kVerticalFrame);
         fCanvas->SetContainer(fContainer);
 
+        AddShotRange();
         AddShotRange();
     }
 
@@ -1377,30 +1379,52 @@ void ThomsonGUI::AddShotRange()
     fCanvas->MapSubwindows();
     fCanvas->Layout();
 
-    fNumberEntryShotStart.Add(start);
-    fNumberEntryShotEnd.Add(end);
-    fHframe.Add(hframe);
+
 }
 
 void ThomsonGUI::RemoveAll()
 {
-    if (!fCanvas) return;
+    if (!fContainer || nrow <= 1) return;
     
-    if (!fContainer) return;
-
-    while (fHframe.GetSize() != 0)
-    {
-        TGFrame *frame = (TGFrame*) fHframe.First();
-        fContainer->RemoveFrame(frame);
-        fHframe.Remove(frame);
-        frame->Delete();
-        std::cout << fHframe.GetSize() << "\n";
+    TList *childList = fContainer->GetList();
+    Int_t childCount = childList->GetSize();
+    
+    if (childCount <= 0) {
+        nrow = 0;
+        return;
     }
-    fContainer->MapSubwindows();
-    fContainer->Layout();
-    fCanvas->MapSubwindows();
-    fCanvas->Layout();
+    
+    // Находим последний дочерний фрейм (исключая кнопки управления если они есть)
+    TGFrameElement *lastElement = (TGFrameElement*)childList->Last();
+    
+    if (lastElement && lastElement->fFrame) {
+        // Проверяем что это TGHorizontalFrame (строка с диапазоном)
+        if (lastElement->fFrame->InheritsFrom("TGHorizontalFrame")) {
+            
+            // Удаляем фрейм из контейнера
+            fContainer->RemoveFrame(lastElement->fFrame);
+            
+            // // Удаляем все дочерние элементы этого фрейма
+            TGHorizontalFrame *hframe = (TGHorizontalFrame*)lastElement->fFrame;
+            TList *hframeChildren = hframe->GetList();
+            
 
+            while (hframeChildren->GetSize() > 0) {
+                TGFrameElement *childEl = (TGFrameElement*)hframeChildren->First();
+                if (childEl && childEl->fFrame) {
+                    hframe->RemoveFrame(childEl->fFrame);
+                    childEl->fFrame->DeleteWindow();
+                }
+            }
+            
+            nrow--;
+            // Обновляем layout
+            fContainer->MapSubwindows();
+            fContainer->Layout();
+            
+            fCanvas->Layout();
+        }
+    }
 }
 
 void ThomsonGUI::run()
