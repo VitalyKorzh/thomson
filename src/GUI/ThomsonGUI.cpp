@@ -1363,7 +1363,7 @@ void ThomsonGUI::AddShotRange()
     TGHorizontalFrame *hframe = new TGHorizontalFrame(fContainer, 250, 40);
 
     TGLabel *text0 = new TGLabel(hframe, "from");
-    TGNumberEntry *start = new TGNumberEntry(hframe, nrow, 9, -1, TGNumberFormat::kNESInteger, TGNumberFormat::kNEANonNegative, TGNumberFormat::kNELNoLimits);
+    TGNumberEntry *start = new TGNumberEntry(hframe, 0, 9, -1, TGNumberFormat::kNESInteger, TGNumberFormat::kNEANonNegative, TGNumberFormat::kNELNoLimits);
     TGLabel *text1 = new TGLabel(hframe, "to");
     TGNumberEntry *end = new TGNumberEntry(hframe, 0, 9, -1, TGNumberFormat::kNESInteger, TGNumberFormat::kNEANonNegative, TGNumberFormat::kNELNoLimits);
     
@@ -1379,6 +1379,8 @@ void ThomsonGUI::AddShotRange()
     fCanvas->MapSubwindows();
     fCanvas->Layout();
 
+    fNumberEntryShotStart.Add(start);
+    fNumberEntryShotEnd.Add(end);
 
 }
 
@@ -1408,6 +1410,10 @@ void ThomsonGUI::Remove()
             TGHorizontalFrame *hframe = (TGHorizontalFrame*)lastElement->fFrame;
             TList *hframeChildren = hframe->GetList();
             
+            fNumberEntryShotStart.RemoveLast();
+            fNumberEntryShotEnd.RemoveLast();
+
+            std::cout << fNumberEntryShotStart.GetSize() << " " << fNumberEntryShotEnd.GetSize() << "\n";
 
             while (hframeChildren->GetSize() > 0) {
                 TGFrameElement *childEl = (TGFrameElement*)hframeChildren->First();

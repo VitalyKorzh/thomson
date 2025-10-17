@@ -73,8 +73,8 @@ private:
     uint nrow;
     TGCanvas *fCanvas;
     TGVerticalFrame *fContainer;
-    //TList fNumberEntryShotStart;
-    //TList fNumberEntryShotEnd;
+    TList fNumberEntryShotStart;
+    TList fNumberEntryShotEnd;
 
 
     int fileType;
