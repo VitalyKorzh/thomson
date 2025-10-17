@@ -742,9 +742,23 @@ ThomsonGUI::ThomsonGUI(const TGWindow *p, UInt_t width, UInt_t height, TApplicat
 
         AddShotRange();
 
+        TGHorizontalFrame *hfameDraw = new TGHorizontalFrame(fTTu, width, 40);
+        fTTu->AddFrame(hfameDraw, new TGLayoutHints(kLHintsLeft,5,5,5,5));
+
+        TGGroupFrame *vframeDraw = new TGGroupFrame(hfameDraw, "draw", kVerticalFrame);
+        hfameDraw->AddFrame(vframeDraw, new TGLayoutHints(kLHintsLeft,5,5,5,5));
+
+        checkButtonSetofShots.push_back(drawSignalStatisticSetofShots = new TGCheckButton(vframeDraw, "draw signal statistics"));
+
+        for (uint i = 0; i < checkButtonSetofShots.size(); i++)
+        {
+            vframeDraw->AddFrame(checkButtonSetofShots[i], new TGLayoutHints(kLHintsLeft, 1, 1, 2, 2));
+        }
+
         TGHorizontalFrame *hframeBottom = new TGHorizontalFrame(fTTu, width, 40);
         fTTu->AddFrame(hframeBottom, new TGLayoutHints(kLHintsBottom|kLHintsExpandX,5,5,5,5));
         TGButton *drawButton = new TGTextButton(hframeBottom, "Draw");
+        drawButton->Connect("Clicked()", CLASS_NAME, this, "DrawSetOfShots()");
         hframeBottom->AddFrame(drawButton, new TGLayoutHints(kLHintsLeft, 5,5,5,10));
 
         timePageNumberSetofShots = new TGNumberEntry(hframeBottom, 1, 4, -1, TGNumberFormat::kNESInteger,
@@ -752,12 +766,18 @@ ThomsonGUI::ThomsonGUI(const TGWindow *p, UInt_t width, UInt_t height, TApplicat
         spectrometrNumberSetofShots = new TGNumberEntry(hframeBottom, 0, 4, -1, TGNumberFormat::kNESInteger,
                                             TGNumberFormat::kNEANonNegative, TGNumberEntry::kNELLimitMinMax, 0, N_SPECTROMETERS-1);
 
+        channelNumberSetofShots = new TGNumberEntry(hframeBottom, 0, 4, -1, TGNumberFormat::kNESInteger,
+                                            TGNumberFormat::kNEANonNegative, TGNumberEntry::kNELLimitMinMax, 0, N_CHANNELS-1);
+
         drawButton->SetToolTipText("draw selected graphs");
         timePageNumberSetofShots->GetNumberEntry()->SetToolTipText("time page number");
         spectrometrNumberSetofShots->GetNumberEntry()->SetToolTipText("spectrometer number");
+        channelNumberSetofShots->GetNumberEntry()->SetToolTipText("channel number");
+
 
         hframeBottom->AddFrame(timePageNumberSetofShots, new TGLayoutHints(kLHintsLeft, 5, 5, 5, 5));
-        hframeBottom->AddFrame(spectrometrNumberSetofShots, new TGLayoutHints(kLHintsLeft, 5, 10, 5, 5));
+        hframeBottom->AddFrame(spectrometrNumberSetofShots, new TGLayoutHints(kLHintsLeft, 5, 5, 5, 5));
+        hframeBottom->AddFrame(channelNumberSetofShots, new TGLayoutHints(kLHintsLeft, 5, 10, 5, 5));
 
         checkButtonDrawTimeSetOfShots.reserve(N_TIME_LIST);
         for (uint i = 0; i < N_TIME_LIST; i++)
@@ -1579,6 +1599,36 @@ void ThomsonGUI::CountSeveralShot()
 
     }
 
+}
+
+void ThomsonGUI::DrawSetOfShots()
+{
+    if (fileType != isSetofShots)
+        return;
+
+
+    uint nSpectrometer = spectrometrNumberSetofShots->GetNumber();
+    uint nTimePage = timePageNumberSetofShots->GetNumber();
+    uint nChannel = channelNumberSetofShots->GetNumber();
+
+    if (checkButton(drawSignalStatisticSetofShots))
+    {
+        darray signal;
+        signal.reserve(N_TIME_LIST*N_SHOTS);
+        for (uint in = 0; in < N_SHOTS; in++)
+        {
+            for (uint it = 0; it < N_TIME_LIST; it++)
+            {
+                if (checkButtonDrawTimeSetOfShots[it]->IsDown())
+                    signal.push_back(getSignalProcessing(it, nSpectrometer, in)->getSignals()[nChannel]);
+            }
+        }
+
+
+        
+
+    }
+    
 }
 
 void ThomsonGUI::run()

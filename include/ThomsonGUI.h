@@ -59,6 +59,9 @@ private:
                     *infoLaserEnery;
 
 
+    TGCheckButton *drawSignalStatisticSetofShots;
+    std::vector <TGCheckButton *> checkButtonSetofShots;
+
     std::vector <TGCheckButton *> checkButtonDraw;
     std::vector <TGCheckButton *> checkButtonInfo;
     std::vector <TGCheckButton *> checkButtonDrawTime;
@@ -77,6 +80,7 @@ private:
 
     TGNumberEntry *spectrometrNumberSetofShots;
     TGNumberEntry *timePageNumberSetofShots;
+    TGNumberEntry *channelNumberSetofShots;
     std::vector <TGCheckButton*> checkButtonDrawTimeSetOfShots;
 
     uint N_SHOTS;
@@ -150,6 +154,7 @@ public:
     void Remove();
     void RemoveAll();
     void CountSeveralShot();
+    void DrawSetOfShots();
 
     void run();
     ~ThomsonGUI();
