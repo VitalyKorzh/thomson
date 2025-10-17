@@ -75,7 +75,6 @@ private:
     TGVerticalFrame *fContainer;
     //TList fNumberEntryShotStart;
     //TList fNumberEntryShotEnd;
-    //TList fHframe;
 
 
     int fileType;
@@ -142,6 +141,7 @@ public:
     void DrawGraphs();
     void PrintInfo();
     void AddShotRange();
+    void Remove();
     void RemoveAll();
 
     void run();

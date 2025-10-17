@@ -674,6 +674,7 @@ ThomsonGUI::ThomsonGUI(const TGWindow *p, UInt_t width, UInt_t height, TApplicat
         TGButton *addButton = new TGTextButton(hframe_button, "Add");
         addButton->Connect("Clicked()", CLASS_NAME, this, "AddShotRange()");
         TGButton *removeButton = new TGTextButton(hframe_button, "Remove");
+        removeButton->Connect("Clicked()", CLASS_NAME, this, "Remove()");
         TGButton *removeAllButton = new TGTextButton(hframe_button, "RemoveAll");
         removeAllButton->Connect("Clicked()", CLASS_NAME, this, "RemoveAll()");
         hframe_button->AddFrame(addButton, new TGLayoutHints(kLHintsLeft|kLHintsTop,5,5,5,5));
@@ -686,7 +687,6 @@ ThomsonGUI::ThomsonGUI(const TGWindow *p, UInt_t width, UInt_t height, TApplicat
         fContainer = new TGVerticalFrame(fCanvas->GetViewPort(), 250, 5000, kVerticalFrame);
         fCanvas->SetContainer(fContainer);
 
-        AddShotRange();
         AddShotRange();
     }
 
@@ -1382,7 +1382,7 @@ void ThomsonGUI::AddShotRange()
 
 }
 
-void ThomsonGUI::RemoveAll()
+void ThomsonGUI::Remove()
 {
     if (!fContainer || nrow <= 1) return;
     
@@ -1413,10 +1413,13 @@ void ThomsonGUI::RemoveAll()
                 TGFrameElement *childEl = (TGFrameElement*)hframeChildren->First();
                 if (childEl && childEl->fFrame) {
                     hframe->RemoveFrame(childEl->fFrame);
-                    childEl->fFrame->DeleteWindow();
+                    childEl->fFrame->UnmapWindow();
+                    childEl->fFrame->Delete();
                 }
             }
             
+            hframe->Delete();
+
             nrow--;
             // Обновляем layout
             fContainer->MapSubwindows();
@@ -1425,6 +1428,12 @@ void ThomsonGUI::RemoveAll()
             fCanvas->Layout();
         }
     }
+}
+
+void ThomsonGUI::RemoveAll()
+{
+    for (uint i = 0; i < nrow; i++)
+        Remove();
 }
 
 void ThomsonGUI::run()
