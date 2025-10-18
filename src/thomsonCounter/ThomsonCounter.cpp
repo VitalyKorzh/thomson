@@ -383,8 +383,42 @@ bool ThomsonCounter::countConcetration()
     darray SResult = countSArray(N_LAMBDA, lMin, dl, countA(Te), 1., theta, lambda_reference);
     darray SResultdT = countSArray(N_LAMBDA, lMin, dl, countA(Te+dT), 1., theta, lambda_reference);
 
-    double max_signal = 0;
-    uint ch = 0;
+    //double max_signal = 0;
+
+    double W = 0.;
+    neResult = 0;
+
+    for (uint i = 0; i < N_CHANNELS; i++)
+    {
+        if (channel_work[i])
+        {
+            double Qi = convolution(getSRFch(i), SResult, lMin, lMax);
+            double Qi_dT = convolution(getSRFch(i), SResultdT, lMin, lMax);
+
+            double ai = signal[i];
+            double dai = signal_error[i];
+
+            double ne_i = ai / Qi;
+
+            double dQi = TeError * (Qi-Qi_dT)/dT;
+            
+            double covFTeAi = 0.; // нужно учесть корреляцию
+
+            double ne_i_error = ne_i * sqrt(dai*dai/(ai*ai) + dQi*dQi/(Qi*Qi) - 2. * covFTeAi/ai/Qi);
+
+            double wi = 1. / (ne_i_error*ne_i_error);
+
+            W += wi;
+            neResult += wi*ne_i;
+
+        }
+    }
+
+    neResult /= W; //получаем оценку плотности
+
+    ne_error = sqrt(1./W); //пока не учитваю корреляцию
+
+    /*uint ch = 0;
     for (uint i = 0; i < N_CHANNELS; i++)
     {
         if (channel_work[i] && signal[i] > max_signal) {
@@ -406,7 +440,7 @@ bool ThomsonCounter::countConcetration()
     double covFTeAi = 0.;
 
     ne_error = neResult * sqrt(dai*dai/(ai*ai) + dF*dF/(F*F) - 2. * covFTeAi/ai/F);
-    chToNeCount = ch;
+    chToNeCount = ch;*/
     return true;
 }
 
