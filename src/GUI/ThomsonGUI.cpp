@@ -2,6 +2,7 @@
 #include <iostream>
 #include <fstream>
 #include <random>
+#include <algorithm>
 
 #include <dasarchive/service.h>
 #include <dasarchive/TSignal.h>
@@ -231,7 +232,7 @@ void ThomsonGUI::processingSignalsData(const char *archive_name, int shot, const
                 readDataFromArchive(archive_name, KUST_NAME, signal_name, shot, t, U, it, 0, N_TIME_SIZE*2, UNUSEFULL);
                 if (T_SIZE_OLD == t.size())
                 {
-                    std::cout << "sp " << sp << " tp " << it << " заполнена нулями\n";
+                    std::cout << "shot " << shot << " sp " << sp << " tp " << it << " заполнена нулями\n";
                     for (uint i = 0; i < N_TIME_SIZE; i++)
                     {
                         t.push_back(0.);
@@ -787,6 +788,26 @@ ThomsonGUI::ThomsonGUI(const TGWindow *p, UInt_t width, UInt_t height, TApplicat
             checkButtonDrawTimeSetOfShots.back()->SetToolTipText(TString::Format("time page %u draw", i));
             hframeBottom->AddFrame(checkButtonDrawTimeSetOfShots.back(), new TGLayoutHints(kLHintsLeft, 1,1,7,7));
         }
+
+        TGHorizontalFrame *hframeParametersHist = new TGHorizontalFrame(fTTu, width, 40);
+        fTTu->AddFrame(hframeParametersHist, new TGLayoutHints(kLHintsBottom|kLHintsLeft,5,5,5,5));
+        nBinsEntry = new TGNumberEntry(hframeParametersHist, 20, 4, -1, TGNumberFormat::kNESInteger,
+                                            TGNumberFormat::kNEAPositive, TGNumberFormat::kNELLimitMin, 2);
+        minSignalEntry = new TGNumberEntryField(hframeParametersHist, -1, 0);
+        minSignalEntry->SetDefaultSize(60, 20);
+        maxSignalEntry = new TGNumberEntryField(hframeParametersHist, -1, 0);
+        maxSignalEntry->SetDefaultSize(60, 20);
+
+        TGLabel *text1 = new TGLabel(hframeParametersHist, "nbins");
+        TGLabel *text2 = new TGLabel(hframeParametersHist, "min");
+        TGLabel *text3 = new TGLabel(hframeParametersHist, "max");
+
+        hframeParametersHist->AddFrame(text1, new TGLayoutHints(kLHintsLeft,5,5,10,10));  
+        hframeParametersHist->AddFrame(nBinsEntry, new TGLayoutHints(kLHintsLeft,5,5,5,5));
+        hframeParametersHist->AddFrame(text2, new TGLayoutHints(kLHintsLeft,5,5,10,10));  
+        hframeParametersHist->AddFrame(minSignalEntry, new TGLayoutHints(kLHintsLeft,5,5,5,5));
+        hframeParametersHist->AddFrame(text3, new TGLayoutHints(kLHintsLeft,5,5,10,10));  
+        hframeParametersHist->AddFrame(maxSignalEntry, new TGLayoutHints(kLHintsLeft,5,5,5,5));
 
     }
 
@@ -1608,7 +1629,7 @@ void ThomsonGUI::DrawSetOfShots()
 
 
     uint nSpectrometer = spectrometrNumberSetofShots->GetNumber();
-    uint nTimePage = timePageNumberSetofShots->GetNumber();
+    //uint nTimePage = timePageNumberSetofShots->GetNumber();
     uint nChannel = channelNumberSetofShots->GetNumber();
 
     if (checkButton(drawSignalStatisticSetofShots))
@@ -1624,7 +1645,24 @@ void ThomsonGUI::DrawSetOfShots()
             }
         }
 
+        double min = minSignalEntry->GetNumber();
+        double max = maxSignalEntry->GetNumber(); 
 
+        if (signal.size() > 0 && max >= min)
+        {
+            uint nBins = nBinsEntry->GetNumber();
+
+            if (min == max) {
+                min = *std::min_element(signal.begin(), signal.end())*1.25-0.25;
+                max = *std::max_element(signal.begin(), signal.end())*1.25+0.25;
+            }
+
+            TString canvas_name = TString::Format("signal_statistics_sp_%u_ch_%u", nSpectrometer, nChannel);
+            TCanvas *c = ThomsonDraw::createCanvas(canvas_name);
+            THStack *hs=  ThomsonDraw::createHStack("hs_"+canvas_name, "");
+
+            ThomsonDraw::draw_signal_statistics(c, hs, signal, min, max, nBins, true);
+        }
         
 
     }

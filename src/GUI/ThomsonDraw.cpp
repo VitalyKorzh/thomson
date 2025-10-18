@@ -224,6 +224,21 @@ TGraph *ThomsonDraw::createSignalBox(double t1, double t2, double U, uint color,
     return createGraph(N_SIZE, x, y, color, lineStyle, lineWidth);
 }
 
+TH1 *ThomsonDraw::createHistStatistics(const darray &signal, double min, double max, uint nbins, const uint color, const uint lineStyle, const uint lineWidth, const char *title)
+{
+    TH1 *h = new TH1D("", title, nbins, min, max);
+    h->SetLineColor(color);
+    h->SetLineWidth(lineWidth);
+    h->SetLineStyle(lineStyle);
+    h->SetBit(kCanDelete);
+
+
+    for (uint i = 0; i < signal.size(); i++)
+        h->Fill(signal[i]);
+
+    return h;
+}
+
 void ThomsonDraw::thomson_draw(TMultiGraph *mg, const SignalProcessing &sp, uint nPoints, const int integrate, bool draw, bool drawSigBox, const std::vector<TString> &gTitle, const barray &work_mask, double scale, bool drawTimePoints, int channel)
 {    
     uint color = 1;
@@ -381,4 +396,19 @@ void ThomsonDraw::draw_comapre_signals(TCanvas *c, THStack *hs, uint NChannel, c
     {
         hs->Draw("nostack HIST E1");
     }
+}
+
+void ThomsonDraw::draw_signal_statistics(TCanvas *c, THStack *hs, const darray &signal, double min, double max, uint nbins, bool draw)
+{
+    c->cd();
+
+    hs->SetTitle(";Vt, V*ns;counts");
+
+    hs->Add(createHistStatistics(signal, min, max, nbins, 1, 1, 2, ""));
+
+    if (draw)
+    {
+        hs->Draw("nostack");
+    }
+
 }

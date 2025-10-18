@@ -78,6 +78,10 @@ private:
     TGVerticalFrame *fContainer;
     std::list <std::pair<TGNumberEntry*, TGNumberEntry*>> fNumberShot;
 
+    TGNumberEntry *nBinsEntry;
+    TGNumberEntryField *minSignalEntry;
+    TGNumberEntryField *maxSignalEntry;
+
     TGNumberEntry *spectrometrNumberSetofShots;
     TGNumberEntry *timePageNumberSetofShots;
     TGNumberEntry *channelNumberSetofShots;
