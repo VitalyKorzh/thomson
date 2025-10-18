@@ -792,7 +792,7 @@ ThomsonGUI::ThomsonGUI(const TGWindow *p, UInt_t width, UInt_t height, TApplicat
         TGHorizontalFrame *hframeParametersHist = new TGHorizontalFrame(fTTu, width, 40);
         fTTu->AddFrame(hframeParametersHist, new TGLayoutHints(kLHintsBottom|kLHintsLeft,5,5,5,5));
         nBinsEntry = new TGNumberEntry(hframeParametersHist, 20, 4, -1, TGNumberFormat::kNESInteger,
-                                            TGNumberFormat::kNEAPositive, TGNumberFormat::kNELLimitMin, 2);
+                                            TGNumberFormat::kNEAPositive, TGNumberFormat::kNELLimitMin, 1);
         minSignalEntry = new TGNumberEntryField(hframeParametersHist, -1, 0);
         minSignalEntry->SetDefaultSize(60, 20);
         maxSignalEntry = new TGNumberEntryField(hframeParametersHist, -1, 0);
