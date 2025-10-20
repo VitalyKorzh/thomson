@@ -12,14 +12,13 @@
 #include <TGTab.h>
 #include <TGText.h>
 #include <TGLabel.h>
-#include <TVirtualX.h>
 
 #include "thomsonCounter/SRF.h"
 #include "ThomsonDraw.h"
 
 ClassImp(ThomsonGUI)
 
-#define ERROR_COEFF 0.1 // ошибка в канале ERROR_COEFF*sqrt(signal)
+#define ERROR_COEFF 0.22 // ошибка в канале ERROR_COEFF*sqrt(signal)
 
 #define N_SPECTROMETERS 6
 #define N_CHANNELS 8
@@ -251,6 +250,16 @@ void ThomsonGUI::processingSignalsData(const char *archive_name, int shot, const
 
 bool ThomsonGUI::countThomson(const std::string &srf_file_folder, const std::string &convolution_file_folder, int shot, bool clearArray)
 {
+
+    const std::vector<darray> sigma0 = {
+        {8.11e-2, 9.42e-2, 6.6e-2, 7.68e-2, 1.67e-1, 2,2,2},
+        {7.42e-2, 1.1e-1, 1.01e-1, 1.94e-1, 1.64e-1, 2,2,2},
+        {8.47e-2, 9.48e-2, 8.65e-2, 8.43e-2, 1.93e-1, 2,2,2},
+        {1, 7.72e-2, 7.59e-2, 1.07e-1, 1.32e-1, 2,2,2},
+        {1.47e-1, 1.03e-1, 8.52e-2, 1.15e-1, 2.31e-1, 2,2,2},
+        {4.52e-2, 7.81e-2, 1.24e-1, 7.64e-2, 1, 2,2,2}
+    };
+
     bool thomsonSuccess = true;
     if (clearArray) clearCounterArray();
     counterArray.reserve(counterArray.size()+N_SPECTROMETERS*N_TIME_LIST);
@@ -282,7 +291,7 @@ bool ThomsonGUI::countThomson(const std::string &srf_file_folder, const std::str
             darray sigma(N_CHANNELS);
 
             for (uint i = 0; i < N_CHANNELS; i++)
-                sigma[i] = ERROR_COEFF*sqrt(getSignalProcessing(it, sp)->getSignals()[i]);
+                sigma[i] = sqrt(ERROR_COEFF*ERROR_COEFF*getSignalProcessing(it, sp)->getSignals()[i] + sigma0[sp][i]*sigma0[sp][i]);
 
             ThomsonCounter * counter = new ThomsonCounter(srf_file_name, convolution_file_name, *getSignalProcessing(it, sp), sigma, calibrations[sp*N_SPECTROMETER_CALIBRATIONS+ID_THETA], LAMBDA_REFERENCE);
             if (!counter->isWork()) {
@@ -570,6 +579,11 @@ uiarray ThomsonGUI::createArrayShots()
                 it.first->SetNumber(shot_start);
             }
 
+            if (shot_end == 0)
+            {
+                shot_end = shot_start;
+            }
+
             if (shot_end > lastShot) {
                 shot_end = lastShot;
                 it.second->SetNumber(shot_end);
@@ -613,7 +627,7 @@ ThomsonGUI::ThomsonGUI(const TGWindow *p, UInt_t width, UInt_t height, TApplicat
         mainFileTextEntry = new TGTextEntry(hframe);
         TGButton *readMainFileButton = new TGTextButton(hframe, "Read");
 
-        readMainFileButton->SetToolTipText("read file until draw graphs");
+        readMainFileButton->SetToolTipText("read file until draw graphs for diagnostic");
 
         readMainFileButton->Connect("Clicked()", CLASS_NAME, this, "ReadMainFile()");
         openMainFileDialogButton->Connect("Clicked()", CLASS_NAME, this, "OpenMainFileDialog()");
@@ -700,7 +714,6 @@ ThomsonGUI::ThomsonGUI(const TGWindow *p, UInt_t width, UInt_t height, TApplicat
         hframe_button->AddFrame(timeListNumber, new TGLayoutHints(kLHintsLeft, 5, 5, 5, 5));
         hframe_button->AddFrame(spectrometerNumber, new TGLayoutHints(kLHintsLeft, 5, 10, 5, 5));
 
-
         for (uint i = 0; i < N_TIME_LIST; i++)
         {
             checkButtonDrawTime.push_back(new TGCheckButton(hframe_button));
@@ -729,6 +742,7 @@ ThomsonGUI::ThomsonGUI(const TGWindow *p, UInt_t width, UInt_t height, TApplicat
         TGButton *removeAllButton = new TGTextButton(hframe_button, "RemoveAll");
         removeAllButton->Connect("Clicked()", CLASS_NAME, this, "RemoveAll()");
         TGButton *countButton = new TGTextButton(hframe_button, "Count");
+        countButton->SetToolTipText("count until draw graphs for set of shots");
         countButton->Connect("Clicked()", CLASS_NAME, this, "CountSeveralShot()");
         hframe_button->AddFrame(addButton, new TGLayoutHints(kLHintsLeft|kLHintsTop,5,5,5,5));
         hframe_button->AddFrame(removeButton, new TGLayoutHints(kLHintsLeft|kLHintsTop,5,5,5,5));
@@ -1205,6 +1219,12 @@ void ThomsonGUI::DrawGraphs()
 
     const barray &work_mask = this->work_mask[nSpectrometer];
 
+    darray xPosition(N_SPECTROMETERS);
+    for (uint i = 0; i < N_SPECTROMETERS; i++) {
+        xPosition[i] = calibrations[i*N_SPECTROMETER_CALIBRATIONS+ID_X];
+    }
+
+
     if (checkButton(drawSRF))
     {
         ThomsonCounter *counter = getThomsonCounter(nTimePage, nSpectrometer);
@@ -1261,12 +1281,10 @@ void ThomsonGUI::DrawGraphs()
         TCanvas *c = ThomsonDraw::createCanvas(canvas_name);
         TMultiGraph *mg = ThomsonDraw::createMultiGraph("mg_"+canvas_name, "");
 
-        darray xPosition(N_SPECTROMETERS);
         darray Te(N_SPECTROMETERS);
         darray TeError(N_SPECTROMETERS);
 
         for (uint i = 0; i < N_SPECTROMETERS; i++) {
-            xPosition[i] = calibrations[i*N_SPECTROMETER_CALIBRATIONS];
             Te[i] = getThomsonCounter(nTimePage, i)->getT();
             TeError[i] = getThomsonCounter(nTimePage, i)->getTError();
         }
@@ -1280,12 +1298,10 @@ void ThomsonGUI::DrawGraphs()
         TCanvas *c = ThomsonDraw::createCanvas(canvas_name);
         TMultiGraph *mg = ThomsonDraw::createMultiGraph("mg_"+canvas_name, "");
 
-        darray xPosition(N_SPECTROMETERS);
         darray ne(N_SPECTROMETERS);
         darray neError(N_SPECTROMETERS);
 
         for (uint i = 0; i < N_SPECTROMETERS; i++) {
-            xPosition[i] = calibrations[i*N_SPECTROMETER_CALIBRATIONS + ID_X];
             ne[i] = getThomsonCounter(nTimePage, i)->getN()*calibrations[i*N_SPECTROMETER_CALIBRATIONS+ID_N_COEFF]/energy[nTimePage];
             neError[i] = getThomsonCounter(nTimePage, i)->getNError()*calibrations[i*N_SPECTROMETER_CALIBRATIONS+ID_N_COEFF]/energy[nTimePage];
         }
@@ -1300,13 +1316,8 @@ void ThomsonGUI::DrawGraphs()
         TMultiGraph *mg = ThomsonDraw::createMultiGraph("mg_"+canvas_name, "");
         mg->SetTitle(";x, mm;T_{e}, eV");
 
-        darray xPosition(N_SPECTROMETERS);
         darray Te(N_SPECTROMETERS);
         darray TeError(N_SPECTROMETERS);
-
-        for (uint i = 0; i < N_SPECTROMETERS; i++) {
-            xPosition[i] = calibrations[i*N_SPECTROMETER_CALIBRATIONS];
-        }
 
         uint color = 1;
         for (uint it = 1; it < N_TIME_LIST; it++)
@@ -1319,7 +1330,7 @@ void ThomsonGUI::DrawGraphs()
                 TeError[i] = getThomsonCounter(it, i)->getTError();
             }
 
-            ThomsonDraw::draw_result_from_r(c, mg, xPosition, Te, TeError, 21, 1.5, color, 1, 7, color, TString::Format("%u", it), false);
+            ThomsonDraw::draw_result_from_r(c, mg, xPosition, Te, TeError, 21, 1.5, color, 1, 7, color, TString::Format("%u (%.2f ms)", it, 0.), false);
             ThomsonDraw::Color(color);
         }
 
@@ -1338,13 +1349,8 @@ void ThomsonGUI::DrawGraphs()
         TMultiGraph *mg = ThomsonDraw::createMultiGraph("mg_"+canvas_name, "");
         mg->SetTitle(";x, mm;n_{e}, 10^{13} cm^{-3}");
 
-        darray xPosition(N_SPECTROMETERS);
         darray ne(N_SPECTROMETERS);
         darray neError(N_SPECTROMETERS);
-
-        for (uint i = 0; i < N_SPECTROMETERS; i++) {
-            xPosition[i] = calibrations[i*N_SPECTROMETER_CALIBRATIONS];
-        }
 
         uint color = 1;
         for (uint it = 1; it < N_TIME_LIST; it++)
@@ -1353,11 +1359,11 @@ void ThomsonGUI::DrawGraphs()
                 continue;
 
             for (uint i = 0; i < N_SPECTROMETERS; i++) {
-                ne[i] = getThomsonCounter(it, i)->getN()*calibrations[i*N_SPECTROMETER_CALIBRATIONS+ID_N_COEFF]/energy[nTimePage];
-                neError[i] = getThomsonCounter(it, i)->getNError()*calibrations[i*N_SPECTROMETER_CALIBRATIONS+ID_N_COEFF]/energy[nTimePage];
+                ne[i] = getThomsonCounter(it, i)->getN()*calibrations[i*N_SPECTROMETER_CALIBRATIONS+ID_N_COEFF]/energy[it];
+                neError[i] = getThomsonCounter(it, i)->getNError()*calibrations[i*N_SPECTROMETER_CALIBRATIONS+ID_N_COEFF]/energy[it];
             }
 
-            ThomsonDraw::draw_result_from_r(c, mg, xPosition, ne, neError, 21, 1.5, color, 1, 7, color, TString::Format("%u", it), false);
+            ThomsonDraw::draw_result_from_r(c, mg, xPosition, ne, neError, 21, 1.5, color, 1, 7, color, TString::Format("%u (%.2f ms)", it, 0.), false);
             ThomsonDraw::Color(color);
         }
 
@@ -1596,9 +1602,9 @@ void ThomsonGUI::CountSeveralShot()
 
             uiarray shotArray = createArrayShots();
             N_SHOTS = shotArray.size();
-            for (auto it : shotArray)
-                std::cout << it << "\n";
-            std::cout << "\n";
+            //for (auto it : shotArray)
+            //    std::cout << it << "\n";
+            //std::cout << "\n";
 
 
             std::string parameters_file_name;
@@ -1615,6 +1621,7 @@ void ThomsonGUI::CountSeveralShot()
                 }
             }
 
+            std::cout << "обработка сигналов завершена!\n\n";
 
         }
 

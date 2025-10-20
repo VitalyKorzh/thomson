@@ -338,7 +338,7 @@ void ThomsonDraw::thomson_signal_draw(TCanvas *c, TMultiGraph *mg, SignalProcess
     if (title) {
         gTitle.reserve(NChannels);
         for (uint i = 0; i < NChannels; i++)
-            gTitle.push_back(TString::Format("ch%u", i+1));
+            gTitle.push_back(TString::Format("ch%u", i));
     }
 
     thomson_draw(mg, *sp, NChannels, integrate, draw, drawSigBox, gTitle, work_mask, scale, drawTimePoint, channel);
