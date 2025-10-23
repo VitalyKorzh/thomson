@@ -1376,10 +1376,12 @@ void ThomsonGUI::DrawGraphs()
                 double AError2 = A * A * (sigma_energy[it]*sigma_energy[it]/(energy[it]*energy[it]) 
                                             + sigma_n_coeff[i]*sigma_n_coeff[i]/(calibrations[i*N_SPECTROMETER_CALIBRATIONS+ID_N_COEFF]*calibrations[i*N_SPECTROMETER_CALIBRATIONS+ID_N_COEFF]));
 
-                std::cout << AError2 << "\n";
+                //std::cout << A << " " << AError2 << "\n";
 
-                neError[i] = A*ne[i]*sqrt(AError2/(A*A)+ 
-                                    getThomsonCounter(it, i)->getNError()*getThomsonCounter(it, i)->getNError()/(ne[i]*ne[i]));
+                neError[i] = getThomsonCounter(it, i)->getNError();
+                neError[i] *= A;
+                //neError[i] = A*ne[i]*sqrt(AError2/(A*A)+ 
+                //                    neError[i]*neError[i] / (ne[i]*ne[i]));
                 ne[i] *= A;
             }
 
