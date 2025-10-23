@@ -293,7 +293,7 @@ bool ThomsonCounter::count(const double alpha, const uint iter_limit, const doub
 
     std::vector <std::pair<uint, double>> devTijZeroArray;
     devTijZeroArray.reserve(N_RATIO_WORK);
-    use_ratio.reserve(N_RATIO_WORK);
+    //use_ratio.reserve(N_RATIO_WORK);
 
     {
         uint index_ratio = 0;
@@ -350,7 +350,7 @@ bool ThomsonCounter::count(const double alpha, const uint iter_limit, const doub
                 number_ratio.push_back(it.first);
 
                 step_count++;
-                use_ratio.push_back(it.first);
+                //use_ratio.push_back(it.first);
                 if(step_count >= N_CHANNELS_WORK)
                     break;
             }
@@ -402,7 +402,7 @@ bool ThomsonCounter::countConcetration()
 
             double devT_ai = 0.;
 
-            /*{
+            {
                 double W_T = 0;
                 for (uint m = 0; m < weight.size(); m++)
                 {
@@ -420,12 +420,12 @@ bool ThomsonCounter::countConcetration()
                     {
                         Tm_ai = - signal[k] / (ai*ai);
                     }
-                    devT_ai += weight[m]*Tm_ai / (devTijArray[i]);
+                    devT_ai += weight[m]*Tm_ai / (devTijArray[m]);
 
                 }
 
                 devT_ai /= W_T;
-            }*/
+            }
 
 
             double devQi = (Qi-Qi_dT)/dT;

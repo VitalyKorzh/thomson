@@ -54,7 +54,7 @@ private:
     uiarray number_ratio;
     darray weight;
 
-    uiarray use_ratio;
+    //uiarray use_ratio;
     uint chToNeCount;
     darray signalResult;
 
@@ -105,7 +105,7 @@ public:
 
     const darray &getTijArray () const { return TijArray; }
     const darray &getSigmaTijArray () const { return sigmaTijArray; }
-    const uiarray &getUseRatio() const { return use_ratio; }
+    const uiarray &getUseRatio() const { return number_ratio; }
     const darray &getSignalResult() const { return signalResult; }
 
     double getTij (uint ch1, uint ch2) const { return TijArray[findRatioNumber(ch1, ch2)]; }
