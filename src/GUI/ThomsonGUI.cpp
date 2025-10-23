@@ -1373,11 +1373,11 @@ void ThomsonGUI::DrawGraphs()
                 double A = calibrations[i*N_SPECTROMETER_CALIBRATIONS+ID_N_COEFF]/energy[it];
                 ne[i] = getThomsonCounter(it, i)->getN();
 
-                double AError2 = A * A * (sigma_energy[it]*sigma_energy[it]/(energy[it]*energy[it]) 
+                double AError2 = (sigma_energy[it]*sigma_energy[it]/(energy[it]*energy[it]) 
                                             + sigma_n_coeff[i]*sigma_n_coeff[i]/(calibrations[i*N_SPECTROMETER_CALIBRATIONS+ID_N_COEFF]*calibrations[i*N_SPECTROMETER_CALIBRATIONS+ID_N_COEFF]));
 
                 neError[i] = getThomsonCounter(it, i)->getNError();
-                neError[i] = A*ne[i]*sqrt(AError2/(A*A)+ 
+                neError[i] = A*ne[i]*sqrt(AError2 + 
                                    neError[i]*neError[i] / (ne[i]*ne[i]));
                 ne[i] *= A;
             }
