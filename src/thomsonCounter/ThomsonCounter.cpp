@@ -400,11 +400,40 @@ bool ThomsonCounter::countConcetration()
 
             double ne_i = ai / Qi;
 
-            double dQi = TeError * (Qi-Qi_dT)/dT;
-            
-            double covFTeAi = 0.; // нужно учесть корреляцию
+            double devT_ai = 0.;
 
-            double ne_i_error = ne_i * sqrt(dai*dai/(ai*ai) + dQi*dQi/(Qi*Qi) - 2. * covFTeAi/ai/Qi);
+            /*{
+                double W_T = 0;
+                for (uint m = 0; m < weight.size(); m++)
+                {
+                    uint k = channels_number[number_ratio[m]].first;
+                    uint l = channels_number[number_ratio[m]].second;
+
+                    W_T += weight[m];
+
+                    double Tm_ai = 0.;
+                    if (i == k)
+                    {
+                        Tm_ai = 1./signal[l];
+                    }
+                    else if (i == l)
+                    {
+                        Tm_ai = - signal[k] / (ai*ai);
+                    }
+                    devT_ai += weight[m]*Tm_ai / (devTijArray[i]);
+
+                }
+
+                devT_ai /= W_T;
+            }*/
+
+
+            double devQi = (Qi-Qi_dT)/dT;
+            double dQi = TeError * devQi;
+            
+            double covFTeAi = dai*dai*devQi*devT_ai; // нужно учесть корреляцию
+
+            double ne_i_error = ne_i * sqrt(dai*dai/(ai*ai) + dQi*dQi/(Qi*Qi) - 2. * covFTeAi/(ai*Qi));
 
             double wi = 1. / (ne_i_error*ne_i_error);
 
