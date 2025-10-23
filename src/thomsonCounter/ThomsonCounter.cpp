@@ -402,7 +402,7 @@ bool ThomsonCounter::countConcetration()
 
             double devT_ai = 0.;
 
-            {
+            /*{
                 double W_T = 0;
                 for (uint m = 0; m < weight.size(); m++)
                 {
@@ -425,7 +425,7 @@ bool ThomsonCounter::countConcetration()
                 }
 
                 devT_ai /= W_T;
-            }
+            }*/
 
 
             double devQi = (Qi-Qi_dT)/dT;
