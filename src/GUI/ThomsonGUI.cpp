@@ -351,8 +351,8 @@ void ThomsonGUI::setDrawEnable(int signal, int thomson)
     {
         drawSRF->SetEnabled(thomson);
         drawConvolution->SetEnabled(thomson);
-        drawTemepratureRDependes->SetEnabled(thomson);
-        drawConceterationRDependes->SetEnabled(thomson);
+        //drawTemepratureRDependes->SetEnabled(thomson);
+        //drawConceterationRDependes->SetEnabled(thomson);
         drawTemperatureRDependesAll->SetEnabled(thomson);
         drawConceterationRDependesAll->SetEnabled(thomson);
         drawCompareSingalAndResult->SetEnabled(thomson);
@@ -673,7 +673,8 @@ ThomsonGUI::ThomsonGUI(const TGWindow *p, UInt_t width, UInt_t height, TApplicat
         checkButtonDraw.push_back(drawTemperatureRDependesAll = new TGCheckButton(vframeDraw, "draw Te(r) all"));
         checkButtonDraw.push_back(drawConceterationRDependesAll = new TGCheckButton(vframeDraw, "draw ne(r) all"));
         checkButtonDraw.push_back(drawCompareSingalAndResult = new TGCheckButton(vframeDraw, "draw count signals in channel"));
-
+        drawTemepratureRDependes->SetEnabled(kFALSE);
+        drawConceterationRDependes->SetEnabled(kFALSE);
         for (uint i = 0; i < checkButtonDraw.size(); i++)
         {
             vframeDraw->AddFrame(checkButtonDraw[i], new TGLayoutHints(kLHintsLeft, 1, 1, 2, 2));
@@ -1279,7 +1280,7 @@ void ThomsonGUI::DrawGraphs()
         ThomsonDraw::thomson_signal_draw(c, mg, getSignalProcessing(nTimePage, NUMBER_ENERGY_SPECTROMETER), 0, false, false, false, 8, mask, 10., false, false, NUMBER_ENERGY_CHANNEL); 
         ThomsonDraw::thomson_signal_draw(c, mg, getSignalProcessing(nTimePage, NUMBER_ENERGY_SPECTROMETER), 1, true, false, false, 8, mask, 1., true, true, NUMBER_ENERGY_CHANNEL); 
     }
-    if (checkButton(drawTemepratureRDependes) && fileType == isROOT)
+    /*if (checkButton(drawTemepratureRDependes) && fileType == isROOT)
     {
         TString canvas_name = TString::Format("Te_from_r_tp_%u", nTimePage);
         TCanvas *c = ThomsonDraw::createCanvas(canvas_name);
@@ -1295,8 +1296,8 @@ void ThomsonGUI::DrawGraphs()
 
         mg->SetTitle(";x, mm;T_{e}, eV");
         ThomsonDraw::draw_result_from_r(c, mg, xPosition, Te, TeError);
-    }
-    if (checkButton(drawConceterationRDependes) && fileType == isROOT)
+    }*/
+    /*if (checkButton(drawConceterationRDependes) && fileType == isROOT)
     {
         TString canvas_name = TString::Format("ne_from_r_tp_%u", nTimePage);
         TCanvas *c = ThomsonDraw::createCanvas(canvas_name);
@@ -1318,7 +1319,7 @@ void ThomsonGUI::DrawGraphs()
 
         mg->SetTitle(";x, mm;n_{e}, 10^{13} cm^{-3}");
         ThomsonDraw::draw_result_from_r(c, mg, xPosition, ne, neError);
-    }
+    }*/
     if (checkButton(drawTemperatureRDependesAll) && fileType == isROOT)
     {
         TString canvas_name = TString::Format("Te_from_r_all");
@@ -1370,13 +1371,16 @@ void ThomsonGUI::DrawGraphs()
 
             for (uint i = 0; i < N_SPECTROMETERS; i++) {
                 double A = calibrations[i*N_SPECTROMETER_CALIBRATIONS+ID_N_COEFF]/energy[it];
-                ne[i] = getThomsonCounter(it, i)->getN()*A;
+                ne[i] = getThomsonCounter(it, i)->getN();
 
-                double AError = A * sqrt(sigma_energy[it]*sigma_energy[it]/(energy[it]*energy[it]) 
+                double AError2 = A * A * (sigma_energy[it]*sigma_energy[it]/(energy[it]*energy[it]) 
                                             + sigma_n_coeff[i]*sigma_n_coeff[i]/(calibrations[i*N_SPECTROMETER_CALIBRATIONS+ID_N_COEFF]*calibrations[i*N_SPECTROMETER_CALIBRATIONS+ID_N_COEFF]));
 
-                neError[i] = ne[i]*sqrt(AError*AError/(A*A)+ 
-                                    getThomsonCounter(it, i)->getNError()*getThomsonCounter(it, i)->getNError()/(getThomsonCounter(it, i)->getN()*getThomsonCounter(it, i)->getN()));
+                std::cout << AError2 << "\n";
+
+                neError[i] = A*ne[i]*sqrt(AError2/(A*A)+ 
+                                    getThomsonCounter(it, i)->getNError()*getThomsonCounter(it, i)->getNError()/(ne[i]*ne[i]));
+                ne[i] *= A;
             }
 
             ThomsonDraw::draw_result_from_r(c, mg, xPosition, ne, neError, 21, 1.5, color, 1, 7, color, TString::Format("%u (%.2f ms)", it, 0.), false);
