@@ -244,8 +244,10 @@ void ThomsonGUI::processingSignalsData(const char *archive_name, int shot, const
     }
 
 
-    for (uint i = 0; i < N_TIME_LIST; i++)
+    for (uint i = 0; i < N_TIME_LIST; i++) {
         energy[i] = getSignalProcessing(i, NUMBER_ENERGY_SPECTROMETER)->getSignals()[NUMBER_ENERGY_CHANNEL];
+        sigma_energy[i] = ERROR_COEFF*sqrt(energy[i]);
+    }
 }
 
 bool ThomsonGUI::countThomson(const std::string &srf_file_folder, const std::string &convolution_file_folder, int shot, bool clearArray)
@@ -615,7 +617,8 @@ uiarray ThomsonGUI::createArrayShots()
 }
 
 ThomsonGUI::ThomsonGUI(const TGWindow *p, UInt_t width, UInt_t height, TApplication *app) : TGMainFrame(p, width, height),
-                                                                                            app(app), N_SHOTS(1),fileType(-1), work_mask(N_SPECTROMETERS, barray(N_CHANNELS)), calibrations(N_SPECTROMETER_CALIBRATIONS*N_SPECTROMETERS, 0.), energy(N_TIME_LIST, 1.)
+                                                                                            app(app), N_SHOTS(1),fileType(-1), work_mask(N_SPECTROMETERS, barray(N_CHANNELS)), calibrations(N_SPECTROMETER_CALIBRATIONS*N_SPECTROMETERS, 0.), energy(N_TIME_LIST, 1.),
+                                                                                            sigma_energy(N_TIME_LIST, 0.)
 {
     SetCleanup(kDeepCleanup);
 
@@ -1224,6 +1227,7 @@ void ThomsonGUI::DrawGraphs()
         xPosition[i] = calibrations[i*N_SPECTROMETER_CALIBRATIONS+ID_X];
     }
 
+    const darray sigma_n_coeff = {0,0,0,0,0,0};
 
     if (checkButton(drawSRF))
     {
@@ -1302,8 +1306,14 @@ void ThomsonGUI::DrawGraphs()
         darray neError(N_SPECTROMETERS);
 
         for (uint i = 0; i < N_SPECTROMETERS; i++) {
-            ne[i] = getThomsonCounter(nTimePage, i)->getN()*calibrations[i*N_SPECTROMETER_CALIBRATIONS+ID_N_COEFF]/energy[nTimePage];
-            neError[i] = getThomsonCounter(nTimePage, i)->getNError()*calibrations[i*N_SPECTROMETER_CALIBRATIONS+ID_N_COEFF]/energy[nTimePage];
+            double A = calibrations[i*N_SPECTROMETER_CALIBRATIONS+ID_N_COEFF]/energy[nTimePage];
+            ne[i] = getThomsonCounter(nTimePage, i)->getN()*A;
+
+            double AError = A * sqrt(sigma_energy[nTimePage]*sigma_energy[nTimePage]/(energy[nTimePage]*energy[nTimePage]) 
+                                        + sigma_n_coeff[i]*sigma_n_coeff[i]/(calibrations[i*N_SPECTROMETER_CALIBRATIONS+ID_N_COEFF]*calibrations[i*N_SPECTROMETER_CALIBRATIONS+ID_N_COEFF]));
+
+            neError[i] = ne[i]*sqrt(AError*AError/(A*A)+ 
+                                getThomsonCounter(nTimePage, i)->getNError()*getThomsonCounter(nTimePage, i)->getNError()/(getThomsonCounter(nTimePage, i)->getN()*getThomsonCounter(nTimePage, i)->getN()));
         }
 
         mg->SetTitle(";x, mm;n_{e}, 10^{13} cm^{-3}");
@@ -1359,8 +1369,14 @@ void ThomsonGUI::DrawGraphs()
                 continue;
 
             for (uint i = 0; i < N_SPECTROMETERS; i++) {
-                ne[i] = getThomsonCounter(it, i)->getN()*calibrations[i*N_SPECTROMETER_CALIBRATIONS+ID_N_COEFF]/energy[it];
-                neError[i] = getThomsonCounter(it, i)->getNError()*calibrations[i*N_SPECTROMETER_CALIBRATIONS+ID_N_COEFF]/energy[it];
+                double A = calibrations[i*N_SPECTROMETER_CALIBRATIONS+ID_N_COEFF]/energy[it];
+                ne[i] = getThomsonCounter(it, i)->getN()*A;
+
+                double AError = A * sqrt(sigma_energy[it]*sigma_energy[it]/(energy[it]*energy[it]) 
+                                            + sigma_n_coeff[i]*sigma_n_coeff[i]/(calibrations[i*N_SPECTROMETER_CALIBRATIONS+ID_N_COEFF]*calibrations[i*N_SPECTROMETER_CALIBRATIONS+ID_N_COEFF]));
+
+                neError[i] = ne[i]*sqrt(AError*AError/(A*A)+ 
+                                    getThomsonCounter(it, i)->getNError()*getThomsonCounter(it, i)->getNError()/(getThomsonCounter(it, i)->getN()*getThomsonCounter(it, i)->getN()));
             }
 
             ThomsonDraw::draw_result_from_r(c, mg, xPosition, ne, neError, 21, 1.5, color, 1, 7, color, TString::Format("%u (%.2f ms)", it, 0.), false);

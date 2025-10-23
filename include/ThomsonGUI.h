@@ -99,6 +99,7 @@ private:
     std::vector <ThomsonCounter *> counterArray;
 
     darray energy;
+    darray sigma_energy;
 
     void setDrawEnable(int signal, int thomson);
 
