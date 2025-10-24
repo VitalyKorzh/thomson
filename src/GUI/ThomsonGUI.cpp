@@ -979,7 +979,7 @@ void ThomsonGUI::ReadMainFile()
 
     if (fileType == isROOT) {
         setDrawEnable(1, 1);
-        //writeResultTableToFile("last_result_table.dat");
+        writeResultTableToFile("last_result_table.dat");
     }
     else if (fileType == isT1)
     {
@@ -1642,6 +1642,7 @@ void ThomsonGUI::CountSeveralShot()
 
         if (!fin.fail() && getFileFormat(archive_name) == "root")
         {
+            std::cout << "oбработка сигналов началась\n";
             for (uint i = 0; i < N_SPECTROMETERS; i++)
             {
                 barray mask = createWorkMask(work_mask_string[i]);
@@ -1674,6 +1675,10 @@ void ThomsonGUI::CountSeveralShot()
 
         }
 
+    }
+    else {
+        std::cerr << "не удалось открыть файл: " << fileName << "\n";
+        return;
     }
 
 }
