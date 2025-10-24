@@ -372,7 +372,7 @@ bool ThomsonCounter::countConcetration()
     {
         neResult = 0;
         ne_error = 0;
-        chToNeCount = 0;
+        //chToNeCount = 0;
         return false;
     }
 

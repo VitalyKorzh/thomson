@@ -359,7 +359,7 @@ void ThomsonGUI::setDrawEnable(int signal, int thomson)
         
 
         infoUseRatio->SetEnabled(thomson);
-        infoUseChannelToNe->SetEnabled(thomson);
+        //infoUseChannelToNe->SetEnabled(thomson);
         infoTe0->SetEnabled(thomson);
         infoTij->SetEnabled(thomson);
         infoTe->SetEnabled(thomson);
@@ -525,12 +525,18 @@ void ThomsonGUI::writeResultTableToFile(const char *file_name) const
         fout << "X\tTe\tTeError\tne\tneError\n";
         fout << "mm\teV\teV\t10^13 cm^-3\t10^13 cm^-3\n";
         fout << "Radius\tTe\tTe error\tne\t ne error\n";
+
+        darray ne(N_SPECTROMETERS);
+        darray neError(N_SPECTROMETERS);
+        const darray coeff_n_error(N_SPECTROMETERS, 0);
+
         for (uint it = 0; it < N_TIME_LIST; it++)
         {
+            countNWithCalibration(ne, neError, coeff_n_error, it);
             for (uint sp = 0; sp < N_SPECTROMETERS; sp++)
             {
                 ThomsonCounter *counter = getThomsonCounter(it, sp);
-                fout << xPosition[sp] << "\t" << counter->getT() << "\t" << counter->getTError() << "\t" << counter->getN()*calibrations[sp*N_SPECTROMETER_CALIBRATIONS+ID_N_COEFF]/energy[it] << "\t" << counter->getNError()*calibrations[sp*N_SPECTROMETER_CALIBRATIONS+ID_N_COEFF]/energy[it] << "\n";
+                fout << xPosition[sp] << "\t" << counter->getT() << "\t" << counter->getTError() << "\t" << ne[sp] << "\t" << neError[sp] << "\n";
             }
         }
 
@@ -560,6 +566,22 @@ std::string ThomsonGUI::readArchiveName(const char *file_name) const
     }
     fin.close();
     return archive_name;
+}
+
+void ThomsonGUI::countNWithCalibration(darray &ne, darray &neError, const darray &sigma_n_coeff, uint it) const
+{
+    for (uint i = 0; i < N_SPECTROMETERS; i++) {
+        double A = calibrations[i*N_SPECTROMETER_CALIBRATIONS+ID_N_COEFF]/energy[it];
+        ne[i] = getThomsonCounter(it, i)->getN();
+
+        double AError2 = (sigma_energy[it]*sigma_energy[it]/(energy[it]*energy[it]) 
+                                    + sigma_n_coeff[i]*sigma_n_coeff[i]/(calibrations[i*N_SPECTROMETER_CALIBRATIONS+ID_N_COEFF]*calibrations[i*N_SPECTROMETER_CALIBRATIONS+ID_N_COEFF]));
+
+        neError[i] = getThomsonCounter(it, i)->getNError();
+        neError[i] = A*ne[i]*sqrt(AError2 + 
+                            neError[i]*neError[i] / (ne[i]*ne[i]));
+        ne[i] *= A;
+    }
 }
 
 uiarray ThomsonGUI::createArrayShots()
@@ -690,7 +712,7 @@ ThomsonGUI::ThomsonGUI(const TGWindow *p, UInt_t width, UInt_t height, TApplicat
         checkButtonInfo.push_back(infoNe = new TGCheckButton(vframeInfo, "print ne"));
         checkButtonInfo.push_back(infoCountSignal = new TGCheckButton(vframeInfo, "print count signals"));
         checkButtonInfo.push_back(infoLaserEnery = new TGCheckButton(vframeInfo, "print Laser enery"));
-        
+        infoUseChannelToNe->SetEnabled(kFALSE);
         
         for (uint i = 0; i < checkButtonInfo.size(); i++)
         {
@@ -951,12 +973,13 @@ void ThomsonGUI::ReadMainFile()
     }
     else {
         std::cerr << "не удалось открыть файл: " << fileName << "!\n"; 
+        return;
     }
     fin.close();
 
     if (fileType == isROOT) {
         setDrawEnable(1, 1);
-        writeResultTableToFile("last_result_table.dat");
+        //writeResultTableToFile("last_result_table.dat");
     }
     else if (fileType == isT1)
     {
@@ -1228,7 +1251,8 @@ void ThomsonGUI::DrawGraphs()
         xPosition[i] = calibrations[i*N_SPECTROMETER_CALIBRATIONS+ID_X];
     }
 
-    const darray sigma_n_coeff = {0,0,0,0,0,0};
+    const darray sigma_n_coeff = {0., 0., 0., 0., 0., 0.};
+    const darray time_points = {0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.};
 
     if (checkButton(drawSRF))
     {
@@ -1271,14 +1295,32 @@ void ThomsonGUI::DrawGraphs()
     }
     if (checkButton(drawEnergySignals) && fileType == isROOT)
     {
-        TString canvas_name = TString::Format("signal_laser_energy_tp_%u", nTimePage);
+        TString canvas_name = TString::Format("signal_laser_energy_%u", nTimePage);
         TCanvas *c = ThomsonDraw::createCanvas(canvas_name);
         TMultiGraph *mg = ThomsonDraw::createMultiGraph("mg_"+canvas_name, "");
 
-        barray mask(N_CHANNELS, true);
+        const barray mask(N_CHANNELS, true);
 
-        ThomsonDraw::thomson_signal_draw(c, mg, getSignalProcessing(nTimePage, NUMBER_ENERGY_SPECTROMETER), 0, false, false, false, 8, mask, 10., false, false, NUMBER_ENERGY_CHANNEL); 
-        ThomsonDraw::thomson_signal_draw(c, mg, getSignalProcessing(nTimePage, NUMBER_ENERGY_SPECTROMETER), 1, true, false, false, 8, mask, 1., true, true, NUMBER_ENERGY_CHANNEL); 
+        uint color = 1;
+        for (uint it = 1; it < N_TIME_LIST; it++)
+        {
+            if (!checkButtonDrawTime[it]->IsDown())
+                continue;
+
+            ThomsonDraw::thomson_signal_draw(c, mg, getSignalProcessing(it, NUMBER_ENERGY_SPECTROMETER), 0, false, false, false, 8, mask, 10., true, false, NUMBER_ENERGY_CHANNEL, color); 
+            ((TGraph*)mg->GetListOfGraphs()->Last())->SetTitle(TString::Format("%u (%.2f ms)", it, time_points[it]));
+            ThomsonDraw::thomson_signal_draw(c, mg, getSignalProcessing(it, NUMBER_ENERGY_SPECTROMETER), 1, false, false, false, 8, mask, 1., false, true, NUMBER_ENERGY_CHANNEL, color); 
+            ThomsonDraw::Color(color);
+        }
+
+        {
+                mg->GetXaxis()->CenterTitle();
+                mg->GetYaxis()->CenterTitle();
+                mg->Draw("A");
+
+                ThomsonDraw::createLegend(mg);
+        }
+
     }
     /*if (checkButton(drawTemepratureRDependes) && fileType == isROOT)
     {
@@ -1341,7 +1383,7 @@ void ThomsonGUI::DrawGraphs()
                 TeError[i] = getThomsonCounter(it, i)->getTError();
             }
 
-            ThomsonDraw::draw_result_from_r(c, mg, xPosition, Te, TeError, 21, 1.5, color, 1, 7, color, TString::Format("%u (%.2f ms)", it, 0.), false);
+            ThomsonDraw::draw_result_from_r(c, mg, xPosition, Te, TeError, 21, 1.5, color, 1, 7, color, TString::Format("%u (%.2f ms)", it, time_points[it]), false);
             ThomsonDraw::Color(color);
         }
 
@@ -1369,19 +1411,7 @@ void ThomsonGUI::DrawGraphs()
             if (!checkButtonDrawTime[it]->IsDown())
                 continue;
 
-            for (uint i = 0; i < N_SPECTROMETERS; i++) {
-                double A = calibrations[i*N_SPECTROMETER_CALIBRATIONS+ID_N_COEFF]/energy[it];
-                ne[i] = getThomsonCounter(it, i)->getN();
-
-                double AError2 = (sigma_energy[it]*sigma_energy[it]/(energy[it]*energy[it]) 
-                                            + sigma_n_coeff[i]*sigma_n_coeff[i]/(calibrations[i*N_SPECTROMETER_CALIBRATIONS+ID_N_COEFF]*calibrations[i*N_SPECTROMETER_CALIBRATIONS+ID_N_COEFF]));
-
-                neError[i] = getThomsonCounter(it, i)->getNError();
-                neError[i] = A*ne[i]*sqrt(AError2 + 
-                                   neError[i]*neError[i] / (ne[i]*ne[i]));
-                ne[i] *= A;
-            }
-
+            countNWithCalibration(ne, neError, sigma_n_coeff, it);
             ThomsonDraw::draw_result_from_r(c, mg, xPosition, ne, neError, 21, 1.5, color, 1, 7, color, TString::Format("%u (%.2f ms)", it, 0.), false);
             ThomsonDraw::Color(color);
         }
@@ -1455,10 +1485,10 @@ void ThomsonGUI::PrintInfo()
             std::cout << "\t" << "(" << ch1 << ", " << ch2 << ")\n"; 
         }
     }
-    if (checkButton(infoUseChannelToNe))
+    /*if (checkButton(infoUseChannelToNe))
     {
         std::cout << "channel to count ne: " << counter->getChannelNeCount() << "\n";
-    }
+    }*/
     if (checkButton(infoTe0))
     {
         std::cout << "Te0=" << counter->getTe0() << "\n";

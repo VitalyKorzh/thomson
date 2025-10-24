@@ -239,9 +239,9 @@ TH1 *ThomsonDraw::createHistStatistics(const darray &signal, double min, double 
     return h;
 }
 
-void ThomsonDraw::thomson_draw(TMultiGraph *mg, const SignalProcessing &sp, uint nPoints, const int integrate, bool draw, bool drawSigBox, const std::vector<TString> &gTitle, const barray &work_mask, double scale, bool drawTimePoints, int channel)
+void ThomsonDraw::thomson_draw(TMultiGraph *mg, const SignalProcessing &sp, uint nPoints, const int integrate, bool draw, bool drawSigBox, const std::vector<TString> &gTitle, const barray &work_mask, double scale, bool drawTimePoints, int channel, uint color)
 {    
-    uint color = 1;
+    //uint color = 1;
 
     uint N_SIGNAL = sp.getTSize();
     const darray &t = sp.getT();
@@ -329,19 +329,19 @@ void ThomsonDraw::thomson_draw(TMultiGraph *mg, const SignalProcessing &sp, uint
     } 
 }
 
-void ThomsonDraw::thomson_signal_draw(TCanvas *c, TMultiGraph *mg, SignalProcessing *sp, int integrate, bool draw, bool drawLegend, bool drawSigBox, uint NChannels, const barray &work_mask, double scale, bool title, bool drawTimePoint, int channel) 
+void ThomsonDraw::thomson_signal_draw(TCanvas *c, TMultiGraph *mg, SignalProcessing *sp, int integrate, bool draw, bool drawLegend, bool drawSigBox, uint NChannels, const barray &work_mask, double scale, bool title, bool drawTimePoint, int channel, uint color) 
 {
     c->cd();
     mg->SetTitle(!integrate ? ";t, ns;U, V" : ";t, ns;Ut, V*ns");
 
     std::vector <TString> gTitle;
-    if (title) {
+    if (title && channel < 0) {
         gTitle.reserve(NChannels);
         for (uint i = 0; i < NChannels; i++)
             gTitle.push_back(TString::Format("ch%u", i));
     }
 
-    thomson_draw(mg, *sp, NChannels, integrate, draw, drawSigBox, gTitle, work_mask, scale, drawTimePoint, channel);
+    thomson_draw(mg, *sp, NChannels, integrate, draw, drawSigBox, gTitle, work_mask, scale, drawTimePoint, channel, color);
     if (drawLegend)
         createLegend(mg);
 

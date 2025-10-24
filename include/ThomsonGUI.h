@@ -143,6 +143,7 @@ private:
 
     std::string readArchiveName(const char *file_name) const;
 
+    void countNWithCalibration(darray &ne, darray &neError, const darray &sigma_n_coeff, uint it) const;
 
     uiarray createArrayShots();
 
