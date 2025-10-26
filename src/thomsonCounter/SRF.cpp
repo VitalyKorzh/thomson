@@ -1,4 +1,4 @@
-#include "thomsonCounter/SRF.h"
+#include "../../include/thomsonCounter/SRF.h"
 #include <fstream>
 #include <string>
 #include <sstream>

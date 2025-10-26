@@ -1,4 +1,4 @@
-#include "thomsonCounter/Spectrum.h"
+#include "../../include/thomsonCounter/Spectrum.h"
 
 double SRelative(double A0, double l, double li, double a, double theta) 
 {

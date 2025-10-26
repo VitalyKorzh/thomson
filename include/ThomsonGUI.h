@@ -31,6 +31,7 @@ private:
     TGTextEntry *mainFileTextEntry;
     TGNumberEntry *timeListNumber;
     TGNumberEntry *spectrometerNumber;
+    TGCheckButton *writeResultTable;
 
     TGNumberEntry *shotNumber;
 

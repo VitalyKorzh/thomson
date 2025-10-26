@@ -330,7 +330,7 @@ bool ThomsonCounter::count(const double alpha, const uint iter_limit, const doub
             uint ch1 = channels_number[it.first].first;
             uint ch2 = channels_number[it.first].second;
 
-            if (!is_channel_use[ch1] || !is_channel_use[ch2] || number_use_channels == N_CHANNELS_WORK)
+            if (!is_channel_use[ch1] || !is_channel_use[ch2])
             {
                 if (!is_channel_use[ch1])
                     number_use_channels++;

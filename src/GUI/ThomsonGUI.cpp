@@ -650,7 +650,9 @@ ThomsonGUI::ThomsonGUI(const TGWindow *p, UInt_t width, UInt_t height, TApplicat
 
         TGButton *openMainFileDialogButton = new TGTextButton(hframe, "^");
         mainFileTextEntry = new TGTextEntry(hframe);
-        TGButton *readMainFileButton = new TGTextButton(hframe, "Read");
+        TGButton *readMainFileButton = new TGTextButton(hframe, "Count");
+        writeResultTable = new TGCheckButton(hframe);
+        writeResultTable->SetToolTipText("write result to last_result_table.dat");
 
         readMainFileButton->SetToolTipText("read file until draw graphs for diagnostic");
 
@@ -659,7 +661,8 @@ ThomsonGUI::ThomsonGUI(const TGWindow *p, UInt_t width, UInt_t height, TApplicat
 
         hframe->AddFrame(openMainFileDialogButton, new TGLayoutHints(kLHintsLeft, 5, 5, 5, 5));
         hframe->AddFrame(mainFileTextEntry, new TGLayoutHints(kLHintsExpandX, 5, 5, 5, 5));
-        hframe->AddFrame(readMainFileButton, new TGLayoutHints(kLHintsRight, 5, 5, 5, 5));
+        hframe->AddFrame(readMainFileButton, new TGLayoutHints(kLHintsLeft, 5, 5, 5, 5));
+        hframe->AddFrame(writeResultTable, new TGLayoutHints(kLHintsLeft, 1, 1, 7, 7));
     }
 
     TGTab *fTap = new TGTab(this, width, height);
@@ -979,7 +982,8 @@ void ThomsonGUI::ReadMainFile()
 
     if (fileType == isROOT) {
         setDrawEnable(1, 1);
-        writeResultTableToFile("last_result_table.dat");
+        if (writeResultTable->IsDown())
+            writeResultTableToFile("last_result_table.dat");
     }
     else if (fileType == isT1)
     {
