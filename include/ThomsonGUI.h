@@ -102,6 +102,9 @@ private:
     darray energy;
     darray sigma_energy;
 
+    darray time_points;
+    uint shotDiagnostic;
+
     void setDrawEnable(int signal, int thomson);
 
     barray createWorkMask(const std::string &work_mask_string) const;
@@ -113,7 +116,7 @@ private:
     bool isCalibrationNew(TFile *f, const char *calibration_name) const;
     bool writeCalibration(const char *archive_name, const char *calibration_name, darray &calibration) const;
     void processingSignalsData(const char *archive_name, int shot, const std::vector<parray> &parametersArray, bool clearArray=true);
-    bool countThomson(const std::string &srf_file_folder, const std::string &convolution_file_folder, int shot, bool clearArray=true);
+    bool countThomson(const std::string &srf_file_folder, const std::string &convolution_file_folder, int shot, bool clearArray=true, bool normalizeFirstWorkChannel=false);
     SignalProcessing * getSignalProcessing(uint it, uint sp, uint nShot=0) const;
     ThomsonCounter * getThomsonCounter(uint it, uint sp, uint nShot=0) const;
 
@@ -147,6 +150,9 @@ private:
     void countNWithCalibration(darray &ne, darray &neError, const darray &sigma_n_coeff, uint it) const;
 
     uiarray createArrayShots();
+
+
+    void createTimePointsArray(int shot);
 
 public:
     ThomsonGUI(const TGWindow *p, UInt_t width, UInt_t height, TApplication *app);

@@ -229,7 +229,7 @@ int ThomsonCounter::findRatioNumber(uint ch1, uint ch2) const
 
 ThomsonCounter::ThomsonCounter(const std::string &srf_file_name, const std::string &convolution_file_name,
                                const darray &signal, const darray &signal_error, double theta, const barray &channel_work, 
-                               double lambda_reference) : 
+                               double lambda_reference, bool normalizeFirstWorkChannel) : normalizeFirstWorkChannel(normalizeFirstWorkChannel),
                                lim_percent(0.5), work(false), signal(signal), signal_error(signal_error), channel_work(channel_work),
                                theta(theta), lambda_reference(lambda_reference)
 
@@ -261,9 +261,24 @@ ThomsonCounter::ThomsonCounter(const std::string &srf_file_name, const std::stri
     }
 }
 
-ThomsonCounter::ThomsonCounter(const std::string &srf_file_name, const std::string &convolution_file_name, const SignalProcessing &sp, const darray &sigma_channels, double theta, double lambda_reference) :
-                                 ThomsonCounter(srf_file_name, convolution_file_name, sp.getSignals(), sigma_channels, theta, sp.getWorkSignals(), lambda_reference)
+ThomsonCounter::ThomsonCounter(const std::string &srf_file_name, const std::string &convolution_file_name, const SignalProcessing &sp, const darray &sigma_channels, double theta, double lambda_reference, bool normalizeFirstWorkChannel) :
+                                 ThomsonCounter(srf_file_name, convolution_file_name, sp.getSignals(), sigma_channels, theta, sp.getWorkSignals(), lambda_reference, normalizeFirstWorkChannel)
 {
+}
+
+bool ThomsonCounter::isChannelUseToCount(uint ch1, uint ch2, const barray &is_channel_use) const 
+{
+    if (!normalizeFirstWorkChannel)
+        return !is_channel_use[ch1] || !is_channel_use[ch2];
+    else
+    {
+        for (uint i = 0; i < N_CHANNELS; i++)
+        {
+            if (channel_work[i])
+                return ch1 == i || ch2 == i;
+        }
+    }
+    return false;
 }
 
 bool ThomsonCounter::count(const double alpha, const uint iter_limit, const double epsilon)
@@ -329,8 +344,7 @@ bool ThomsonCounter::count(const double alpha, const uint iter_limit, const doub
         {
             uint ch1 = channels_number[it.first].first;
             uint ch2 = channels_number[it.first].second;
-
-            if (!is_channel_use[ch1] || !is_channel_use[ch2])
+            if (isChannelUseToCount(ch1, ch2, is_channel_use))
             {
                 if (!is_channel_use[ch1])
                     number_use_channels++;

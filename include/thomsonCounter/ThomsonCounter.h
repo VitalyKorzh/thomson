@@ -16,6 +16,8 @@ class ThomsonCounter
 {
 private:
 
+    bool normalizeFirstWorkChannel;
+
     const double lim_percent;
 
     bool work;
@@ -89,10 +91,13 @@ private:
 
     const double * const getSRFch(uint ch) const { return SRF.data()+ch*N_LAMBDA; }
     inline double getSCount(uint it, uint ch) const { return SCount[it+ch*N_TEMPERATURE]; }
+
+
+    bool isChannelUseToCount(uint ch1, uint ch2, const barray &is_channel_use) const;
  
 public:
-    ThomsonCounter(const std::string &srf_file_name, const std::string &convolution_file_name, const darray &signal, const darray & signal_error, double theta, const barray &channel_work={}, double lambda_reference=W_REFERENCE);
-    ThomsonCounter(const std::string &srf_file_name, const std::string &convolution_file_name, const SignalProcessing &sp, const darray &sigma_channels, double theta, double lambda_reference=W_REFERENCE);
+    ThomsonCounter(const std::string &srf_file_name, const std::string &convolution_file_name, const darray &signal, const darray & signal_error, double theta, const barray &channel_work={}, double lambda_reference=W_REFERENCE, bool normalizeFirstWorkChannel=false);
+    ThomsonCounter(const std::string &srf_file_name, const std::string &convolution_file_name, const SignalProcessing &sp, const darray &sigma_channels, double theta, double lambda_reference=W_REFERENCE, bool normalizeFirstWorkChannel=false);
 
     bool count(const double alpha=0.001, const uint iter_limit=10000, const double epsilon=1e-12);
     bool countConcetration();

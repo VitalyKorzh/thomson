@@ -12,10 +12,13 @@ uint &ThomsonDraw::Color(uint &color)
     return color;
 }
 
-TCanvas *ThomsonDraw::createCanvas(const char *canvas_name, uint width, uint height)
+TCanvas *ThomsonDraw::createCanvas(const char *canvas_name, uint shot, uint width, uint height)
 {
 	TCanvas* c;
-	TString cTitle(canvas_name);
+	TString cName(canvas_name);
+    TString cTitle = cName;
+    if (shot != 0)
+        cTitle += TString::Format(", %u", shot);
 	TObject* const o = gROOT->FindObject(canvas_name);
 	if( o && o->InheritsFrom(TCanvas::Class()) )
 	{
@@ -25,7 +28,7 @@ TCanvas *ThomsonDraw::createCanvas(const char *canvas_name, uint width, uint hei
 		c->SetTitle(cTitle);
 	}
 	else
-		c=new TCanvas(cTitle, cTitle,1,1,width, height);
+		c=new TCanvas(cName, cTitle,1,1,width, height);
 	c->SetBit(kCanDelete);
 	c->SetGrid();
 	c->cd();
