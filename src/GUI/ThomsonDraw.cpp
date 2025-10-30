@@ -32,16 +32,22 @@ TCanvas *ThomsonDraw::createCanvas(const char *canvas_name, uint shot, uint widt
 		c=new TCanvas(cName, cTitle,1,1,width, height);
 	c->SetBit(kCanDelete);
 	c->cd();
-    gPad->SetLeftMargin(0.15);
     if (divideX*divideY > 1) {
         c->Divide(divideX, divideY);
         for (uint i = 0; i < divideX*divideY; i++)
         {
             c->cd(i+1);
             gPad->SetGrid();
+            gPad->SetLeftMargin(0.15);
+            gPad->SetRightMargin(0.05);
+            gPad->SetTopMargin(0.1);
+            gPad->SetBottomMargin(0.1);
+            gPad->SetBit(kCannotPick);
         }
     }
+    else
     {
+        gPad->SetLeftMargin(0.15);
 	    c->SetGrid();
     }
     c->Modified();
