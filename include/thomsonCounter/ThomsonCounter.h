@@ -69,6 +69,8 @@ private:
     double neResult;
     double ne_error;
 
+    double rmse;
+
     void createChannelsNumberArray();
 
     int delta(uint i, uint j) const {
@@ -97,6 +99,8 @@ private:
 
 
     bool isChannelUseToCount(uint ch1, uint ch2, const barray &is_channel_use) const;
+
+    void countRMSE();
  
 public:
     ThomsonCounter(const std::string &srf_file_name, const std::string &convolution_file_name, const darray &signal, const darray & signal_error, double theta, const barray &channel_work={}, double lambda_reference=W_REFERENCE, int selectionMethod=0);
@@ -138,6 +142,7 @@ public:
     double getTError() const { return t_error; }
     double getN() const { return neResult; }
     double getNError() const { return ne_error; }
+    double getRMSE() const { return rmse; }
     double getTheta() const { return theta; }
 
 

@@ -1691,21 +1691,9 @@ void ThomsonGUI::PrintInfo()
     }
     if (checkButton(infoError))
     {
-        double rmse = 0;
-        double Wi = 0;
         ThomsonCounter *counter = getThomsonCounter(nTimePage, nSpectrometer);
 
-        for (uint i = 0; i < N_CHANNELS; i++)
-        {
-            if (counter->getWorkSignal()[i])
-            {
-                double w = 1./ (counter->getSignalError()[i]*counter->getSignalError()[i]);
-                rmse += (counter->getSignal()[i] - counter->getSignalResult()[i])*(counter->getSignal()[i] - counter->getSignalResult()[i]) * w;
-                Wi += w;
-            }
-        }
-
-        std::cout << "rmse = " << sqrt(rmse/Wi) << "\n";
+        std::cout << "rmse = " << counter->getRMSE() << "\n";
     }
 
     if (isInfo)

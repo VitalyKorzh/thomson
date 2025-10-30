@@ -296,6 +296,24 @@ bool ThomsonCounter::isChannelUseToCount(uint ch1, uint ch2, const barray &is_ch
     return false;
 }
 
+void ThomsonCounter::countRMSE()
+{
+    double rmse = 0;
+    double Wi = 0;
+
+    for (uint i = 0; i < N_CHANNELS; i++)
+    {
+        if (channel_work[i])
+        {
+            double w = 1./ (signal_error[i]*signal_error[i]);
+            rmse += (signal[i] - signalResult[i])*(signal[i] - signalResult[i]) * w;
+            Wi += w;
+        }
+    }
+
+    rmse = sqrt(rmse);
+}
+
 bool ThomsonCounter::count(const double alpha, const uint iter_limit, const double epsilon)
 {
     if (!work)
@@ -508,6 +526,7 @@ bool ThomsonCounter::countSignalResult()
     double ne = getN();
 
     signalResult.resize(N_CHANNELS, 0);
+    rmse = 0;
 
     if (N_CHANNELS_WORK < 2)
         return true;
@@ -525,6 +544,8 @@ bool ThomsonCounter::countSignalResult()
             signalResult[i] = 0.;
         }
     }
+
+    countRMSE();
 
     return true;
 }
