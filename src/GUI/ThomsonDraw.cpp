@@ -12,7 +12,7 @@ uint &ThomsonDraw::Color(uint &color)
     return color;
 }
 
-TCanvas *ThomsonDraw::createCanvas(const char *canvas_name, uint shot, uint width, uint height)
+TCanvas *ThomsonDraw::createCanvas(const char *canvas_name, uint shot, uint width, uint height, uint divideX, uint divideY)
 {
 	TCanvas* c;
 	TString cName(canvas_name);
@@ -31,9 +31,19 @@ TCanvas *ThomsonDraw::createCanvas(const char *canvas_name, uint shot, uint widt
 	else
 		c=new TCanvas(cName, cTitle,1,1,width, height);
 	c->SetBit(kCanDelete);
-	c->SetGrid();
 	c->cd();
     gPad->SetLeftMargin(0.15);
+    if (divideX*divideY > 1) {
+        c->Divide(divideX, divideY);
+        for (uint i = 0; i < divideX*divideY; i++)
+        {
+            c->cd(i+1);
+            gPad->SetGrid();
+        }
+    }
+    {
+	    c->SetGrid();
+    }
     c->Modified();
     c->Update();
 	return c;
@@ -379,7 +389,7 @@ void ThomsonDraw::draw_result_from_r(TCanvas *c, TMultiGraph *mg, const darray &
 
 void ThomsonDraw::draw_comapre_signals(TCanvas *c, THStack *hs, uint NChannel, const darray &signal, const darray &signal_error, const darray &countSignal, const barray &work_channel, bool draw)
 {
-    c->cd();
+    //c->cd();
     hs->SetTitle(";channel;Vt, V*ns");
 
     darray signalN(NChannel, 0.);
@@ -406,7 +416,7 @@ void ThomsonDraw::draw_comapre_signals(TCanvas *c, THStack *hs, uint NChannel, c
 
 void ThomsonDraw::draw_signal_statistics(TCanvas *c, THStack *hs, const darray &signal, double min, double max, uint nbins, bool draw)
 {
-    //c->cd();
+    c->cd();
 
     hs->SetTitle(";Vt, V*ns;counts");
 

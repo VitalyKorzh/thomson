@@ -760,7 +760,7 @@ ThomsonGUI::ThomsonGUI(const TGWindow *p, UInt_t width, UInt_t height, TApplicat
         //checkButtonDraw.push_back(drawConceterationRDependes = new TGCheckButton(vframeDraw, "draw ne(r)"));
         //checkButtonDraw.push_back(drawTemperatureRDependesAll = new TGCheckButton(vframeDraw, "draw Te(r) all"));
         //checkButtonDraw.push_back(drawConceterationRDependesAll = new TGCheckButton(vframeDraw, "draw ne(r) all"));
-        checkButtonDraw.push_back(drawCompareSingalAndResult = new TGCheckButton(vframeDraw, "draw count signals in channel"));
+        checkButtonDraw.push_back(drawCompareSingalAndResult = new TGCheckButton(vframeDraw, "draw synthetic signal in channels"));
         //drawTemepratureRDependes->SetEnabled(kFALSE);
         //drawConceterationRDependes->SetEnabled(kFALSE);
 
@@ -1577,14 +1577,19 @@ void ThomsonGUI::DrawGraphs()
     }
     if (checkButton(drawCompareSingalAndResult))
     {
-        ThomsonCounter *counter = getThomsonCounter(nTimePage, nSpectrometer);
         //TString canvas_name = TString::Format("signal_compare_tp_%u_sp_%u", nTimePage, nSpectrometer);
         TString canvas_name = "synthetic_signal";
-        TCanvas *c = ThomsonDraw::createCanvas(canvas_name);
-        c->SetTitle(canvas_name+TString::Format("_tp_%u_sp_%u, %u", nTimePage, nSpectrometer, shotDiagnostic));
-        THStack *hs = ThomsonDraw::createHStack("hs_"+canvas_name, "");
-        ThomsonDraw::draw_comapre_signals(c, hs, N_WORK_CHANNELS, counter->getSignal(), counter->getSignalError(), counter->getSignalResult(), counter->getWorkSignal(), true);
-
+        const uint Nx = 3;
+        TCanvas *c = ThomsonDraw::createCanvas(canvas_name, 0, 1000, 1000, Nx, N_SPECTROMETERS/Nx);
+        c->SetTitle(canvas_name+TString::Format("_tp_%u, %u", nTimePage, shotDiagnostic));
+        
+        for (uint i = 0; i < N_SPECTROMETERS; i++)
+        {
+            c->cd(i+1);
+            ThomsonCounter *counter = getThomsonCounter(nTimePage, i);
+            THStack *hs = ThomsonDraw::createHStack("hs_"+canvas_name+std::to_string(i), TString::Format("spectrometer %u", i));
+            ThomsonDraw::draw_comapre_signals(c, hs, N_WORK_CHANNELS, counter->getSignal(), counter->getSignalError(), counter->getSignalResult(), counter->getWorkSignal(), true);
+        }
         c->Modified();
         c->Update();
     }

@@ -509,6 +509,9 @@ bool ThomsonCounter::countSignalResult()
 
     signalResult.resize(N_CHANNELS, 0);
 
+    if (N_CHANNELS_WORK < 2)
+        return true;
+
     for (uint i = 0; i < N_CHANNELS; i++)
     {
         if (channel_work[i])
@@ -516,6 +519,10 @@ bool ThomsonCounter::countSignalResult()
             darray S = countSArray(N_LAMBDA, lMin, dl, countA(Te), ne, theta, lambda_reference);
             double sig = convolution(getSRFch(i), S, lMin, lMax);
             signalResult[i] = sig;
+        }
+        else
+        {
+            signalResult[i] = 0.;
         }
     }
 
