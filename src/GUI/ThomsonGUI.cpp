@@ -12,6 +12,8 @@
 #include <TGTab.h>
 #include <TGText.h>
 #include <TGLabel.h>
+#include <TROOT.h>
+#include <TSystem.h>
 
 #include "thomsonCounter/SRF.h"
 #include "ThomsonDraw.h"
@@ -45,6 +47,8 @@ ClassImp(ThomsonGUI)
 #define isROOT 0
 #define isT1 1
 #define isSetofShots 2
+
+#define STATUS_ENTRY_TEXT "press count"
 
 void ThomsonGUI::readDataFromArchive(const char *archive_name, const char *kust, const char *signal_name, int shot, darray &t, darray &U, int timePoint, int timeList, const uint N_INFORM, const uint N_UNUSEFULL) const
 {
@@ -863,6 +867,15 @@ ThomsonGUI::ThomsonGUI(const TGWindow *p, UInt_t width, UInt_t height, TApplicat
         //spectrometerNumber->GetNumberEntry()->SetToolTipText("spectrometer number");
         
         hframe_button->AddFrame(drawButton, new TGLayoutHints(kLHintsLeft, 5, 5, 5, 5));
+
+
+        statusEntry = new TGTextEntry(hframe_button, STATUS_ENTRY_TEXT);
+        statusEntry->SetWidth(130);
+        statusEntry->SetEnabled(kFALSE);
+        statusEntry->SetTextColor(0x666666);
+        statusEntry->SetToolTipText("status");
+        hframe_button->AddFrame(statusEntry, new TGLayoutHints(kLHintsLeft, 5,5,5,5));
+
         //hframe_button->AddFrame(timeListNumber, new TGLayoutHints(kLHintsLeft, 5, 5, 5, 5));
         //hframe_button->AddFrame(spectrometerNumber, new TGLayoutHints(kLHintsLeft, 5, 10, 5, 5));
 
@@ -1054,6 +1067,9 @@ void ThomsonGUI::ReadMainFile()
 
     if (fin.is_open())
     {
+        statusEntry->SetText("count start");
+        gClient->ForceRedraw();
+        gSystem->ProcessEvents();
         shotDiagnostic = 0;
         fileType = -1;
         N_SHOTS = 1;
@@ -1111,6 +1127,8 @@ void ThomsonGUI::ReadMainFile()
         shotNumber->GetNumberEntry()->SetToolTipText(TString::Format("%u", shotDiagnostic));
         if (writeResultTable->IsDown())
             writeResultTableToFile("last_result_table.dat");
+
+        statusEntry->SetText(TString::Format("ready, shot: %u", shotDiagnostic));
     }
     else if (fileType == isT1)
     {
@@ -1119,6 +1137,8 @@ void ThomsonGUI::ReadMainFile()
         drawConvolution->SetEnabled(true);
         for (uint i = 0; i < checkButtonInfo.size(); i++)
             checkButtonInfo[i]->SetEnabled(true);
+
+        statusEntry->SetText(TString::Format("ready"));
     }
 
     if (fileType >= 0)
@@ -1388,7 +1408,7 @@ void ThomsonGUI::DrawGraphs()
     }
 
     const darray sigma_n_coeff = {0., 0., 0., 0., 0., 0.};
-    const uiarray color_map = {0,1,2,3,4,5,6,7, 8, 9, 11};
+    const uiarray color_map = {0,1,2,3,4,5,6,7, 209, 46, 11};
     //const darray time_points = {0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.};
 
     if (checkButton(drawSRF))
@@ -1399,6 +1419,10 @@ void ThomsonGUI::DrawGraphs()
         TMultiGraph *mg = ThomsonDraw::createMultiGraph("mg_"+canvas_name, "");
         ThomsonDraw::srf_draw(c, mg,counter->getSRF(), N_WORK_CHANNELS, counter->getLMin(), counter->getLMax(),
         counter->getNLambda(), LAMBDA_REFERENCE, {counter->getT()}, {counter->getTheta()}, true, false);
+
+
+        c->Modified();
+        c->Update();
     }
     if (checkButton(drawConvolution))
     {
@@ -1407,6 +1431,10 @@ void ThomsonGUI::DrawGraphs()
         TCanvas *c = ThomsonDraw::createCanvas(canvas_name, shotDiagnostic);
         TMultiGraph *mg = ThomsonDraw::createMultiGraph("mg_"+canvas_name, "");
         ThomsonDraw::convolution_draw(c, mg, counter->getConvolution(), N_WORK_CHANNELS, counter->getTMin(), counter->getDT(), counter->getNTemperature(), true, true);
+        
+        c->Modified();
+        c->Update();
+    
     }
     if (checkButton(drawSignalsInChannels) && fileType == isROOT) 
     {
@@ -1414,6 +1442,9 @@ void ThomsonGUI::DrawGraphs()
         TCanvas *c = ThomsonDraw::createCanvas(canvas_name, shotDiagnostic);
         TMultiGraph *mg = ThomsonDraw::createMultiGraph("mg_"+canvas_name, "");
         ThomsonDraw::thomson_signal_draw(c, mg, getSignalProcessing(nTimePage, nSpectrometer), 0, true, true, false, N_WORK_CHANNELS, work_mask);
+    
+        c->Modified();
+        c->Update();
     }
     if (checkButton(drawIntegralInChannels) && fileType == isROOT)
     {
@@ -1421,6 +1452,9 @@ void ThomsonGUI::DrawGraphs()
         TCanvas *c = ThomsonDraw::createCanvas(canvas_name, shotDiagnostic);
         TMultiGraph *mg = ThomsonDraw::createMultiGraph("mg_"+canvas_name, "");
         ThomsonDraw::thomson_signal_draw(c, mg, getSignalProcessing(nTimePage, nSpectrometer), 1, true, true, false, N_WORK_CHANNELS, work_mask);
+    
+        c->Modified();
+        c->Update();
     }
     if (checkButton(drawSignalsAndIntegralsInChannels) && fileType == isROOT)
     {
@@ -1429,6 +1463,9 @@ void ThomsonGUI::DrawGraphs()
         TMultiGraph *mg = ThomsonDraw::createMultiGraph("mg_"+canvas_name, "");
         ThomsonDraw::thomson_signal_draw(c, mg, getSignalProcessing(nTimePage, nSpectrometer), 0, false, false, false, N_WORK_CHANNELS, work_mask, 10., false);
         ThomsonDraw::thomson_signal_draw(c, mg, getSignalProcessing(nTimePage, nSpectrometer), 1, true, true, false, N_WORK_CHANNELS, work_mask);
+
+        c->Modified();
+        c->Update();
     }
     if (checkButton(drawEnergySignals) && fileType == isROOT)
     {
@@ -1457,6 +1494,9 @@ void ThomsonGUI::DrawGraphs()
 
                 ThomsonDraw::createLegend(mg);
         }
+
+        c->Modified();
+        c->Update();
 
     }
     /*if (checkButton(drawTemepratureRDependes) && fileType == isROOT)
@@ -1531,6 +1571,9 @@ void ThomsonGUI::DrawGraphs()
 
         ThomsonDraw::createLegend(mg);
 
+
+        c->Modified();
+        c->Update();
     }
     if (checkButton(drawConceterationRDependesAll) && fileType == isROOT)
     {
@@ -1557,6 +1600,9 @@ void ThomsonGUI::DrawGraphs()
         mg->GetYaxis()->CenterTitle();
         mg->Draw("A");
         ThomsonDraw::createLegend(mg);
+
+        c->Modified();
+        c->Update();
     }
     if (checkButton(drawCompareSingalAndResult))
     {
@@ -1565,6 +1611,9 @@ void ThomsonGUI::DrawGraphs()
         TCanvas *c = ThomsonDraw::createCanvas(canvas_name, shotDiagnostic);
         THStack *hs = ThomsonDraw::createHStack("hs_"+canvas_name, "");
         ThomsonDraw::draw_comapre_signals(c, hs, N_WORK_CHANNELS, counter->getSignal(), counter->getSignalError(), counter->getSignalResult(), counter->getWorkSignal(), true);
+
+        c->Modified();
+        c->Update();
     }
 
 }
@@ -1778,6 +1827,7 @@ void ThomsonGUI::CountSeveralShot()
 
     if (fin.is_open())
     {
+        statusEntry->SetText(STATUS_ENTRY_TEXT);
         N_SHOTS = 1;
         fileType = -1;
         clearSpArray();

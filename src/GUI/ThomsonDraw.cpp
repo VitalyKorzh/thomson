@@ -34,6 +34,8 @@ TCanvas *ThomsonDraw::createCanvas(const char *canvas_name, uint shot, uint widt
 	c->SetGrid();
 	c->cd();
     gPad->SetLeftMargin(0.15);
+    c->Modified();
+    c->Update();
 	return c;
 }
 

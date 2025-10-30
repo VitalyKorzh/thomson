@@ -61,6 +61,8 @@ private:
                     *infoError;
 
 
+    TGTextEntry *statusEntry;
+
     TGCheckButton *drawSignalStatisticSetofShots;
     std::vector <TGCheckButton *> checkButtonSetofShots;
 
