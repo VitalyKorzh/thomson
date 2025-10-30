@@ -17,8 +17,9 @@ TCanvas *ThomsonDraw::createCanvas(const char *canvas_name, uint shot, uint widt
 	TCanvas* c;
 	TString cName(canvas_name);
     TString cTitle = cName;
-    if (shot != 0)
+    if (shot != 0) {
         cTitle += TString::Format(", %u", shot);
+    }
 	TObject* const o = gROOT->FindObject(canvas_name);
 	if( o && o->InheritsFrom(TCanvas::Class()) )
 	{
