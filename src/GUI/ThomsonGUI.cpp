@@ -928,8 +928,8 @@ ThomsonGUI::ThomsonGUI(const TGWindow *p, UInt_t width, UInt_t height, TApplicat
         drawButton->Connect("Clicked()", CLASS_NAME, this, "DrawSetOfShots()");
         hframeBottom->AddFrame(drawButton, new TGLayoutHints(kLHintsLeft, 5,5,5,10));
 
-        timePageNumberSetofShots = new TGNumberEntry(hframeBottom, 1, 4, -1, TGNumberFormat::kNESInteger,
-                                            TGNumberFormat::kNEANonNegative, TGNumberEntry::kNELLimitMinMax, 0, N_TIME_LIST-1);
+        //timePageNumberSetofShots = new TGNumberEntry(hframeBottom, 1, 4, -1, TGNumberFormat::kNESInteger,
+        //                                    TGNumberFormat::kNEANonNegative, TGNumberEntry::kNELLimitMinMax, 0, N_TIME_LIST-1);
         spectrometrNumberSetofShots = new TGNumberEntry(hframeBottom, 0, 4, -1, TGNumberFormat::kNESInteger,
                                             TGNumberFormat::kNEANonNegative, TGNumberEntry::kNELLimitMinMax, 0, N_SPECTROMETERS-1);
 
@@ -937,12 +937,12 @@ ThomsonGUI::ThomsonGUI(const TGWindow *p, UInt_t width, UInt_t height, TApplicat
                                             TGNumberFormat::kNEANonNegative, TGNumberEntry::kNELLimitMinMax, 0, N_CHANNELS-1);
 
         drawButton->SetToolTipText("draw selected graphs");
-        timePageNumberSetofShots->GetNumberEntry()->SetToolTipText("time page number");
+        //timePageNumberSetofShots->GetNumberEntry()->SetToolTipText("time page number");
         spectrometrNumberSetofShots->GetNumberEntry()->SetToolTipText("spectrometer number");
         channelNumberSetofShots->GetNumberEntry()->SetToolTipText("channel number");
 
 
-        hframeBottom->AddFrame(timePageNumberSetofShots, new TGLayoutHints(kLHintsLeft, 5, 5, 5, 5));
+        //hframeBottom->AddFrame(timePageNumberSetofShots, new TGLayoutHints(kLHintsLeft, 5, 5, 5, 5));
         hframeBottom->AddFrame(spectrometrNumberSetofShots, new TGLayoutHints(kLHintsLeft, 5, 5, 5, 5));
         hframeBottom->AddFrame(channelNumberSetofShots, new TGLayoutHints(kLHintsLeft, 5, 10, 5, 5));
 

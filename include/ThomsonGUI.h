@@ -85,7 +85,7 @@ private:
     TGNumberEntryField *maxSignalEntry;
 
     TGNumberEntry *spectrometrNumberSetofShots;
-    TGNumberEntry *timePageNumberSetofShots;
+    //TGNumberEntry *timePageNumberSetofShots;
     TGNumberEntry *channelNumberSetofShots;
     std::vector <TGCheckButton*> checkButtonDrawTimeSetOfShots;
 
