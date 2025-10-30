@@ -403,7 +403,7 @@ void ThomsonDraw::draw_comapre_signals(TCanvas *c, THStack *hs, uint NChannel, c
 
 void ThomsonDraw::draw_signal_statistics(TCanvas *c, THStack *hs, const darray &signal, double min, double max, uint nbins, bool draw)
 {
-    c->cd();
+    //c->cd();
 
     hs->SetTitle(";Vt, V*ns;counts");
 

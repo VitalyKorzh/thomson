@@ -8,6 +8,9 @@
 #include <cmath>
 #include <algorithm>
 
+#define SELECTION_BEST_RATIO 0
+#define SELECTION_RATIO_TO_FIRST_WORK_CHANNEl 1
+
 void ThomsonCounter::createChannelsNumberArray()
 {
     N_RATIO = N_CHANNELS*(N_CHANNELS-1)/2;
@@ -229,7 +232,7 @@ int ThomsonCounter::findRatioNumber(uint ch1, uint ch2) const
 
 ThomsonCounter::ThomsonCounter(const std::string &srf_file_name, const std::string &convolution_file_name,
                                const darray &signal, const darray &signal_error, double theta, const barray &channel_work, 
-                               double lambda_reference, bool normalizeFirstWorkChannel) : normalizeFirstWorkChannel(normalizeFirstWorkChannel),
+                               double lambda_reference, int selectionMethod) : selectionMethod(selectionMethod),
                                lim_percent(0.5), work(false), signal(signal), signal_error(signal_error), channel_work(channel_work),
                                theta(theta), lambda_reference(lambda_reference)
 
@@ -255,29 +258,41 @@ ThomsonCounter::ThomsonCounter(const std::string &srf_file_name, const std::stri
         if (this->channel_work[i])
             N_CHANNELS_WORK++;
 
+    normalizeChannel = 0;
+    firstWorkChannel = 0;
+    for (uint i = 0; i < N_CHANNELS; i++)
+        if (this->channel_work[i]) {
+            firstWorkChannel = i;
+            break;
+        }
+
+    if (selectionMethod == SELECTION_RATIO_TO_FIRST_WORK_CHANNEl)
+        normalizeChannel = firstWorkChannel;
+    else if (selectionMethod >= SELECTION_RATIO_TO_FIRST_WORK_CHANNEl*100 && selectionMethod <= SELECTION_RATIO_TO_FIRST_WORK_CHANNEl*100+5)
+    {
+        uint index = selectionMethod - 100*SELECTION_RATIO_TO_FIRST_WORK_CHANNEl;
+        if (index < N_CHANNELS)
+            normalizeChannel = index;
+    }
+
     if (work) {
         createChannelsNumberArray();
         Te0 = findTZeroApproximation();
     }
 }
 
-ThomsonCounter::ThomsonCounter(const std::string &srf_file_name, const std::string &convolution_file_name, const SignalProcessing &sp, const darray &sigma_channels, double theta, double lambda_reference, bool normalizeFirstWorkChannel) :
-                                 ThomsonCounter(srf_file_name, convolution_file_name, sp.getSignals(), sigma_channels, theta, sp.getWorkSignals(), lambda_reference, normalizeFirstWorkChannel)
+ThomsonCounter::ThomsonCounter(const std::string &srf_file_name, const std::string &convolution_file_name, const SignalProcessing &sp, const darray &sigma_channels, double theta, double lambda_reference, int selectionMethod) :
+                                 ThomsonCounter(srf_file_name, convolution_file_name, sp.getSignals(), sigma_channels, theta, sp.getWorkSignals(), lambda_reference, selectionMethod)
 {
 }
 
 bool ThomsonCounter::isChannelUseToCount(uint ch1, uint ch2, const barray &is_channel_use) const 
 {
-    if (!normalizeFirstWorkChannel)
+    if (selectionMethod == SELECTION_BEST_RATIO)
         return !is_channel_use[ch1] || !is_channel_use[ch2];
     else
-    {
-        for (uint i = 0; i < N_CHANNELS; i++)
-        {
-            if (channel_work[i])
-                return ch1 == i || ch2 == i;
-        }
-    }
+        return ch1 == normalizeChannel || ch2 == normalizeChannel;
+
     return false;
 }
 
@@ -288,7 +303,7 @@ bool ThomsonCounter::count(const double alpha, const uint iter_limit, const doub
     if (alpha <= 0. || iter_limit == 0 || epsilon <= 0.)
         return false;
 
-    if (N_CHANNELS_WORK == 0)
+    if (N_CHANNELS_WORK < 2)
     {
         TResult = 0;
         t_error = 0;
@@ -382,7 +397,7 @@ bool ThomsonCounter::count(const double alpha, const uint iter_limit, const doub
 
 bool ThomsonCounter::countConcetration()
 {
-    if (N_CHANNELS_WORK == 0)
+    if (N_CHANNELS_WORK < 2)
     {
         neResult = 0;
         ne_error = 0;

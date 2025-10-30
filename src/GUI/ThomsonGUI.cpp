@@ -250,7 +250,7 @@ void ThomsonGUI::processingSignalsData(const char *archive_name, int shot, const
     }
 }
 
-bool ThomsonGUI::countThomson(const std::string &srf_file_folder, const std::string &convolution_file_folder, int shot, bool clearArray, bool normalizeFirstWorkChannel)
+bool ThomsonGUI::countThomson(const std::string &srf_file_folder, const std::string &convolution_file_folder, int shot, bool clearArray, int selectionMethod)
 {
 
     const std::vector<darray> sigma0 = {
@@ -295,7 +295,7 @@ bool ThomsonGUI::countThomson(const std::string &srf_file_folder, const std::str
             for (uint i = 0; i < N_CHANNELS; i++)
                 sigma[i] = sqrt(ERROR_COEFF*ERROR_COEFF*getSignalProcessing(it, sp)->getSignals()[i] + sigma0[sp][i]*sigma0[sp][i]);
 
-            ThomsonCounter * counter = new ThomsonCounter(srf_file_name, convolution_file_name, *getSignalProcessing(it, sp), sigma, calibrations[sp*N_SPECTROMETER_CALIBRATIONS+ID_THETA], LAMBDA_REFERENCE, normalizeFirstWorkChannel);
+            ThomsonCounter * counter = new ThomsonCounter(srf_file_name, convolution_file_name, *getSignalProcessing(it, sp), sigma, calibrations[sp*N_SPECTROMETER_CALIBRATIONS+ID_THETA], LAMBDA_REFERENCE, selectionMethod);
             if (!counter->isWork()) {
                 thomsonSuccess = false;
                 break;
@@ -366,6 +366,7 @@ void ThomsonGUI::setDrawEnable(int signal, int thomson)
         infoNe->SetEnabled(thomson);
         infoCountSignal->SetEnabled(thomson);
         infoLaserEnery->SetEnabled(thomson);
+        infoError->SetEnabled(thomson);
     }
     if (signal >= 0)
     {
@@ -763,6 +764,7 @@ ThomsonGUI::ThomsonGUI(const TGWindow *p, UInt_t width, UInt_t height, TApplicat
         checkButtonInfo.push_back(infoNe = new TGCheckButton(vframeInfo, "print ne"));
         checkButtonInfo.push_back(infoCountSignal = new TGCheckButton(vframeInfo, "print count signals"));
         checkButtonInfo.push_back(infoLaserEnery = new TGCheckButton(vframeInfo, "print Laser enery"));
+        checkButtonInfo.push_back(infoError = new TGCheckButton(vframeInfo, "print rmse"));
         infoUseChannelToNe->SetEnabled(kFALSE);
         
         for (uint i = 0; i < checkButtonInfo.size(); i++)
@@ -1033,6 +1035,7 @@ void ThomsonGUI::ReadMainFile()
 
     if (fileType == isROOT) {
         setDrawEnable(1, 1);
+        shotNumber->GetNumberEntry()->SetToolTipText(TString::Format("%u", shotDiagnostic));
         if (writeResultTable->IsDown())
             writeResultTableToFile("last_result_table.dat");
     }
@@ -1191,10 +1194,10 @@ void ThomsonGUI::readROOTFormat(const std::string &fileName, const std::string &
     /*fin >> shot >> parameters.start_point_from_start_zero_line >> parameters.step_from_start_zero_line >> parameters.start_point_from_end_zero_line >> 
     parameters.step_from_end_zero_line >> parameters.signal_point_start >> 
     parameters.signal_point_step >> parameters.point_integrate_start >> parameters.threshold >> parameters.increase_point >> parameters.decrease_point;*/
-    bool normalizeFirstWorkChannel;
-    fin >> normalizeFirstWorkChannel;
+    int selectionMethod;
+    fin >> selectionMethod;
     processingSignalsData(archive_name.c_str(), shot, parametersArray, true);
-    if (fin.fail() || !countThomson(srf_file_folder, convolution_file_folder, shot, true, normalizeFirstWorkChannel)) {
+    if (fin.fail() || !countThomson(srf_file_folder, convolution_file_folder, shot, true, selectionMethod)) {
         std::cerr << "ошибка чтения файла!\n";
         fileType = -1;
     }
@@ -1312,6 +1315,7 @@ void ThomsonGUI::DrawGraphs()
     }
 
     const darray sigma_n_coeff = {0., 0., 0., 0., 0., 0.};
+    const uiarray color_map = {0,1,2,3,4,5,6,7, 8, 9, 11};
     //const darray time_points = {0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.};
 
     if (checkButton(drawSRF))
@@ -1361,16 +1365,16 @@ void ThomsonGUI::DrawGraphs()
 
         const barray mask(N_CHANNELS, true);
 
-        uint color = 1;
+        //uint color = 1;
         for (uint it = 1; it < N_TIME_LIST; it++)
         {
             if (!checkButtonDrawTime[it]->IsDown())
                 continue;
 
-            ThomsonDraw::thomson_signal_draw(c, mg, getSignalProcessing(it, NUMBER_ENERGY_SPECTROMETER), 0, false, false, false, 8, mask, 10., true, false, NUMBER_ENERGY_CHANNEL, color); 
+            ThomsonDraw::thomson_signal_draw(c, mg, getSignalProcessing(it, NUMBER_ENERGY_SPECTROMETER), 0, false, false, false, 8, mask, 10., true, false, NUMBER_ENERGY_CHANNEL, color_map[it]); 
             ((TGraph*)mg->GetListOfGraphs()->Last())->SetTitle(TString::Format("%u (%.2f ms)", it, time_points[it]));
-            ThomsonDraw::thomson_signal_draw(c, mg, getSignalProcessing(it, NUMBER_ENERGY_SPECTROMETER), 1, false, false, false, 8, mask, 1., false, true, NUMBER_ENERGY_CHANNEL, color); 
-            ThomsonDraw::Color(color);
+            ThomsonDraw::thomson_signal_draw(c, mg, getSignalProcessing(it, NUMBER_ENERGY_SPECTROMETER), 1, false, false, false, 8, mask, 1., false, true, NUMBER_ENERGY_CHANNEL, color_map[it]); 
+            //ThomsonDraw::Color(color);
         }
 
         {
@@ -1432,7 +1436,7 @@ void ThomsonGUI::DrawGraphs()
         darray Te(N_SPECTROMETERS);
         darray TeError(N_SPECTROMETERS);
 
-        uint color = 1;
+        //uint color = 1;
         for (uint it = 1; it < N_TIME_LIST; it++)
         {
             if (!checkButtonDrawTime[it]->IsDown())
@@ -1443,8 +1447,8 @@ void ThomsonGUI::DrawGraphs()
                 TeError[i] = getThomsonCounter(it, i)->getTError();
             }
 
-            ThomsonDraw::draw_result_from_r(c, mg, xPosition, Te, TeError, 21, 1.5, color, 1, 7, color, TString::Format("%u (%.2f ms)", it, time_points[it]), false);
-            ThomsonDraw::Color(color);
+            ThomsonDraw::draw_result_from_r(c, mg, xPosition, Te, TeError, 21, 1.5, color_map[it], 1, 7, color_map[it], TString::Format("%u (%.2f ms)", it, time_points[it]), false);
+            //ThomsonDraw::Color(color);
         }
 
         mg->GetXaxis()->CenterTitle();
@@ -1465,15 +1469,15 @@ void ThomsonGUI::DrawGraphs()
         darray ne(N_SPECTROMETERS);
         darray neError(N_SPECTROMETERS);
 
-        uint color = 1;
+        //uint color = 1;
         for (uint it = 1; it < N_TIME_LIST; it++)
         {
             if (!checkButtonDrawTime[it]->IsDown())
                 continue;
 
             countNWithCalibration(ne, neError, sigma_n_coeff, it);
-            ThomsonDraw::draw_result_from_r(c, mg, xPosition, ne, neError, 21, 1.5, color, 1, 7, color, TString::Format("%u (%.2f ms)", it, time_points[it]), false);
-            ThomsonDraw::Color(color);
+            ThomsonDraw::draw_result_from_r(c, mg, xPosition, ne, neError, 21, 1.5, color_map[it], 1, 7, color_map[it], TString::Format("%u (%.2f ms)", it, time_points[it]), false);
+            //ThomsonDraw::Color(color);
         }
 
         mg->GetXaxis()->CenterTitle();
@@ -1584,6 +1588,24 @@ void ThomsonGUI::PrintInfo()
         std::cout << "LASER energy:\n";
         for (uint it = 0; it < N_TIME_LIST; it++)
             std::cout << "\t" << energy[it] << "\n";
+    }
+    if (checkButton(infoError))
+    {
+        double rmse = 0;
+        double Wi = 0;
+        ThomsonCounter *counter = getThomsonCounter(nTimePage, nSpectrometer);
+
+        for (uint i = 0; i < N_CHANNELS; i++)
+        {
+            if (counter->getWorkSignal()[i])
+            {
+                double w = 1./ (counter->getSignalError()[i]*counter->getSignalError()[i]);
+                rmse += (counter->getSignal()[i] - counter->getSignalResult()[i])*(counter->getSignal()[i] - counter->getSignalResult()[i]) * w;
+                Wi += w;
+            }
+        }
+
+        std::cout << "rmse = " << sqrt(rmse/Wi) << "\n";
     }
 
     if (isInfo)
