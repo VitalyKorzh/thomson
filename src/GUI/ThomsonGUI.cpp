@@ -1587,6 +1587,7 @@ void ThomsonGUI::DrawGraphs()
         {
             c->cd(i+1);
             ThomsonCounter *counter = getThomsonCounter(nTimePage, i);
+            gPad->SetTitle(TString::Format("spectrometr %u, rmse=%.3f", i, counter->getRMSE()));
             THStack *hs = ThomsonDraw::createHStack("hs_"+canvas_name+std::to_string(i), TString::Format("spectrometer %u", i));
             ThomsonDraw::draw_comapre_signals(c, hs, N_WORK_CHANNELS, counter->getSignal(), counter->getSignalError(), counter->getSignalResult(), counter->getWorkSignal(), true);
         }
