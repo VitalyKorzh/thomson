@@ -12,14 +12,12 @@ uint &ThomsonDraw::Color(uint &color)
     return color;
 }
 
-TCanvas *ThomsonDraw::createCanvas(const char *canvas_name, uint shot, uint width, uint height, uint divideX, uint divideY)
+TCanvas *ThomsonDraw::createCanvas(const char *canvas_name, const char *title, uint width, uint height, uint divideX, uint divideY)
 {
 	TCanvas* c;
 	TString cName(canvas_name);
-    TString cTitle = cName;
-    if (shot != 0) {
-        cTitle += TString::Format(", %u", shot);
-    }
+    TString cTitle(title);
+
 	TObject* const o = gROOT->FindObject(canvas_name);
 	if( o && o->InheritsFrom(TCanvas::Class()) )
 	{
@@ -30,6 +28,7 @@ TCanvas *ThomsonDraw::createCanvas(const char *canvas_name, uint shot, uint widt
 	}
 	else
 		c=new TCanvas(cName, cTitle,1,1,width, height);
+
 	c->SetBit(kCanDelete);
 	c->cd();
     if (divideX*divideY > 1) {
@@ -39,11 +38,11 @@ TCanvas *ThomsonDraw::createCanvas(const char *canvas_name, uint shot, uint widt
             c->cd(i+1);
             gPad->SetBit(kCanDelete);
             gPad->SetGrid();
-            gPad->SetLeftMargin(0.1);
+            gPad->SetLeftMargin(0.15);
             gPad->SetRightMargin(0.01);
             gPad->SetTopMargin(0.1);
             gPad->SetBottomMargin(0.1);
-            gPad->SetBit(kCannotPick);
+            //gPad->SetBit(kCannotPick);
         }
     }
     else
@@ -355,7 +354,7 @@ void ThomsonDraw::thomson_draw(TMultiGraph *mg, const SignalProcessing &sp, uint
 void ThomsonDraw::thomson_signal_draw(TCanvas *c, TMultiGraph *mg, SignalProcessing *sp, int integrate, bool draw, bool drawLegend, bool drawSigBox, uint NChannels, const barray &work_mask, double scale, bool title, bool drawTimePoint, int channel, uint color) 
 {
     //c->cd();
-    mg->SetTitle(mg->GetTitle() + !integrate ? ";t, ns;U, V" : ";t, ns;Ut, V*ns");
+    mg->SetTitle(mg->GetTitle() + (TString)(!integrate ? ";t, ns;U, V" : ";t, ns;Ut, V*ns"));
 
     std::vector <TString> gTitle;
     if (title && channel < 0) {

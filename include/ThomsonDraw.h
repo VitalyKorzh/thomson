@@ -24,7 +24,7 @@ private:
 public:
     static TLegend *createLegend(const TMultiGraph * const mg, double x1=0.18, double y1=0.6, double x2=0.35, double y2=0.88, bool draw=true);
     static uint & Color(uint &color);
-    static TCanvas *createCanvas(const char *canvas_name, uint shot=0, uint width=700, uint height=800, uint divideX=1, uint divideY=1);
+    static TCanvas *createCanvas(const char *canvas_name, const char *title="", uint width=700, uint height=800, uint divideX=1, uint divideY=1);
     static TMultiGraph *createMultiGraph(const char *mg_name, const char *mg_title);
     static THStack *createHStack(const char *hs_name, const char *hs_title);
     static void srf_draw(TCanvas *c, TMultiGraph *mg, const darray &SRF, uint N_CHANNELS, double lMin, double lMax, uint N_LAMBDA, double lambda_reference=1064., const darray &Te={}, const darray &theta={}, bool draw=true, bool drawLegend=false);
