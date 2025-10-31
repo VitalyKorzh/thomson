@@ -298,7 +298,6 @@ bool ThomsonCounter::isChannelUseToCount(uint ch1, uint ch2, const barray &is_ch
 
 void ThomsonCounter::countRMSE()
 {
-    double rmse = 0;
     double Wi = 0;
 
     for (uint i = 0; i < N_CHANNELS; i++)
@@ -311,7 +310,7 @@ void ThomsonCounter::countRMSE()
         }
     }
 
-    rmse = sqrt(rmse);
+    rmse = sqrt(rmse/Wi);
 }
 
 bool ThomsonCounter::count(const double alpha, const uint iter_limit, const double epsilon)

@@ -37,9 +37,10 @@ TCanvas *ThomsonDraw::createCanvas(const char *canvas_name, uint shot, uint widt
         for (uint i = 0; i < divideX*divideY; i++)
         {
             c->cd(i+1);
+            gPad->SetBit(kCanDelete);
             gPad->SetGrid();
-            gPad->SetLeftMargin(0.15);
-            gPad->SetRightMargin(0.05);
+            gPad->SetLeftMargin(0.1);
+            gPad->SetRightMargin(0.01);
             gPad->SetTopMargin(0.1);
             gPad->SetBottomMargin(0.1);
             gPad->SetBit(kCannotPick);
@@ -93,8 +94,8 @@ THStack *ThomsonDraw::createHStack(const char *hs_name, const char *hs_title)
 
 void ThomsonDraw::srf_draw(TCanvas *c, TMultiGraph *mg, const darray &SRF, uint N_CHANNELS, double lMin, double lMax, uint N_LAMBDA, double lambda_reference, const darray &Te, const darray &theta, bool draw, bool drawLegend)
 {
-    c->cd();
-    mg->SetTitle(";#lambda, nm;SRF, a.u.");
+    //c->cd();
+    mg->SetTitle(mg->GetTitle() + (TString)";#lambda, nm;SRF, a.u.");
 
     darray lambda(N_LAMBDA);
     double dl = (lMax-lMin) / (N_LAMBDA-1.);
@@ -119,7 +120,7 @@ void ThomsonDraw::srf_draw(TCanvas *c, TMultiGraph *mg, const darray &SRF, uint 
             for (uint j = 0; j < S.size(); j++)
                 S[j] /= S.back();
 
-            mg->Add(createGraph(N_LAMBDA, lambda.data(), S.data(), color, 1, 1, TString::Format("Te=%.2f", Te[i])));
+            mg->Add(createGraph(N_LAMBDA, lambda.data(), S.data(), color, 1, 2, TString::Format("Te=%.2f", Te[i])));
         }
     }
 
@@ -146,8 +147,8 @@ void ThomsonDraw::srf_draw(TCanvas *c, TMultiGraph *mg, const darray &SRF, uint 
 
 void ThomsonDraw::convolution_draw(TCanvas *c, TMultiGraph *mg, const darray &SCount, uint N_CHANNELS, double T0, double dT, uint N_TEMPERATURE, bool draw, bool drawLegend)
 {
-    c->cd();
-    mg->SetTitle(";Te, eV;signal a.u.");
+    //c->cd();
+    mg->SetTitle(mg->GetTitle() + (TString)";Te, eV;signal a.u.");
 
 
     darray T(N_TEMPERATURE);
@@ -353,8 +354,8 @@ void ThomsonDraw::thomson_draw(TMultiGraph *mg, const SignalProcessing &sp, uint
 
 void ThomsonDraw::thomson_signal_draw(TCanvas *c, TMultiGraph *mg, SignalProcessing *sp, int integrate, bool draw, bool drawLegend, bool drawSigBox, uint NChannels, const barray &work_mask, double scale, bool title, bool drawTimePoint, int channel, uint color) 
 {
-    c->cd();
-    mg->SetTitle(!integrate ? ";t, ns;U, V" : ";t, ns;Ut, V*ns");
+    //c->cd();
+    mg->SetTitle(mg->GetTitle() + !integrate ? ";t, ns;U, V" : ";t, ns;Ut, V*ns");
 
     std::vector <TString> gTitle;
     if (title && channel < 0) {
@@ -372,7 +373,7 @@ void ThomsonDraw::thomson_signal_draw(TCanvas *c, TMultiGraph *mg, SignalProcess
 void ThomsonDraw::draw_result_from_r(TCanvas *c, TMultiGraph *mg, const darray &xPosition, const darray &result, const darray &result_error, uint marker_style, float marker_size, uint marker_color,
                                         uint lineWidth, uint lineStyle, uint lineColor, TString title, bool draw)
 {
-    c->cd();
+    //c->cd();
     TGraph *g = createGraph(xPosition.size(), xPosition.data(), result.data(), lineColor, lineStyle, lineWidth, title, nullptr, nullptr);
     g->SetMarkerStyle(marker_style);
     g->SetMarkerSize(marker_size);
@@ -396,7 +397,7 @@ void ThomsonDraw::draw_result_from_r(TCanvas *c, TMultiGraph *mg, const darray &
 void ThomsonDraw::draw_comapre_signals(TCanvas *c, THStack *hs, uint NChannel, const darray &signal, const darray &signal_error, const darray &countSignal, const barray &work_channel, bool draw)
 {
     //c->cd();
-    hs->SetTitle(";channel;Vt, V*ns");
+    hs->SetTitle(hs->GetTitle()+(TString)";channel;Vt, V*ns");
 
     darray signalN(NChannel, 0.);
     darray signalNE(NChannel, 0.);
@@ -422,9 +423,9 @@ void ThomsonDraw::draw_comapre_signals(TCanvas *c, THStack *hs, uint NChannel, c
 
 void ThomsonDraw::draw_signal_statistics(TCanvas *c, THStack *hs, const darray &signal, double min, double max, uint nbins, bool draw)
 {
-    c->cd();
+    //c->cd();
 
-    hs->SetTitle(";Vt, V*ns;counts");
+    hs->SetTitle(hs->GetTitle() + (TString)";Vt, V*ns;counts");
 
     hs->Add(createHistStatistics(signal, min, max, nbins, 1, 1, 2, ""));
 

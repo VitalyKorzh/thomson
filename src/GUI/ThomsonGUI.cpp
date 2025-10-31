@@ -11,6 +11,7 @@
 #include <TGFileDialog.h>
 #include <TGTab.h>
 #include <TGText.h>
+#include <TLatex.h>
 #include <TGLabel.h>
 #include <TROOT.h>
 #include <TSystem.h>
@@ -287,6 +288,8 @@ bool ThomsonGUI::countThomson(const std::string &srf_file_folder, const std::str
     if (calibrations.size() < N_SPECTROMETERS*N_SPECTROMETER_CALIBRATIONS)
         calibrations.resize(N_SPECTROMETERS*N_SPECTROMETER_CALIBRATIONS, 0);
 
+    std::vector <ThomsonCounter*> tempCounter(N_TIME_LIST*N_SPECTROMETERS, nullptr);
+
     for (uint sp = 0; sp < N_SPECTROMETERS; sp++)
     {
         std::string srf_file_name = srf_file_folder+"SRF_Spectro-" + std::to_string(sp+1)+".dat";
@@ -307,11 +310,18 @@ bool ThomsonGUI::countThomson(const std::string &srf_file_folder, const std::str
             counter->count();
             counter->countConcetration();
             counter->countSignalResult();
-            counterArray.push_back(counter);
+            tempCounter[sp*N_TIME_LIST+it] = counter;
+            //counterArray.push_back(counter);
         }
 
         if (!thomsonSuccess)
             break;
+    }
+
+    for (ThomsonCounter *counter : tempCounter)
+    {
+        if (counter != nullptr);
+            counterArray.push_back(counter);
     }
 
     return thomsonSuccess;
@@ -1409,33 +1419,42 @@ void ThomsonGUI::DrawGraphs()
 
     const darray sigma_n_coeff = {0., 0., 0., 0., 0., 0.};
     const uiarray color_map = {0,1,2,3,4,5,6,7, 209, 46, 11};
-    //const darray time_points = {0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.};
+    const uint Nx = 3;
+    const uint Ny = N_SPECTROMETERS / Nx;
 
     if (checkButton(drawSRF))
     {
-        ThomsonCounter *counter = getThomsonCounter(nTimePage, nSpectrometer);
         //TString canvas_name = TString::Format("SRF_sp_%u", nSpectrometer);
         TString canvas_name = "SRF";
-        TCanvas *c = ThomsonDraw::createCanvas(canvas_name);
-        c->SetTitle(canvas_name+TString::Format("_tp_%u_sp_%u, %u", nTimePage, nSpectrometer, shotDiagnostic));
-        TMultiGraph *mg = ThomsonDraw::createMultiGraph("mg_"+canvas_name, "");
-        ThomsonDraw::srf_draw(c, mg,counter->getSRF(), N_WORK_CHANNELS, counter->getLMin(), counter->getLMax(),
-        counter->getNLambda(), LAMBDA_REFERENCE, {counter->getT()}, {counter->getTheta()}, true, false);
+        TCanvas *c = ThomsonDraw::createCanvas(canvas_name, 0, 700, 800, Nx, Ny);
+        c->SetTitle(canvas_name+TString::Format("_tp_%u, %u", nTimePage, shotDiagnostic));
 
+        for (uint i = 0; i < N_SPECTROMETERS; i++)
+        {
+            c->cd(i+1);
+            ThomsonCounter *counter = getThomsonCounter(nTimePage, i);
+            TMultiGraph *mg = ThomsonDraw::createMultiGraph("mg_"+canvas_name+std::to_string(i), TString::Format("spectrometer %u", i));
+            ThomsonDraw::srf_draw(c, mg,counter->getSRF(), N_WORK_CHANNELS, counter->getLMin(), counter->getLMax(),
+                                    counter->getNLambda(), LAMBDA_REFERENCE, {counter->getT()}, {counter->getTheta()}, true, false);
+        }
 
         c->Modified();
         c->Update();
     }
     if (checkButton(drawConvolution))
     {
-        ThomsonCounter *counter = getThomsonCounter(0, nSpectrometer);
         //TString canvas_name = TString::Format("convolution_sp_%u", nSpectrometer);
         TString canvas_name = "convolution";
-        TCanvas *c = ThomsonDraw::createCanvas(canvas_name);
-        c->SetTitle(canvas_name+TString::Format("_sp_%u, %u", nSpectrometer, shotDiagnostic));
-        TMultiGraph *mg = ThomsonDraw::createMultiGraph("mg_"+canvas_name, "");
-        ThomsonDraw::convolution_draw(c, mg, counter->getConvolution(), N_WORK_CHANNELS, counter->getTMin(), counter->getDT(), counter->getNTemperature(), true, true);
-        
+        TCanvas *c = ThomsonDraw::createCanvas(canvas_name, 0, 700, 800, Nx, Ny);
+        c->SetTitle(canvas_name+TString::Format(", %u", shotDiagnostic));
+
+        for (uint i = 0; i < N_SPECTROMETERS; i++)
+        {
+            c->cd(i+1);
+            ThomsonCounter *counter = getThomsonCounter(nTimePage, i);
+            TMultiGraph *mg = ThomsonDraw::createMultiGraph("mg_" + canvas_name + std::to_string(i), TString::Format("spectrometer %u", i));
+            ThomsonDraw::convolution_draw(c, mg, counter->getConvolution(), N_WORK_CHANNELS, counter->getTMin(), counter->getDT(), counter->getNTemperature(), true, true);
+        }
         c->Modified();
         c->Update();
     
@@ -1579,16 +1598,14 @@ void ThomsonGUI::DrawGraphs()
     {
         //TString canvas_name = TString::Format("signal_compare_tp_%u_sp_%u", nTimePage, nSpectrometer);
         TString canvas_name = "synthetic_signal";
-        const uint Nx = 3;
-        TCanvas *c = ThomsonDraw::createCanvas(canvas_name, 0, 1000, 1000, Nx, N_SPECTROMETERS/Nx);
+        TCanvas *c = ThomsonDraw::createCanvas(canvas_name, 0, 700, 800, Nx, Ny);
         c->SetTitle(canvas_name+TString::Format("_tp_%u, %u", nTimePage, shotDiagnostic));
         
         for (uint i = 0; i < N_SPECTROMETERS; i++)
         {
             c->cd(i+1);
             ThomsonCounter *counter = getThomsonCounter(nTimePage, i);
-            gPad->SetTitle(TString::Format("spectrometr %u, rmse=%.3f", i, counter->getRMSE()));
-            THStack *hs = ThomsonDraw::createHStack("hs_"+canvas_name+std::to_string(i), TString::Format("spectrometer %u", i));
+            THStack *hs = ThomsonDraw::createHStack("hs_"+canvas_name+std::to_string(i), TString::Format("spectrometer %u, rmse=%.3f", i, counter->getRMSE()));
             ThomsonDraw::draw_comapre_signals(c, hs, N_WORK_CHANNELS, counter->getSignal(), counter->getSignalError(), counter->getSignalResult(), counter->getWorkSignal(), true);
         }
         c->Modified();
