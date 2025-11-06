@@ -45,8 +45,13 @@ private:
                 //*drawConceterationRDependes,
                 *drawTemperatureRDependesAll,
                 *drawConceterationRDependesAll,
-                *drawCompareSingalAndResult;
+                *drawCompareSingalAndResult,
+                *drawTeFromTime,
+                *drawNeFromTime;
 
+
+    TGNumberEntry *timeListNumberInfo;
+    TGNumberEntry *spectrometerNumberInfo;
 
     TGCheckButton *infoSignal,
                     *infoWorkChannels,
@@ -69,7 +74,7 @@ private:
     std::vector <TGCheckButton *> checkButtonDraw;
     std::vector <TGCheckButton *> checkButtonInfo;
     std::vector <TGCheckButton *> checkButtonDrawTime;
-
+    std::vector <TGCheckButton *> checkButtonDrawSpectrometers;
 
     TGNumberEntry *calibrationShot;
     TGNumberEntryField **xPositionCalibration,

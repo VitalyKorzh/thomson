@@ -13,6 +13,7 @@
 #include <TGText.h>
 #include <TLatex.h>
 #include <TGLabel.h>
+#include <TGTableLayout.h>
 #include <TROOT.h>
 #include <TSystem.h>
 
@@ -370,6 +371,8 @@ void ThomsonGUI::setDrawEnable(int signal, int thomson)
         drawTemperatureRDependesAll->SetEnabled(thomson);
         drawConceterationRDependesAll->SetEnabled(thomson);
         drawCompareSingalAndResult->SetEnabled(thomson);
+        drawTeFromTime->SetEnabled(thomson);
+        drawNeFromTime->SetEnabled(thomson);
         
 
         infoUseRatio->SetEnabled(thomson);
@@ -758,7 +761,7 @@ ThomsonGUI::ThomsonGUI(const TGWindow *p, UInt_t width, UInt_t height, TApplicat
         TGGroupFrame *vframeDraw = new TGGroupFrame(hframeGroups, "draw", kVerticalFrame);
         TGGroupFrame *vframeInfo = new TGGroupFrame(hframeGroups, "info", kVerticalFrame);
         hframeGroups->AddFrame(vframeDraw, new TGLayoutHints(kLHintsTop, 5, 5, 5, 5));
-        hframeGroups->AddFrame(vframeInfo, new TGLayoutHints(kLHintsTop, 5, 5, 5, 5));
+        hframeGroups->AddFrame(vframeInfo, new TGLayoutHints(kLHintsTop|kLHintsExpandX, 5, 5, 5, 5));
 
         checkButtonDraw.push_back(drawSRF = new TGCheckButton(vframeDraw, "draw SRF"));
         checkButtonDraw.push_back(drawConvolution = new TGCheckButton(vframeDraw, "draw convolution"));
@@ -810,7 +813,42 @@ ThomsonGUI::ThomsonGUI(const TGWindow *p, UInt_t width, UInt_t height, TApplicat
         {
             vframeDraw->AddFrame(checkButtonDraw[i], new TGLayoutHints(kLHintsLeft, 1, 1, 2, 2));
         }
-        
+
+
+        TGHorizontalFrame *hframePrintInfo = new TGHorizontalFrame(vframeInfo, 80, 40);
+        TGVerticalFrame *vframeTimeInfo = new TGVerticalFrame(hframePrintInfo, 80, 40);
+        TGVerticalFrame *vframeSpectrometerInfo = new TGVerticalFrame(hframePrintInfo, 80, 40);
+
+
+        TGLabel *labelTimeInfo = new TGLabel(vframeTimeInfo, "time page");
+        timeListNumberInfo = new TGNumberEntry(vframeTimeInfo, 1, 4, -1, TGNumberFormat::kNESInteger,
+                                            TGNumberFormat::kNEANonNegative, TGNumberEntry::kNELLimitMinMax, 0, N_TIME_LIST-1);
+
+        vframeTimeInfo->AddFrame(labelTimeInfo, new TGLayoutHints(kLHintsLeft, 0, 0, 5, 5));
+        vframeTimeInfo->AddFrame(timeListNumberInfo, new  TGLayoutHints(kLHintsLeft, 0, 0, 0, 0));
+
+
+        TGLabel *labelSpectrometerInfo = new TGLabel(vframeSpectrometerInfo, "spectrometer");
+        spectrometerNumberInfo = new TGNumberEntry(vframeSpectrometerInfo, 0, 4, -1, TGNumberFormat::kNESInteger,
+                                            TGNumberFormat::kNEANonNegative, TGNumberEntry::kNELLimitMinMax, 0, N_SPECTROMETERS-1);
+
+        vframeSpectrometerInfo->AddFrame(labelSpectrometerInfo, new TGLayoutHints(kLHintsLeft, 0, 0, 5, 5));
+        vframeSpectrometerInfo->AddFrame(spectrometerNumberInfo, new TGLayoutHints(kLHintsLeft, 0, 0, 0, 2));
+
+        hframePrintInfo->AddFrame(vframeTimeInfo, new TGLayoutHints(kLHintsLeft, 5, 5, 5, 5));
+        hframePrintInfo->AddFrame(vframeSpectrometerInfo, new TGLayoutHints(kLHintsLeft, 5,5,5,5));
+
+        vframeInfo->AddFrame(hframePrintInfo, new TGLayoutHints(kLHintsLeft, 0,0,0,0));
+
+        //const uint N_PAIRS = 5;
+        //TGHorizontalFrame *hframePairs[N_PAIRS];
+
+        //for (uint i = 0; i < N_PAIRS; i++)
+        //    hframePairs[i] = new TGHorizontalFrame(vframeInfo, 40, 40);
+
+        //TGTableLayout *tableLayout = new TGTableLayout(vframeInfo, N_PAIRS, 2, kFALSE);
+        //vframeInfo->SetLayoutManager(tableLayout);
+
         checkButtonInfo.push_back(infoSignal = new TGCheckButton(vframeInfo, "print signals"));
         checkButtonInfo.push_back(infoWorkChannels = new TGCheckButton(vframeInfo, "print work channels"));
         checkButtonInfo.push_back(infoUseRatio = new TGCheckButton(vframeInfo, "print use ratio for Te"));
@@ -819,13 +857,19 @@ ThomsonGUI::ThomsonGUI(const TGWindow *p, UInt_t width, UInt_t height, TApplicat
         checkButtonInfo.push_back(infoTij = new TGCheckButton(vframeInfo, "print Tij"));
         checkButtonInfo.push_back(infoTe = new TGCheckButton(vframeInfo, "print Te"));
         checkButtonInfo.push_back(infoNe = new TGCheckButton(vframeInfo, "print ne"));
-        checkButtonInfo.push_back(infoCountSignal = new TGCheckButton(vframeInfo, "print count signals"));
+        checkButtonInfo.push_back(infoCountSignal = new TGCheckButton(vframeInfo, "print synthetic signals"));
         checkButtonInfo.push_back(infoError = new TGCheckButton(vframeInfo, "print rmse"));
         checkButtonInfo.push_back(infoLaserEnery = new TGCheckButton(vframeInfo, "print Laser enery"));
         //infoUseChannelToNe->SetEnabled(kFALSE);
         
         for (uint i = 0; i < checkButtonInfo.size(); i++)
         {
+            //vframeInfo->AddFrame(checkButtonInfo[2*i], new TGTableLayoutHints(0, 1, i, i+1, kLHintsLeft | kLHintsCenterY));
+            //vframeInfo->AddFrame(checkButtonInfo[2*i+1], new TGTableLayoutHints(1, 2, i, i+1, kLHintsLeft | kLHintsCenterY));
+            //TGHorizontalFrame *hframePrintPairs = new TGHorizontalFrame(vframeInfo, 40, 40);
+            //hframePrintPairs->AddFrame(checkButtonInfo[i], new TGLayoutHints(kLHintsLeft, 1, 1, 2, 2));
+            //hframePrintPairs->AddFrame(checkButtonInfo[i+1], new TGLayoutHints(kLHintsLeft, 1, 1, 2, 2));
+            //vframeInfo->AddFrame(hframePairs[i], new TGLayoutHints(kLHintsLeft, 0, 0, 0, 0));
             vframeInfo->AddFrame(checkButtonInfo[i], new TGLayoutHints(kLHintsLeft, 1, 1, 2, 2));
         }
         
@@ -858,6 +902,26 @@ ThomsonGUI::ThomsonGUI(const TGWindow *p, UInt_t width, UInt_t height, TApplicat
         vframeTimeDraw->AddFrame(drawTemperatureRDependesAll, new TGLayoutHints(kLHintsLeft, 1, 1, 2, 2));
         vframeTimeDraw->AddFrame(drawConceterationRDependesAll, new TGLayoutHints(kLHintsLeft, 1, 1, 2, 2));
 
+
+        TGGroupFrame *vframeRadiusDraw = new TGGroupFrame(hframe_draw_all, "draw (spectrometers)", kVerticalFrame);
+        hframe_draw_all->AddFrame(vframeRadiusDraw, new TGLayoutHints(kLHintsLeft, 5,5,5,5));
+
+
+        TGHorizontalFrame *hframeSpectrometersList = new TGHorizontalFrame(vframeRadiusDraw, 40, 40);
+        vframeRadiusDraw->AddFrame(hframeSpectrometersList, new TGLayoutHints(kLHintsLeft, 5,5,5,5));
+        for (uint i = 0; i < N_SPECTROMETERS; i++)
+        {
+            checkButtonDrawSpectrometers.push_back(new TGCheckButton(hframeSpectrometersList));
+            checkButtonDrawSpectrometers.back()->SetState(kButtonDown);
+            checkButtonDrawSpectrometers.back()->SetToolTipText(TString::Format("spectrometer %u draw", i));
+            hframeSpectrometersList->AddFrame(checkButtonDrawSpectrometers.back(), new TGLayoutHints(kLHintsLeft, 1,1,7,7));
+        }
+
+        drawTeFromTime = new TGCheckButton(vframeRadiusDraw, "draw Te(t)");
+        drawNeFromTime = new TGCheckButton(vframeRadiusDraw, "draw ne(t)");
+
+        vframeRadiusDraw->AddFrame(drawTeFromTime, new TGLayoutHints(kLHintsLeft, 1, 1, 2, 2));
+        vframeRadiusDraw->AddFrame(drawNeFromTime, new TGLayoutHints(kLHintsLeft, 1, 1, 2, 2));
         
         setDrawEnable(0,0);
 
@@ -1455,6 +1519,10 @@ void ThomsonGUI::DrawGraphs()
         return TString::Format("%u (%.2f ms)", it, time_points[it]);
     };
 
+    auto rLabel = [](uint i, const darray &xPosition) {
+        return TString::Format("%u (%.1f mm)", i, xPosition[i]);
+    };
+
     if (checkButton(drawSRF))
     {
         TString canvas_name = "SRF";
@@ -1638,6 +1706,45 @@ void ThomsonGUI::DrawGraphs()
         c->Modified();
         c->Update();
     }
+    if (checkButton(drawTeFromTime) && fileType == isROOT)
+    {
+        TString canvas_name = "Te_from_t";
+        TCanvas *c = ThomsonDraw::createCanvas(canvas_name, canvasTitle(canvas_name, shotDiagnostic), width, height);
+        TMultiGraph *mg = ThomsonDraw::createMultiGraph(groupName(canvas_name), "");
+        mg->SetTitle(";t, ms;T_{e}, eV");
+
+        darray Te(N_TIME_LIST-1);
+        darray TeError(N_TIME_LIST-1);
+        darray t(N_TIME_LIST-1);
+        for (uint i = 0; i < N_SPECTROMETERS; i++)
+        {
+            if (!checkButtonDrawSpectrometers[i]->IsDown())
+                continue;
+
+            for (uint it = 1; it < N_TIME_LIST; it++)
+            {
+                t[it-1] = time_points[it]; 
+                Te[it-1] = getThomsonCounter(it, i)->getT();
+                TeError[it-1] = getThomsonCounter(it, i)->getTError();
+            }
+
+            ThomsonDraw::draw_result_from_r(c, mg, t, Te, TeError, 21, 1.5, color_map[i+1], 1, 7, color_map[i+1], rLabel(i, xPosition), false);
+        }
+
+        mg->GetXaxis()->CenterTitle();
+        mg->GetYaxis()->CenterTitle();
+        mg->Draw("A");
+
+        ThomsonDraw::createLegend(mg);
+
+        c->Modified();
+        c->Update();
+
+    }
+    if (checkButton(drawNeFromTime) && fileType == isROOT)
+    {
+
+    }
 
 }
 
@@ -1650,8 +1757,8 @@ void ThomsonGUI::PrintInfo()
     uint nSpectrometer=0, nTimePage=0;
     if (fileType == isROOT)
     {
-        //nSpectrometer = spectrometerNumber->GetNumber();
-        nTimePage = timeListNumber->GetNumber();
+        nSpectrometer = spectrometerNumberInfo->GetNumber();
+        nTimePage = timeListNumberInfo->GetNumber();
     }
 
     bool isInfo = false;
