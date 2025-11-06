@@ -1743,7 +1743,43 @@ void ThomsonGUI::DrawGraphs()
     }
     if (checkButton(drawNeFromTime) && fileType == isROOT)
     {
+        TString canvas_name = "ne_from_t";
+        TCanvas *c = ThomsonDraw::createCanvas(canvas_name, canvasTitle(canvas_name, shotDiagnostic), width, height);
+        TMultiGraph *mg = ThomsonDraw::createMultiGraph(groupName(canvas_name), "");
+        mg->SetTitle(";t, ms;n_{e}, 10^{13} cm^{-3}");
 
+        darray ne(N_TIME_LIST-1);
+        darray neError(N_TIME_LIST-1);
+        darray neTemp(N_SPECTROMETERS);
+        darray neTempError(N_SPECTROMETERS);
+        darray t(N_TIME_LIST-1);
+
+        for (uint i = 0; i < N_SPECTROMETERS; i++)
+        {
+            if (!checkButtonDrawSpectrometers[i]->IsDown())
+                continue;
+
+            for (uint it = 1; it < N_TIME_LIST; it++)
+            {
+                countNWithCalibration(neTemp, neTempError, sigma_n_coeff, it);
+
+                t[it-1] = time_points[it];
+                ne[it-1]= neTemp[i];
+                neError[it-1] = neTempError[i];
+            }
+
+            ThomsonDraw::draw_result_from_r(c, mg, t, ne, neError, 21, 1.5, color_map[i+1], 1, 7, color_map[i+1], rLabel(i, xPosition), false);
+        }
+
+
+        mg->GetXaxis()->CenterTitle();
+        mg->GetYaxis()->CenterTitle();
+        mg->Draw("A");
+
+        ThomsonDraw::createLegend(mg);
+
+        c->Modified();
+        c->Update();
     }
 
 }
