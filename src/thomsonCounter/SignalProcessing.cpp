@@ -70,7 +70,7 @@ double SignalProcessing::findZeroLine(const darray &t, const darray &U, uint cha
     return shift/use_points;
 }
 
-bool SignalProcessing::checkSignal(const darray &t, const darray &U, uint channel, double signal, double threshold, int increase_point, int decrease_point)
+bool SignalProcessing::checkSignal(const darray &t, const darray &U, const darray &UTintegral, uint channel, double signal, double threshold, int increase_point, int decrease_point, double klim, uint signal_point_start)
 {
     if (signal > 0)
     {
@@ -120,6 +120,33 @@ bool SignalProcessing::checkSignal(const darray &t, const darray &U, uint channe
 
         }
 
+        if (isImpulse && klim > 0.)
+        {
+            double T = 0;
+            double Y = 0;
+            double Y2 = 0;
+            double T2 = 0;
+            double TY = 0;
+            double N = 0;
+            for (uint i = signal_point_start; i < tSize; i++)
+            {
+                T += t[index+i];
+                Y += UTintegral[index+i];
+                Y2 += UTintegral[index+i]*UTintegral[index+i];
+                T2 += t[index+i]*t[index+i];
+                TY += t[index+i]*UTintegral[index+i];
+                N += 1;
+                //std::cout << t[index+i] << " " << U[index+i] << "\n";
+            } 
+            //std::cout << "\n";
+
+
+            double k = (N*TY - T*Y ) / (N*T2-T*T);
+            if (std::abs(k) > klim)
+                isImpulse = false;
+
+        }
+
         return isImpulse;
     }
     else
@@ -141,7 +168,7 @@ SignalProcessing::SignalProcessing(const darray &t_full, const darray &U_full, u
         shiftSignal(U_full, i, shift);
         double signal = countChannelSignal(UTintegrate_full, i, parameters.signal_point_start, parameters.signal_point_step);
 
-        work_signal[i] = checkSignal(t_full, UShift, i, signal, parameters.threshold, parameters.increase_point, parameters.decrease_point);
+        work_signal[i] = checkSignal(t_full, UShift, UTintegrate_full, i, signal, parameters.threshold, parameters.increase_point, parameters.decrease_point, parameters.klim, parameters.signal_point_start);
 
         signals[i] = signal;
         shifts[i] = shift;

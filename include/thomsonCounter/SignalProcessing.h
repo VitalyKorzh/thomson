@@ -23,18 +23,21 @@ struct SignalProcessingParameters
     int increase_point; // сколько точек возрастания сигнала дожны быть чтобы считать сигнал с импульсом
     int decrease_point; // сколько точек уменьшения сигнала должно быть чтобы считать сигнал с импульсом
 
+    double klim; // предельный наклон линии интегралла сигнала
+
     SignalProcessingParameters(
                                 uint start_point_from_start_zero_line = 0, uint start_point_from_end_zero_line = 0,
                                 uint step_from_start_zero_line=0, uint step_from_end_zero_line=0, 
                                 uint signal_point_start=0, uint signal_point_step=0,
                                 uint point_integrate_start=0,
-                                double threshold=0., int increase_point=0, int decrease_point=0
+                                double threshold=0., int increase_point=0, int decrease_point=0, 
+                                double klim=-1.
                                 ) :
                                 start_point_from_start_zero_line(start_point_from_start_zero_line), start_point_from_end_zero_line(start_point_from_end_zero_line),
                                 step_from_start_zero_line(step_from_start_zero_line), step_from_end_zero_line(step_from_end_zero_line),
                                 signal_point_start(signal_point_start), signal_point_step(signal_point_step),
                                 point_integrate_start(point_integrate_start),
-                                threshold(threshold), increase_point(increase_point), decrease_point(decrease_point)
+                                threshold(threshold), increase_point(increase_point), decrease_point(decrease_point), klim(klim)
     {}
 
 };
@@ -60,7 +63,7 @@ private:
     darray signal_box;
     parray paramtersArray;
 
-    bool checkSignal(const darray &t, const darray &U, uint channel, double signal, double threshold=0., int increase_point=0, int decrease_point=0); // проверить был ли импульс в канале
+    bool checkSignal(const darray &t, const darray &U, const darray &UTintegral, uint channel, double signal, double threshold=0., int increase_point=0, int decrease_point=0, double klim=-1., uint signal_points_start=1); // проверить был ли импульс в канале
     void integrateSignal(const darray &t, const darray &U, uint channel, double UZero, uint point_integrate_start);    
     void shiftSignal(const darray &U, uint channel, double UZero);
     double countChannelSignal(const darray &UTintegrate, uint channel, uint signal_point_start, uint signal_point_step) const;

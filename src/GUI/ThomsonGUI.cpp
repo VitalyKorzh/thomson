@@ -508,7 +508,7 @@ std::vector<parray> ThomsonGUI::readParametersToSignalProssecong(const std::stri
                 fin >> line >> pr.start_point_from_start_zero_line >> pr.step_from_start_zero_line >>
                 pr.start_point_from_end_zero_line >> pr.step_from_end_zero_line
                 >> pr.signal_point_start >> pr.signal_point_step >> pr.point_integrate_start >>
-                pr.threshold >> pr.increase_point >> pr.decrease_point;
+                pr.threshold >> pr.increase_point >> pr.decrease_point >> pr.klim;
 
                 parametersArray[sp][ch] = pr;
             }
