@@ -321,7 +321,7 @@ bool ThomsonGUI::countThomson(const std::string &srf_file_folder, const std::str
 
     for (ThomsonCounter *counter : tempCounter)
     {
-        if (counter != nullptr);
+        if (counter != nullptr)
             counterArray.push_back(counter);
     }
 
