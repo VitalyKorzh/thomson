@@ -1479,7 +1479,7 @@ void ThomsonGUI::DrawGraphs()
 
     darray xPosition(N_SPECTROMETERS);
     for (uint i = 0; i < N_SPECTROMETERS; i++) {
-        xPosition[i] = calibrations[i*N_SPECTROMETER_CALIBRATIONS+ID_X];
+        xPosition[i] = -calibrations[i*N_SPECTROMETER_CALIBRATIONS+ID_X];
     }
 
     const darray sigma_n_coeff = {0., 0., 0., 0., 0., 0.};
@@ -1659,7 +1659,7 @@ void ThomsonGUI::DrawGraphs()
         mg->GetYaxis()->CenterTitle();
         mg->Draw("A");
 
-        ThomsonDraw::createLegend(mg);
+        ThomsonDraw::createLegend(mg, 0.72, 0.6, 0.88, 0.88);
 
         c->Modified();
         c->Update();
@@ -1686,7 +1686,7 @@ void ThomsonGUI::DrawGraphs()
         mg->GetXaxis()->CenterTitle();
         mg->GetYaxis()->CenterTitle();
         mg->Draw("A");
-        ThomsonDraw::createLegend(mg);
+        ThomsonDraw::createLegend(mg, 0.72, 0.6, 0.88, 0.88);
 
         c->Modified();
         c->Update();
