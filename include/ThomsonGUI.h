@@ -74,6 +74,7 @@ private:
     std::vector <TGCheckButton *> checkButtonDraw;
     std::vector <TGCheckButton *> checkButtonInfo;
     std::vector <TGCheckButton *> checkButtonDrawTime;
+    std::vector <TGCheckButton *> checkButtonDrawSpectrometersFromTime;
     std::vector <TGCheckButton *> checkButtonDrawSpectrometers;
 
     TGNumberEntry *calibrationShot;
@@ -112,6 +113,10 @@ private:
 
     darray time_points;
     uint shotDiagnostic;
+
+    std::vector <std::pair<double, double>> raman_parameters;
+
+    void readRamanCrossSection(const char *raman_file_name);
 
     void setDrawEnable(int signal, int thomson);
 
@@ -155,7 +160,7 @@ private:
 
     std::string readArchiveName(const char *file_name) const;
 
-    void countNWithCalibration(darray &ne, darray &neError, const darray &sigma_n_coeff, uint it) const;
+    void countNWithCalibration(darray &ne, darray &neError, uint it) const;
 
     uiarray createArrayShots();
 

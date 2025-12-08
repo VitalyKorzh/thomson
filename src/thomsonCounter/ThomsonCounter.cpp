@@ -231,10 +231,10 @@ int ThomsonCounter::findRatioNumber(uint ch1, uint ch2) const
 }
 
 ThomsonCounter::ThomsonCounter(const std::string &srf_file_name, const std::string &convolution_file_name,
-                               const darray &signal, const darray &signal_error, double theta, const barray &channel_work, 
+                               const darray &signal, const darray &signal_error, double theta, const darray &Ki, const darray &sigmaKi, const barray &channel_work, 
                                double lambda_reference, int selectionMethod) : selectionMethod(selectionMethod),
                                lim_percent(0.5), work(false), signal(signal), signal_error(signal_error), channel_work(channel_work),
-                               theta(theta), lambda_reference(lambda_reference)
+                               theta(theta), lambda_reference(lambda_reference), Ki(Ki), sigmaKi(sigmaKi)
 
 {
 
@@ -281,8 +281,8 @@ ThomsonCounter::ThomsonCounter(const std::string &srf_file_name, const std::stri
     }
 }
 
-ThomsonCounter::ThomsonCounter(const std::string &srf_file_name, const std::string &convolution_file_name, const SignalProcessing &sp, const darray &sigma_channels, double theta, double lambda_reference, int selectionMethod) :
-                                 ThomsonCounter(srf_file_name, convolution_file_name, sp.getSignals(), sigma_channels, theta, sp.getWorkSignals(), lambda_reference, selectionMethod)
+ThomsonCounter::ThomsonCounter(const std::string &srf_file_name, const std::string &convolution_file_name, const SignalProcessing &sp, const darray &sigma_channels, double theta, const darray &Ki, const darray &sigmaKi, double lambda_reference, int selectionMethod) :
+                                 ThomsonCounter(srf_file_name, convolution_file_name, sp.getSignals(), sigma_channels, theta, Ki, sigmaKi, sp.getWorkSignals(), lambda_reference, selectionMethod)
 {
 }
 
@@ -481,6 +481,11 @@ bool ThomsonCounter::countConcetration()
 
             double ne_i_error = ne_i * sqrt(dai*dai/(ai*ai) + dQi*dQi/(Qi*Qi) - 2. * covFTeAi/(ai*Qi));
 
+            
+            ne_i_error = ne_i*Ki[i]*sqrt(ne_i_error*ne_i_error/(ne_i*ne_i)+sigmaKi[i]*sigmaKi[i]/(Ki[i]*Ki[i]));
+
+            ne_i *= Ki[i];
+
             double wi = 1. / (ne_i_error*ne_i_error);
 
             W += wi;
@@ -535,7 +540,7 @@ bool ThomsonCounter::countSignalResult()
         if (channel_work[i])
         {
             darray S = countSArray(N_LAMBDA, lMin, dl, countA(Te), ne, theta, lambda_reference);
-            double sig = convolution(getSRFch(i), S, lMin, lMax);
+            double sig = convolution(getSRFch(i), S, lMin, lMax)/Ki[i];
             signalResult[i] = sig;
         }
         else

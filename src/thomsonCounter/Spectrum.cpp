@@ -21,9 +21,15 @@ double SClassic(double A0, double l, double li, double a, double theta)
     double inLi2 = 1./(li*li);
     double SIN = sin(theta / 2.);
     double sin2 = SIN*SIN;
-    double S = A0*exp(- 0.25 * b * b * deltaL*deltaL/sin2*inLi2) * b ;
+    double S = A0*exp(- 0.25 * b * b * deltaL*deltaL/sin2*inLi2) * b;
     
     return S;
+}
+
+
+double SNorma(double l, double li, double theta)
+{
+    return 1./(2. * sqrt(M_PI)*li*sin(theta/2.));
 }
 
 double convolution(const double * const SRF, const darray &S, double lMin, double lMax) 

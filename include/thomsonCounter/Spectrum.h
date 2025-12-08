@@ -12,6 +12,7 @@ typedef unsigned uint;
 
 double SRelative(double A0, double l, double li, double a, double theta);
 double SClassic(double A0, double l, double li, double a, double theta);
+double SNorma(double l, double li, double theta);
 double convolution(const double *const SRF, const darray &S, double lMin, double lMax);
 double countA(double Te);
 double countT(double a);

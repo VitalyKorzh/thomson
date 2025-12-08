@@ -296,6 +296,8 @@ bool ThomsonGUI::countThomson(const std::string &srf_file_folder, const std::str
         std::string srf_file_name = srf_file_folder+"SRF_Spectro-" + std::to_string(sp+1)+".dat";
         std::string convolution_file_name = convolution_file_folder+"Convolution_Spectro-" + std::to_string(sp+1)+".dat";
 
+        darray Ki(N_CHANNELS, calibrations[sp*N_SPECTROMETER_CALIBRATIONS+ID_N_COEFF]);
+
         for (uint it = 0; it < N_TIME_LIST; it++)
         {
             darray sigma(N_CHANNELS);
@@ -303,7 +305,8 @@ bool ThomsonGUI::countThomson(const std::string &srf_file_folder, const std::str
             for (uint i = 0; i < N_CHANNELS; i++)
                 sigma[i] = sqrt(ERROR_COEFF*ERROR_COEFF*getSignalProcessing(it, sp)->getSignals()[i] + sigma0[sp][i]*sigma0[sp][i]);
 
-            ThomsonCounter * counter = new ThomsonCounter(srf_file_name, convolution_file_name, *getSignalProcessing(it, sp), sigma, calibrations[sp*N_SPECTROMETER_CALIBRATIONS+ID_THETA], LAMBDA_REFERENCE, selectionMethod);
+            ThomsonCounter * counter = new ThomsonCounter(srf_file_name, convolution_file_name, *getSignalProcessing(it, sp), sigma, calibrations[sp*N_SPECTROMETER_CALIBRATIONS+ID_THETA], Ki,
+            darray(N_CHANNELS, 0) , LAMBDA_REFERENCE, selectionMethod);
             if (!counter->isWork()) {
                 thomsonSuccess = false;
                 break;
@@ -358,6 +361,24 @@ void ThomsonGUI::clearCounterArray()
         delete it;
 
     counterArray.clear();
+}
+
+void ThomsonGUI::readRamanCrossSection(const char *raman_file_name)
+{
+    std::ifstream fin;
+    fin.open(raman_file_name);
+
+    if(fin.is_open())
+    {
+        uint J;
+        double lambdaJ;
+        double sigmaJ;
+        while (fin >> J >> lambdaJ >> sigmaJ) {
+            raman_parameters.emplace_back(lambdaJ, sigmaJ);
+        }
+    } // читает lambda J нм, sigmaJ cm^-2
+
+    fin.close();
 }
 
 void ThomsonGUI::setDrawEnable(int signal, int thomson)
@@ -546,11 +567,10 @@ void ThomsonGUI::writeResultTableToFile(const char *file_name) const
 
         darray ne(N_SPECTROMETERS);
         darray neError(N_SPECTROMETERS);
-        const darray coeff_n_error(N_SPECTROMETERS, 0);
 
         for (uint it = 0; it < N_TIME_LIST; it++)
         {
-            countNWithCalibration(ne, neError, coeff_n_error, it);
+            countNWithCalibration(ne, neError, it);
             for (uint sp = 0; sp < N_SPECTROMETERS; sp++)
             {
                 ThomsonCounter *counter = getThomsonCounter(it, sp);
@@ -574,6 +594,7 @@ std::string ThomsonGUI::readArchiveName(const char *file_name) const
         std::getline(fin, line);
         std::getline(fin, line);
         std::getline(fin, line);
+        std::getline(fin, line);
 
         if (!fin.fail())
         {
@@ -586,14 +607,13 @@ std::string ThomsonGUI::readArchiveName(const char *file_name) const
     return archive_name;
 }
 
-void ThomsonGUI::countNWithCalibration(darray &ne, darray &neError, const darray &sigma_n_coeff, uint it) const
+void ThomsonGUI::countNWithCalibration(darray &ne, darray &neError, uint it) const
 {
     for (uint i = 0; i < N_SPECTROMETERS; i++) {
-        double A = calibrations[i*N_SPECTROMETER_CALIBRATIONS+ID_N_COEFF]/energy[it];
+        double A = 1./energy[it];
         ne[i] = getThomsonCounter(it, i)->getN();
 
-        double AError2 = (sigma_energy[it]*sigma_energy[it]/(energy[it]*energy[it]) 
-                                    + sigma_n_coeff[i]*sigma_n_coeff[i]/(calibrations[i*N_SPECTROMETER_CALIBRATIONS+ID_N_COEFF]*calibrations[i*N_SPECTROMETER_CALIBRATIONS+ID_N_COEFF]));
+        double AError2 = sigma_energy[it]*sigma_energy[it] / (energy[it]*energy[it]);
 
         neError[i] = getThomsonCounter(it, i)->getNError();
         neError[i] = A*ne[i]*sqrt(AError2 + 
@@ -794,6 +814,12 @@ ThomsonGUI::ThomsonGUI(const TGWindow *p, UInt_t width, UInt_t height, TApplicat
         vframeTimeList->AddFrame(timeListNumber, new TGLayoutHints(kLHintsCenterX,0,0,0,0));
 
 
+        // for (uint i = 0; i < N_SPECTROMETERS; i++)
+        // {
+        //     checkButtonDrawSpectrometers.push_back(new TGCheckButton(hframeDrawPoints, ""));
+        //     hframeDrawPoints->AddFrame(checkButtonDrawSpectrometers.back(), new TGLayoutHints(kLHintsLeft, 1,1,1,1));
+        // }
+
         //TGVerticalFrame *vframeSpectrometer = new TGVerticalFrame(hframeDrawPoints, 80, 80);
 
         //TGLabel *labelSpectrometer = new TGLabel(vframeSpectrometer, "spectrometer");
@@ -911,10 +937,10 @@ ThomsonGUI::ThomsonGUI(const TGWindow *p, UInt_t width, UInt_t height, TApplicat
         vframeRadiusDraw->AddFrame(hframeSpectrometersList, new TGLayoutHints(kLHintsLeft, 5,5,5,5));
         for (uint i = 0; i < N_SPECTROMETERS; i++)
         {
-            checkButtonDrawSpectrometers.push_back(new TGCheckButton(hframeSpectrometersList));
-            checkButtonDrawSpectrometers.back()->SetState(kButtonDown);
-            checkButtonDrawSpectrometers.back()->SetToolTipText(TString::Format("spectrometer %u draw", i));
-            hframeSpectrometersList->AddFrame(checkButtonDrawSpectrometers.back(), new TGLayoutHints(kLHintsLeft, 1,1,7,7));
+            checkButtonDrawSpectrometersFromTime.push_back(new TGCheckButton(hframeSpectrometersList));
+            checkButtonDrawSpectrometersFromTime.back()->SetState(kButtonDown);
+            checkButtonDrawSpectrometersFromTime.back()->SetToolTipText(TString::Format("spectrometer %u draw", i));
+            hframeSpectrometersList->AddFrame(checkButtonDrawSpectrometersFromTime.back(), new TGLayoutHints(kLHintsLeft, 1,1,7,7));
         }
 
         drawTeFromTime = new TGCheckButton(vframeRadiusDraw, "draw Te(t)");
@@ -1150,14 +1176,18 @@ void ThomsonGUI::ReadMainFile()
         setDrawEnable(0, 0);
         std::string srf_file_folder;
         std::string convolution_file_folder;
+        std::string raman_file_name;
         std::getline(fin, srf_file_folder);
         std::getline(fin, convolution_file_folder);
+        std::getline(fin, raman_file_name);
         std::getline(fin, archive_name);
         
         std::string work_mask_string[N_SPECTROMETERS];
         for (uint i = 0; i < N_SPECTROMETERS; i++)
            std::getline(fin, work_mask_string[i]);
         
+
+        readRamanCrossSection(raman_file_name.c_str());
 
         if (!fin.fail())
         {
@@ -1336,7 +1366,7 @@ void ThomsonGUI::addToArrayTFormat(const std::string &srf_file, const std::strin
     clearSpArray();
     clearCounterArray();
     SignalProcessing *sp = new SignalProcessing(signal, work_mask[0]);
-    ThomsonCounter *counter = new ThomsonCounter(srf_file, convolution_file, *sp, signal_error, theta, LAMBDA_REFERENCE);
+    ThomsonCounter *counter = new ThomsonCounter(srf_file, convolution_file, *sp, signal_error, theta, darray(N_CHANNELS, 1.), darray(N_CHANNELS, 0), LAMBDA_REFERENCE);
     if (counter->isWork())
     {
         counter->count();
@@ -1482,7 +1512,6 @@ void ThomsonGUI::DrawGraphs()
         xPosition[i] = -calibrations[i*N_SPECTROMETER_CALIBRATIONS+ID_X];
     }
 
-    const darray sigma_n_coeff = {0., 0., 0., 0., 0., 0.};
     const uiarray color_map = {0,1,2,3,4,5,6,7, 209, 46, 11};
     const uint Nx = 3;
     const uint Ny = N_SPECTROMETERS / Nx;
@@ -1679,7 +1708,7 @@ void ThomsonGUI::DrawGraphs()
             if (!checkButtonDrawTime[it]->IsDown())
                 continue;
 
-            countNWithCalibration(ne, neError, sigma_n_coeff, it);
+            countNWithCalibration(ne, neError, it);
             ThomsonDraw::draw_result_from_r(c, mg, xPosition, ne, neError, 21, 1.5, color_map[it], 1, 7, color_map[it], timeLabel(it, time_points), false);
         }
 
@@ -1718,7 +1747,7 @@ void ThomsonGUI::DrawGraphs()
         darray t(N_TIME_LIST-1);
         for (uint i = 0; i < N_SPECTROMETERS; i++)
         {
-            if (!checkButtonDrawSpectrometers[i]->IsDown())
+            if (!checkButtonDrawSpectrometersFromTime[i]->IsDown())
                 continue;
 
             for (uint it = 1; it < N_TIME_LIST; it++)
@@ -1756,12 +1785,12 @@ void ThomsonGUI::DrawGraphs()
 
         for (uint i = 0; i < N_SPECTROMETERS; i++)
         {
-            if (!checkButtonDrawSpectrometers[i]->IsDown())
+            if (!checkButtonDrawSpectrometersFromTime[i]->IsDown())
                 continue;
 
             for (uint it = 1; it < N_TIME_LIST; it++)
             {
-                countNWithCalibration(neTemp, neTempError, sigma_n_coeff, it);
+                countNWithCalibration(neTemp, neTempError, it);
 
                 t[it-1] = time_points[it];
                 ne[it-1]= neTemp[i];

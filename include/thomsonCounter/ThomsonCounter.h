@@ -55,6 +55,8 @@ private:
     darray devTijArray;
     uiarray number_ratio;
     darray weight;
+    darray Ki;
+    darray sigmaKi;
 
     uint normalizeChannel;
     uint firstWorkChannel;
@@ -103,8 +105,8 @@ private:
     void countRMSE();
  
 public:
-    ThomsonCounter(const std::string &srf_file_name, const std::string &convolution_file_name, const darray &signal, const darray & signal_error, double theta, const barray &channel_work={}, double lambda_reference=W_REFERENCE, int selectionMethod=0);
-    ThomsonCounter(const std::string &srf_file_name, const std::string &convolution_file_name, const SignalProcessing &sp, const darray &sigma_channels, double theta, double lambda_reference=W_REFERENCE, int selectionMethod=0);
+    ThomsonCounter(const std::string &srf_file_name, const std::string &convolution_file_name, const darray &signal, const darray & signal_error, double theta, const darray &Ki, const darray &sigmaKi, const barray &channel_work={}, double lambda_reference=W_REFERENCE, int selectionMethod=0);
+    ThomsonCounter(const std::string &srf_file_name, const std::string &convolution_file_name, const SignalProcessing &sp, const darray &sigma_channels, double theta, const darray &Ki, const darray &sigmaKi, double lambda_reference=W_REFERENCE, int selectionMethod=0);
 
     bool count(const double alpha=0.001, const uint iter_limit=10000, const double epsilon=1e-12);
     bool countConcetration();
