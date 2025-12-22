@@ -296,10 +296,10 @@ bool ThomsonCounter::isChannelUseToCount(uint ch1, uint ch2, const barray &is_ch
     return false;
 }
 
-void ThomsonCounter::countRMSE()
+double ThomsonCounter::countRMSE(const darray &signalResult)
 {
     double Wi = 0;
-
+    double rmse = 0;
     for (uint i = 0; i < N_CHANNELS; i++)
     {
         if (channel_work[i])
@@ -311,6 +311,7 @@ void ThomsonCounter::countRMSE()
     }
 
     rmse = sqrt(rmse/Wi);
+    return rmse;
 }
 
 bool ThomsonCounter::count(const double alpha, const uint iter_limit, const double epsilon)
@@ -535,21 +536,36 @@ bool ThomsonCounter::countSignalResult()
     if (N_CHANNELS_WORK < 2)
         return true;
 
+
+    signalResultPlus.resize(N_CHANNELS, 0);
+    signalResultMinus.resize(N_CHANNELS, 0);
+
     for (uint i = 0; i < N_CHANNELS; i++)
     {
         if (channel_work[i])
         {
             darray S = countSArray(N_LAMBDA, lMin, dl, countA(Te), ne, theta, lambda_reference);
+            darray SPlus = countSArray(N_LAMBDA, lMin, dl, countA(Te+getTError()/2.), ne, theta, lambda_reference);
+            darray SMinus = countSArray(N_LAMBDA, lMin, dl, countA(Te-getTError()/2.), ne, theta, lambda_reference);
             double sig = convolution(getSRFch(i), S, lMin, lMax)/Ki[i];
+            double sigPlus = convolution(getSRFch(i), SPlus, lMin, lMax)/Ki[i];
+            double sigMinus = convolution(getSRFch(i), SMinus, lMin, lMax)/Ki[i];
             signalResult[i] = sig;
+            signalResultMinus[i] = sigMinus;
+            signalResultPlus[i] = sigPlus;
         }
         else
         {
             signalResult[i] = 0.;
+            signalResultMinus[i] = 0.;
+            signalResultPlus[i] = 0.;
         }
     }
 
-    countRMSE();
+    rmseMinus = countRMSE(signalResultMinus);
+    rmsePlus = countRMSE(signalResultPlus);
+    rmse = countRMSE(signalResult);
+
 
     return true;
 }

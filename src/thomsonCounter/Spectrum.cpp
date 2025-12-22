@@ -27,7 +27,7 @@ double SClassic(double A0, double l, double li, double a, double theta)
 }
 
 
-double SNorma(double l, double li, double theta)
+double SNorma(double li, double theta)
 {
     return 1./(2. * sqrt(M_PI)*li*sin(theta/2.));
 }

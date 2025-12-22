@@ -69,6 +69,7 @@ private:
     TGTextEntry *statusEntry;
 
     TGCheckButton *drawSignalStatisticSetofShots;
+    TGCheckButton *drawSignalToEnergyStatisticSefofShots;
     std::vector <TGCheckButton *> checkButtonSetofShots;
 
     std::vector <TGCheckButton *> checkButtonDraw;
@@ -113,6 +114,21 @@ private:
 
     darray time_points;
     uint shotDiagnostic;
+
+
+    TGNumberEntryField *channel_1_signal;
+    TGNumberEntryField *channel_2_signal;
+
+    TGNumberEntryField *channel_1_result;
+    TGNumberEntryField *channel_2_result;
+
+    TGNumberEntryField *pressure;
+    TGNumberEntryField *temperature;
+
+    TGNumberEntry *calibration_spectrometer;
+
+    std::string error_file_name;
+    void readError(const char *file_name, double &A, darray &sigma0);
 
     std::vector <std::pair<double, double>> raman_parameters;
 
@@ -167,6 +183,9 @@ private:
 
     void createTimePointsArray(int shot);
 
+
+    void calibrateRaman(double P, double T, double theta, const darray &signalRaman_to_ERaman, const darray &lambda, const darray &SRF, darray &Ki) const;
+
 public:
     ThomsonGUI(const TGWindow *p, UInt_t width, UInt_t height, TApplication *app);
 
@@ -181,6 +200,7 @@ public:
     void RemoveAll();
     void CountSeveralShot();
     void DrawSetOfShots();
+    void Calibrate();
 
     void run();
     ~ThomsonGUI();

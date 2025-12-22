@@ -64,6 +64,8 @@ private:
     //uiarray use_ratio;
     //uint chToNeCount;
     darray signalResult;
+    darray signalResultPlus;
+    darray signalResultMinus;
 
     double TResult;
     double t_error;
@@ -71,6 +73,8 @@ private:
     double neResult;
     double ne_error;
 
+    double rmsePlus;
+    double rmseMinus;
     double rmse;
 
     void createChannelsNumberArray();
@@ -102,7 +106,7 @@ private:
 
     bool isChannelUseToCount(uint ch1, uint ch2, const barray &is_channel_use) const;
 
-    void countRMSE();
+    double countRMSE(const darray &signal_result);
  
 public:
     ThomsonCounter(const std::string &srf_file_name, const std::string &convolution_file_name, const darray &signal, const darray & signal_error, double theta, const darray &Ki, const darray &sigmaKi, const barray &channel_work={}, double lambda_reference=W_REFERENCE, int selectionMethod=0);
@@ -121,6 +125,8 @@ public:
     const darray &getSigmaTijArray () const { return sigmaTijArray; }
     const uiarray &getUseRatio() const { return number_ratio; }
     const darray &getSignalResult() const { return signalResult; }
+    const darray &getSignalResultPlus() const { return signalResultPlus; }
+    const darray &getSignalResultMinus() const { return signalResultMinus; }
 
     double getTij (uint ch1, uint ch2) const { return TijArray[findRatioNumber(ch1, ch2)]; }
     double getSigmaTij (uint ch1, uint ch2) const { return sigmaTijArray[findRatioNumber(ch1, ch2)]; }
@@ -145,6 +151,8 @@ public:
     double getN() const { return neResult; }
     double getNError() const { return ne_error; }
     double getRMSE() const { return rmse; }
+    double getRMSEPlus() const { return rmsePlus; }
+    double getRMSEMinus() const { return rmseMinus; }
     double getTheta() const { return theta; }
 
 
