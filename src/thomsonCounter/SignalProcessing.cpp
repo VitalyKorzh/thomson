@@ -153,16 +153,16 @@ bool SignalProcessing::checkSignal(const darray &t, const darray &U, const darra
         return false;
 }
 
-SignalProcessing::SignalProcessing(const darray &t_full, const darray &U_full, uint N_CHANNELS, const parray &paramtersArray, const barray &work_mask) : N_CHANNELS(N_CHANNELS),
-                                    signals(N_CHANNELS, 0), work_signal(N_CHANNELS, true), shifts(N_CHANNELS, 0.), UTintegrate_full(t_full.size()), t(t_full), UShift(t_full.size()), signal_box(3*N_CHANNELS), paramtersArray(paramtersArray)
+SignalProcessing::SignalProcessing(const darray &t_full, const darray &U_full, uint N_CHANNELS, const parray &parametersArray, const barray &work_mask) : N_CHANNELS(N_CHANNELS),
+                                    signals(N_CHANNELS, 0), work_signal(N_CHANNELS, true), shifts(N_CHANNELS, 0.), UTintegrate_full(t_full.size()), t(t_full), UShift(t_full.size()), signal_box(3*N_CHANNELS), parametersArray(parametersArray)
 {
     tSize = t_full.size() / N_CHANNELS;
 
-    this->paramtersArray.resize(N_CHANNELS);
+    this->parametersArray.resize(N_CHANNELS);
 
     for (uint i = 0; i < N_CHANNELS; i++)
     {
-        SignalProcessingParameters parameters = this->paramtersArray[i];
+        SignalProcessingParameters parameters = this->parametersArray[i];
         double shift = findZeroLine(t_full, U_full, i, parameters.step_from_start_zero_line, parameters.step_from_end_zero_line, parameters.start_point_from_start_zero_line, parameters.start_point_from_end_zero_line);
         integrateSignal(t_full, U_full, i, shift, parameters.point_integrate_start);
         shiftSignal(U_full, i, shift);

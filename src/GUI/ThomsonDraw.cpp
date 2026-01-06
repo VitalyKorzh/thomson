@@ -393,7 +393,7 @@ void ThomsonDraw::draw_result_from_r(TCanvas *c, TMultiGraph *mg, const darray &
 
 }
 
-void ThomsonDraw::draw_comapre_signals(TCanvas *c, THStack *hs, uint NChannel, const darray &signal, const darray &signal_error, const darray &countSignal, const barray &work_channel, bool draw)
+void ThomsonDraw::draw_compare_signals(TCanvas *c, THStack *hs, uint NChannel, const darray &signal, const darray &signal_error, const darray &countSignal, const barray &work_channel, bool draw)
 {
     //c->cd();
     hs->SetTitle(hs->GetTitle()+(TString)";channel;Vt, V*ns");
