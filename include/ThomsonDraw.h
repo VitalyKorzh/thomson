@@ -31,7 +31,7 @@ public:
     static void convolution_draw(TCanvas *c, TMultiGraph *mg, const darray &SCount, uint N_CHANNELS, double T0, double dT, uint N_TEMPERATURE, bool draw=true, bool drawLegend=true);
     static void thomson_signal_draw(TCanvas *c, TMultiGraph *mg, SignalProcessing *sp, int integrate=0, bool draw=true, bool drawLegend=true, bool drawSigBox=false, uint NChannels=6, const barray &work_mask={}, double scale=1., bool title=true, bool drawTimePoint = true, int channel=-1, uint color=1);
     static void draw_result_from_r(TCanvas *c, TMultiGraph *mg, const darray &xPosition, const darray &result, const darray &result_error, uint marker_style=kFullSquare, float marker_size=1.5, uint markerColor=1, uint lineWidth=1, uint lineStyle=7, uint lineColor=1, TString title="", bool draw=true);
-    static void draw_comapre_signals(TCanvas *c, THStack *hs, uint NChannel, const darray &signal, const darray &signal_error, const darray &countSignal, const barray &work_channel, bool draw);
+    static void draw_compare_signals(TCanvas *c, THStack *hs, uint NChannel, const darray &signal, const darray &signal_error, const darray &countSignal, const barray &work_channel, bool draw);
     static void draw_signal_statistics(TCanvas *c, THStack *hs, const darray &signal, double min, double max, uint nbins, bool draw=true);
 
 };

@@ -113,7 +113,7 @@ public:
     ThomsonCounter(const std::string &srf_file_name, const std::string &convolution_file_name, const SignalProcessing &sp, const darray &sigma_channels, double theta, const darray &Ki, const darray &sigmaKi, double lambda_reference=W_REFERENCE, int selectionMethod=0);
 
     bool count(const double alpha=0.001, const uint iter_limit=10000, const double epsilon=1e-12);
-    bool countConcetration();
+    bool countConcentration();
     bool countSignalResult();
 
     bool isWork() const { return work; }
@@ -131,7 +131,7 @@ public:
     double getTij (uint ch1, uint ch2) const { return TijArray[findRatioNumber(ch1, ch2)]; }
     double getSigmaTij (uint ch1, uint ch2) const { return sigmaTijArray[findRatioNumber(ch1, ch2)]; }
     double getTij (uint k) const { return TijArray[k]; }
-    uint getNumberRatioij(uint k) const { return number_ratio[k]; }
+    uint getNumberRatio_ij(uint k) const { return number_ratio[k]; }
     double getSigmaTij (uint k) const { return sigmaTijArray[k]; }
     double getTe0() const { return Te0; }
     double getWeight(uint k) const { return weight[k]; }

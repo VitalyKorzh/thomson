@@ -46,13 +46,13 @@ double convolution(const double * const SRF, const darray &S, double lMin, doubl
     return resultSpectrum;
 }
 
-darray countSArray(uint N_LAMBDA ,double lMin, double dl, double a, double Aampl, double theta, double lambda_refernce) 
+darray countSArray(uint N_LAMBDA ,double lMin, double dl, double a, double Aampl, double theta, double lambda_reference) 
 {
     darray SArray(N_LAMBDA);
 
     for (uint i = 0; i < N_LAMBDA; i++)
     {
-        SArray[i] = SRelative(Aampl, lMin+i*dl, lambda_refernce, a, theta);
+        SArray[i] = SRelative(Aampl, lMin+i*dl, lambda_reference, a, theta);
     }
     return SArray;
 }

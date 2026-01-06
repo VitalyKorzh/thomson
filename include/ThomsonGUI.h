@@ -41,11 +41,11 @@ private:
                 *drawIntegralInChannels,
                 *drawSignalsAndIntegralsInChannels,
                 *drawEnergySignals,
-                //*drawTemepratureRDependes,
-                //*drawConceterationRDependes,
-                *drawTemperatureRDependesAll,
-                *drawConceterationRDependesAll,
-                *drawCompareSingalAndResult,
+                //*drawTemperatureRDependence,
+                //*drawConcentrationRDependence,
+                *drawTemperatureRDependenceAll,
+                *drawConcentrationRDependenceAll,
+                *drawCompareSignalAndResult,
                 *drawTeFromTime,
                 *drawNeFromTime;
 
@@ -62,14 +62,14 @@ private:
                     *infoTe,
                     *infoNe,
                     *infoCountSignal,
-                    *infoLaserEnery,
+                    *infoLaserEntry,
                     *infoError;
 
 
     TGTextEntry *statusEntry;
 
     TGCheckButton *drawSignalStatisticSetofShots;
-    TGCheckButton *drawSignalToEnergyStatisticSefofShots;
+    TGCheckButton *drawSignalToEnergyStatisticSetofShots;
     std::vector <TGCheckButton *> checkButtonSetofShots;
 
     std::vector <TGCheckButton *> checkButtonDraw;
@@ -93,7 +93,7 @@ private:
     TGNumberEntryField *minSignalEntry;
     TGNumberEntryField *maxSignalEntry;
 
-    TGNumberEntry *spectrometrNumberSetofShots;
+    TGNumberEntry *spectrometerNumberSetofShots;
     //TGNumberEntry *timePageNumberSetofShots;
     TGNumberEntry *channelNumberSetofShots;
     std::vector <TGCheckButton*> checkButtonDrawTimeSetOfShots;
@@ -168,9 +168,9 @@ private:
     void readT2Format(const std::string &fileName, const std::string &srf_file_folder, const std::string &convolution_file_folder);
 
     bool checkButton(TGCheckButton *ch, bool lookEnable=true) const { return ch->IsDown() && (!lookEnable || ch->IsEnabled()); }
-    //void readParametersToSignalProssecing(const char *fileName, SignalProcessingParameters &parameters, uint sp, uint ch, uint it, const darray &t);
+    //void readParametersToSignalProcessing(const char *fileName, SignalProcessingParameters &parameters, uint sp, uint ch, uint it, const darray &t);
 
-    std::vector <parray> readParametersToSignalProssecong(const std::string &file_name) const;
+    std::vector <parray> readParametersToSignalProcessing(const std::string &file_name) const;
 
     void writeResultTableToFile(const char *file_name) const;
 

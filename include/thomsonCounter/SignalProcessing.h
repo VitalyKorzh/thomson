@@ -20,10 +20,10 @@ struct SignalProcessingParameters
     uint point_integrate_start;
 
     double threshold; // порог импульса в V
-    int increase_point; // сколько точек возрастания сигнала дожны быть чтобы считать сигнал с импульсом
+    int increase_point; // сколько точек возрастания сигнала должны быть чтобы считать сигнал с импульсом
     int decrease_point; // сколько точек уменьшения сигнала должно быть чтобы считать сигнал с импульсом
 
-    double klim; // предельный наклон линии интегралла сигнала
+    double klim; // предельный наклон линии интеграла сигнала
 
     SignalProcessingParameters(
                                 uint start_point_from_start_zero_line = 0, uint start_point_from_end_zero_line = 0,
@@ -51,17 +51,17 @@ private:
 
     uint N_CHANNELS;
     darray signals; // массив значений сигнала в канале
-    barray work_signal; // true - канал с испольсом, false - канал без импульса
+    barray work_signal; // true - канал с импульсом, false - канал без импульса
 
     darray shifts; // массив значений нулевой линии сигнала от времени
-    darray UTintegrate_full; // массив проинтыгрированных значений сигнала
+    darray UTintegrate_full; // массив проинтегрированных значений сигнала
     darray t; // временные точки
     darray UShift; // значение сигналов смещенных на shift
 
     uint tSize; // число точек одного сигнала по времени
 
     darray signal_box;
-    parray paramtersArray;
+    parray parametersArray;
 
     bool checkSignal(const darray &t, const darray &U, const darray &UTintegral, uint channel, double signal, double threshold=0., int increase_point=0, int decrease_point=0, double klim=-1., uint signal_points_start=1); // проверить был ли импульс в канале
     void integrateSignal(const darray &t, const darray &U, uint channel, double UZero, uint point_integrate_start);    
@@ -71,7 +71,7 @@ private:
     
 public:
     
-    SignalProcessing(const darray &t_full, const darray &U_full, uint N_CHANNELS, const parray &paramtersArray, const barray &work_mask={});
+    SignalProcessing(const darray &t_full, const darray &U_full, uint N_CHANNELS, const parray &parametersArray, const barray &work_mask={});
     SignalProcessing(const darray &signals, const barray &work_signal={});
 
     const darray &getSignals() const { return signals; }
@@ -81,7 +81,7 @@ public:
     const darray &getT() const { return t; }
     const darray &getUTintegrateSignal() const { return UTintegrate_full; }
     const darray &getSignalBox() const { return signal_box; }
-    const parray &getParameters() const { return paramtersArray; }
+    const parray &getParameters() const { return parametersArray; }
     uint getNChannels() const { return N_CHANNELS; }
     uint getTSize() const { return tSize; }
 };
