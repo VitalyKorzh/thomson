@@ -413,7 +413,7 @@ bool ThomsonCounter::count(const double alpha, const uint iter_limit, const doub
     return work;
 }
 
-bool ThomsonCounter::countConcetration()
+bool ThomsonCounter::countConcetration(double Te)
 {
     if (N_CHANNELS_WORK < 2)
     {
@@ -423,7 +423,8 @@ bool ThomsonCounter::countConcetration()
         return false;
     }
 
-    double Te = getT();
+    if (Te < 0.)
+        Te = getT();
     double TeError  = getTError();
     double dT = 1e-8;
 
@@ -529,7 +530,15 @@ bool ThomsonCounter::countSignalResult()
 {
     double Te = getT();
     double ne = getN();
+    double ne_error = getNError();
 
+    countConcetration(Te+getTError()/2.);
+    double nePlus = this->neResult;
+    countConcetration(Te-getTError()/2.);
+    double neMinus = this->neResult;
+    this->neResult = ne;
+    this->ne_error = ne_error;
+    
     signalResult.resize(N_CHANNELS, 0);
     rmse = 0;
 
@@ -545,8 +554,8 @@ bool ThomsonCounter::countSignalResult()
         if (channel_work[i])
         {
             darray S = countSArray(N_LAMBDA, lMin, dl, countA(Te), ne, theta, lambda_reference);
-            darray SPlus = countSArray(N_LAMBDA, lMin, dl, countA(Te+getTError()/2.), ne, theta, lambda_reference);
-            darray SMinus = countSArray(N_LAMBDA, lMin, dl, countA(Te-getTError()/2.), ne, theta, lambda_reference);
+            darray SPlus = countSArray(N_LAMBDA, lMin, dl, countA(Te+getTError()/2.), nePlus, theta, lambda_reference);
+            darray SMinus = countSArray(N_LAMBDA, lMin, dl, countA(Te-getTError()/2.), neMinus, theta, lambda_reference);
             double sig = convolution(getSRFch(i), S, lMin, lMax)/Ki[i];
             double sigPlus = convolution(getSRFch(i), SPlus, lMin, lMax)/Ki[i];
             double sigMinus = convolution(getSRFch(i), SMinus, lMin, lMax)/Ki[i];

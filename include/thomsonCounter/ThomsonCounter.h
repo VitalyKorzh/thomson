@@ -113,7 +113,7 @@ public:
     ThomsonCounter(const std::string &srf_file_name, const std::string &convolution_file_name, const SignalProcessing &sp, const darray &sigma_channels, double theta, const darray &Ki, const darray &sigmaKi, double lambda_reference=W_REFERENCE, int selectionMethod=0);
 
     bool count(const double alpha=0.001, const uint iter_limit=10000, const double epsilon=1e-12);
-    bool countConcetration();
+    bool countConcetration(double Te=-1.);
     bool countSignalResult();
 
     bool isWork() const { return work; }
