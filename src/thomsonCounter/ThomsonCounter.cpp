@@ -413,7 +413,7 @@ bool ThomsonCounter::count(const double alpha, const uint iter_limit, const doub
     return work;
 }
 
-bool ThomsonCounter::countConcetration(double Te)
+bool ThomsonCounter::countConcentration(double Te)
 {
     if (N_CHANNELS_WORK < 2)
     {
@@ -532,9 +532,9 @@ bool ThomsonCounter::countSignalResult()
     double ne = getN();
     double ne_error = getNError();
 
-    countConcetration(Te+getTError()/2.);
+    countConcentration(Te+getTError()/2.);
     double nePlus = this->neResult;
-    countConcetration(Te-getTError()/2.);
+    countConcentration(Te-getTError()/2.);
     double neMinus = this->neResult;
     this->neResult = ne;
     this->ne_error = ne_error;
