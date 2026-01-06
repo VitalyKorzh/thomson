@@ -429,7 +429,7 @@ bool ThomsonCounter::countConcentration(double Te)
     double dT = 1e-8;
 
     darray SResult = countSArray(N_LAMBDA, lMin, dl, countA(Te), 1., theta, lambda_reference);
-    darray SResultdT = countSArray(N_LAMBDA, lMin, dl, countA(Te+dT), 1., theta, lambda_reference);
+    darray SResult_dT = countSArray(N_LAMBDA, lMin, dl, countA(Te+dT), 1., theta, lambda_reference);
 
     //double max_signal = 0;
 
@@ -441,7 +441,7 @@ bool ThomsonCounter::countConcentration(double Te)
         if (channel_work[i])
         {
             double Qi = convolution(getSRFch(i), SResult, lMin, lMax);
-            double Qi_dT = convolution(getSRFch(i), SResultdT, lMin, lMax);
+            double Qi_dT = convolution(getSRFch(i), SResult_dT, lMin, lMax);
 
             double ai = signal[i];
             double dai = signal_error[i];
@@ -498,7 +498,7 @@ bool ThomsonCounter::countConcentration(double Te)
 
     neResult /= W; //получаем оценку плотности
 
-    ne_error = sqrt(1./W); //пока не учитваю корреляцию
+    ne_error = sqrt(1./W); //пока не учитываю корреляцию
 
     /*uint ch = 0;
     for (uint i = 0; i < N_CHANNELS; i++)
@@ -510,7 +510,7 @@ bool ThomsonCounter::countConcentration(double Te)
     }
 
     double F = convolution(getSRFch(ch), SResult, lMin, lMax);
-    double FdT = convolution(getSRFch(ch), SResultdT, lMin, lMax);
+    double FdT = convolution(getSRFch(ch), SResult_dT, lMin, lMax);
 
     neResult = max_signal / F;
 
