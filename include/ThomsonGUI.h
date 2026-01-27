@@ -70,6 +70,7 @@ private:
 
     TGCheckButton *drawSignalStatisticSetofShots;
     TGCheckButton *drawSignalToEnergyStatisticSetofShots;
+    TGCheckButton *drawEnergyStatisticSetofShots;
     std::vector <TGCheckButton *> checkButtonSetofShots;
 
     std::vector <TGCheckButton *> checkButtonDraw;
@@ -116,14 +117,12 @@ private:
     uint shotDiagnostic;
 
 
-    TGNumberEntryField *channel_1_signal;
-    TGNumberEntryField *channel_2_signal;
-
-    TGNumberEntryField *channel_1_result;
-    TGNumberEntryField *channel_2_result;
+    std::vector <TGNumberEntryField*> channel_signal;
+    std::vector <TGNumberEntryField*> channel_result;
 
     TGNumberEntryField *pressure;
     TGNumberEntryField *temperature;
+    TGNumberEntryField *thetaSpectrometer;
 
     TGNumberEntry *calibration_spectrometer;
 

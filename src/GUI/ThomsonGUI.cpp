@@ -393,6 +393,7 @@ void ThomsonGUI::readError(const char *file_name, double &A, darray &sigma0)
 
 void ThomsonGUI::readRamanCrossSection(const char *raman_file_name)
 {
+    raman_parameters.clear();
     std::ifstream fin;
     fin.open(raman_file_name);
 
@@ -404,7 +405,11 @@ void ThomsonGUI::readRamanCrossSection(const char *raman_file_name)
         while (fin >> J >> lambdaJ >> sigmaJ) {
             raman_parameters.emplace_back(lambdaJ, sigmaJ);
         }
-    } // читает lambda J нм, sigmaJ cm^-2
+    } // читает lambda J нм, sigmaJ cm^2
+    else
+    {
+        std::cerr << "не удалось открыть файл: " << raman_file_name << "!\n";
+    }
 
     fin.close();
 }
@@ -567,7 +572,7 @@ std::vector<parray> ThomsonGUI::readParametersToSignalProcessing(const std::stri
         }
     }
     else {
-        std::cerr << "не удалось открыть файл с параметрами!\n";
+        std::cerr << "не удалось открыть файл с параметрами: " << file_name  << "!\n";
     }
     fin.close();
 
@@ -765,8 +770,12 @@ void ThomsonGUI::calibrateRaman(double P, double T, double theta, const darray &
     const double h = 6.63e-27; // эрг*с
     const double E0 = h*c*B0; // эрг
     const double psi = E0/(kB*T); // безразмерный
-    const double Q = 9./(2.*psi);
-    const double coeff = P / (kB*T*r0*r0*sin(theta)*sin(theta)*SNorma(LAMBDA_REFERENCE, theta)*Q);
+    const uint I = 1;
+    const double Q = (2.*I+1)*(2.*I+1)/(2.*psi);
+    const double phi = M_PI_2;
+    const double coeff = P / (kB*T*r0*r0*sin(phi)*sin(phi)*SNorma(LAMBDA_REFERENCE, theta)*Q); // возможно dsigma/dOmega = r0^2sin2(fi) где fi=90
+
+    //std::cout << raman_parameters.size() << "\n";
 
     for (uint i = 0; i < N_WORK_CHANNELS; i++)
     {
@@ -782,14 +791,16 @@ void ThomsonGUI::calibrateRaman(double P, double T, double theta, const darray &
             {
                 if (lambda_j >= lambda[l] && lambda_j < lambda[l+1])
                 {
-                    SRF_j = (SRF[l]+SRF[l+1])/2.;
+                    SRF_j = (SRF[lambda.size()*i+l]+SRF[lambda.size()*i+l+1])/2.;
+                   //std::cout << J << " " << lambda[l] << " " << lambda_j << " " << lambda[l+1] << " " << SRF_j << "\n";
                     break;
                 }
             }
 
             double sigma = ls.second;
+            //std::cout << sigma << "\n";
             double g = J % 2 == 0 ? 6 : 3;
-            sum += sigma*(2.*J+1)*g*exp(-psi*J*(J+1.))*SRF_j;
+            sum += sigma*(2.*J+1.)*g*exp(-psi*J*(J+1.))*SRF_j;
             J++;
         }
         Ki[i] = coeff*coeff_i*sum;
@@ -1108,6 +1119,7 @@ ThomsonGUI::ThomsonGUI(const TGWindow *p, UInt_t width, UInt_t height, TApplicat
 
         checkButtonSetofShots.push_back(drawSignalStatisticSetofShots = new TGCheckButton(vframeDraw, "draw signal statistics"));
         checkButtonSetofShots.push_back(drawSignalToEnergyStatisticSetofShots = new TGCheckButton(vframeDraw, "draw signal/energy statistics"));
+        checkButtonSetofShots.push_back(drawEnergyStatisticSetofShots = new TGCheckButton(vframeDraw, "draw energy statistics"));
 
         for (uint i = 0; i < checkButtonSetofShots.size(); i++)
         {
@@ -1171,25 +1183,24 @@ ThomsonGUI::ThomsonGUI(const TGWindow *p, UInt_t width, UInt_t height, TApplicat
 
     {
         TGCompositeFrame *fTTu = fTap->AddTab("Raman.");
+
+
+        for (uint i = 0; i < N_WORK_CHANNELS; i++)
         {
             TGHorizontalFrame *hframe = new TGHorizontalFrame(fTTu, width, 40);
-            fTTu->AddFrame(hframe, new TGLayoutHints(kLHintsLeft|kLHintsExpandX|kLHintsTop, 5, 5, 5, 5));
+            fTTu->AddFrame(hframe, new TGLayoutHints(kLHintsLeft|kLHintsExpandX|kLHintsTop, 5, 5, 3, 3));
 
-            channel_1_signal = new TGNumberEntryField(hframe, -1, 0);
-            channel_1_result = new TGNumberEntryField(hframe, -1, 0);
+            TGLabel *label = new TGLabel(hframe, TString::Format("channel %u", i));
 
-            hframe->AddFrame(channel_1_signal, new TGLayoutHints(kLHintsLeft,5,5,5,0));
-            hframe->AddFrame(channel_1_result, new TGLayoutHints(kLHintsRight,5,5,5,0));
-        }
-        {
-            TGHorizontalFrame *hframe = new TGHorizontalFrame(fTTu, width, 40);
-            fTTu->AddFrame(hframe, new TGLayoutHints(kLHintsLeft|kLHintsExpandX|kLHintsTop, 5, 5, 0, 0));
+            channel_signal.push_back(new TGNumberEntryField(hframe, -1, 0));
+            channel_result.push_back(new TGNumberEntryField(hframe, -1, 0));
 
-            channel_2_signal = new TGNumberEntryField(hframe, -1, 0);
-            channel_2_result = new TGNumberEntryField(hframe, -1, 0);
+            channel_signal.back()->SetToolTipText(TString::Format("signal/E for channel %u", i));
+            channel_result.back()->SetToolTipText(TString::Format("result calibration coeff for channel %u", i));
 
-            hframe->AddFrame(channel_2_signal, new TGLayoutHints(kLHintsLeft,5,5,0,5));
-            hframe->AddFrame(channel_2_result, new TGLayoutHints(kLHintsRight,5,5,0,5));
+            hframe->AddFrame(label, new TGLayoutHints(kLHintsLeft,2,5,3,0));
+            hframe->AddFrame(channel_signal.back(), new TGLayoutHints(kLHintsLeft,1,1,0,0));
+            hframe->AddFrame(channel_result.back(), new TGLayoutHints(kLHintsRight,1,1,0,0));
         }
 
         TGHorizontalFrame *hframe = new TGHorizontalFrame(fTTu, width, 40);
@@ -1203,11 +1214,18 @@ ThomsonGUI::ThomsonGUI(const TGWindow *p, UInt_t width, UInt_t height, TApplicat
                                             TGNumberFormat::kNEANonNegative, TGNumberEntry::kNELLimitMinMax, 0, N_SPECTROMETERS-1);
 
         pressure = new TGNumberEntryField(hframe, -1, 0);
-        temperature = new TGNumberEntryField(hframe, -1, 0);
+        temperature = new TGNumberEntryField(hframe, -1, 300);
+        thetaSpectrometer = new TGNumberEntryField(hframe, -1, 90);
 
-        hframe->AddFrame(calibration_spectrometer, new TGLayoutHints(kLHintsLeft,5,5,0,5));
-        hframe->AddFrame(pressure, new TGLayoutHints(kLHintsLeft,5,5,0,5));
-        hframe->AddFrame(temperature, new TGLayoutHints(kLHintsLeft,5,5,0,5));
+        pressure->SetToolTipText("pressure, Pa");
+        temperature->SetToolTipText("temperature, K");
+        calibration_spectrometer->GetNumberEntry()->SetToolTipText("spectromer number");
+        thetaSpectrometer->SetToolTipText("theta,°");
+
+        hframe->AddFrame(calibration_spectrometer, new TGLayoutHints(kLHintsLeft,0,0,0,5));
+        hframe->AddFrame(pressure, new TGLayoutHints(kLHintsLeft,0,0,0,5));
+        hframe->AddFrame(temperature, new TGLayoutHints(kLHintsLeft,0,0,0,5));
+        hframe->AddFrame(thetaSpectrometer, new TGLayoutHints(kLHintsLeft,0,0,0,5));
     }
 
     {
@@ -2186,10 +2204,12 @@ void ThomsonGUI::CountSeveralShot()
         std::string srf_file_folder;
         std::string convolution_file_folder;
         std::string raman_file;
+        std::string error_file;
         std::getline(fin, srf_file_folder);
         std::getline(fin, convolution_file_folder);
         std::getline(fin, raman_file);
         std::getline(fin, archive_name);
+        std::getline(fin, error_file);
         
         std::string work_mask_string[N_SPECTROMETERS];
         for (uint i = 0; i < N_SPECTROMETERS; i++)
@@ -2317,28 +2337,101 @@ void ThomsonGUI::DrawSetOfShots()
             c->Modified();
             c->Update();
         }
-        
+    }
+    if (checkButton(drawEnergyStatisticSetofShots))
+    {
+        darray signal;
+        signal.reserve(N_TIME_LIST*N_SHOTS);
+        for (uint in = 0; in < N_SHOTS; in++)
+        {
+            for (uint it = 0; it < N_TIME_LIST; it++)
+            {
+                if (checkButtonDrawTimeSetOfShots[it]->IsDown())
+                    signal.push_back(getSignalProcessing(it, NUMBER_ENERGY_SPECTROMETER, in)->getSignals()[NUMBER_ENERGY_CHANNEL]);
+            }
+        }
+
+        double min = minSignalEntry->GetNumber();
+        double max = maxSignalEntry->GetNumber(); 
+
+        if (signal.size() > 0 && max >= min)
+        {
+            uint nBins = nBinsEntry->GetNumber();
+
+            if (min == max) {
+                min = *std::min_element(signal.begin(), signal.end())*1.-0.25;
+                max = *std::max_element(signal.begin(), signal.end())*1.+0.25;
+            }
+
+            TString canvas_name = TString::Format("energy_statistics");
+            TCanvas *c = ThomsonDraw::createCanvas(canvas_name, canvas_name);
+            THStack *hs=  ThomsonDraw::createHStack("hs_"+canvas_name, "");
+
+            ThomsonDraw::draw_signal_statistics(c, hs, signal, min, max, nBins, true);
+            hs->SetTitle(";E, V*ns;counts");
+            c->Modified();
+            c->Update();
+        }
     }
     
 }
 
 void ThomsonGUI::Calibrate()
 {
+    for (uint i = 0; i < N_WORK_CHANNELS; i++)
+        channel_result[i]->SetNumber(-1);
+
     std::string file_name = mainFileTextEntry->GetText();
     uint sp = calibration_spectrometer->GetNumber();
-    double signal_1 = channel_1_signal->GetNumber();
-    double signal_2 = channel_2_signal->GetNumber();
+    std::string srf_file;
+    std::string raman_file;
+    std::ifstream fin;   
+    
+    darray lambda;
+    darray srf;
+    fin.open(file_name);
+    if (fin.is_open())
+    {
+        std::getline(fin, srf_file);
+        srf_file = srf_file + "SRF_Spectro-" + std::to_string(sp+1)+".dat";
+        std::getline(fin, raman_file);
+        std::getline(fin, raman_file);
+        readRamanCrossSection(raman_file.c_str());
 
-    double pressure = this->pressure->GetNumber();
+        double lMin;
+        double lMax;
+        double dl;
+        uint NLambda;
+        uint NChannels;
+        readSRF(srf_file, srf, lMin, lMax, dl, NLambda, NChannels);
+        lambda.resize(NLambda);
+        for (uint j = 0; j < NLambda; j++)
+            lambda[j] = lMin + dl*j;
+
+    }
+    else {
+        std::cerr << "не удалось открыть файл: " << file_name << "!\n";
+        return;
+    }
+    fin.close();
+
+    double pressure = this->pressure->GetNumber()*10.;
     double T = this->temperature->GetNumber();
 
     darray signal(N_CHANNELS, 0);
-    signal[0] = signal_1;
-    signal[1] = signal_2;
+
+    for (uint i = 0; i < N_WORK_CHANNELS; i++)
+        signal[i] = channel_signal[i]->GetNumber();
 
 
-    channel_1_result->SetNumber(-1);
-    channel_2_result->SetNumber(-1);
+    double theta = thetaSpectrometer->GetNumber()/180.*M_PI;
+
+    darray Ki(N_CHANNELS, 0);
+
+    calibrateRaman(pressure, T, theta, signal, lambda, srf, Ki);
+
+    for (uint i = 0; i < N_WORK_CHANNELS; i++)
+        channel_result[i]->SetNumber(Ki[i]*1e-13);
 }
 
 void ThomsonGUI::run()
