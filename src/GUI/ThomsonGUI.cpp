@@ -1214,8 +1214,9 @@ ThomsonGUI::ThomsonGUI(const TGWindow *p, UInt_t width, UInt_t height, TApplicat
             channel_result.push_back(new TGNumberEntryField(hframe, -1, 0));
 
             channel_signal.back()->SetToolTipText(TString::Format("signal/E for channel %u", i));
-            channel_signal.back()->
+            channel_signal.back()->SetDefaultSize(60, 20);
             channel_result.back()->SetToolTipText(TString::Format("result calibration coeff for channel %u", i));
+            channel_result.back()->SetDefaultSize(60, 20);
 
             hframe->AddFrame(label, new TGLayoutHints(kLHintsLeft,2,5,3,0));
             hframe->AddFrame(channel_signal.back(), new TGLayoutHints(kLHintsLeft,1,1,0,0));
@@ -1237,14 +1238,17 @@ ThomsonGUI::ThomsonGUI(const TGWindow *p, UInt_t width, UInt_t height, TApplicat
         thetaSpectrometer = new TGNumberEntryField(hframe, -1, 90);
 
         pressure->SetToolTipText("pressure, Pa");
+        pressure->SetDefaultSize(60, 20);
         temperature->SetToolTipText("temperature, K");
+        temperature->SetDefaultSize(60, 20);
         calibration_spectrometer->GetNumberEntry()->SetToolTipText("spectromer number");
         thetaSpectrometer->SetToolTipText("theta,°");
+        thetaSpectrometer->SetDefaultSize(60, 20);
 
-        hframe->AddFrame(calibration_spectrometer, new TGLayoutHints(kLHintsLeft,0,0,0,5));
-        hframe->AddFrame(pressure, new TGLayoutHints(kLHintsLeft,0,0,0,5));
-        hframe->AddFrame(temperature, new TGLayoutHints(kLHintsLeft,0,0,0,5));
-        hframe->AddFrame(thetaSpectrometer, new TGLayoutHints(kLHintsLeft,0,0,0,5));
+        hframe->AddFrame(calibration_spectrometer, new TGLayoutHints(kLHintsLeft,5,5,0,5));
+        hframe->AddFrame(pressure, new TGLayoutHints(kLHintsLeft,5,5,0,5));
+        hframe->AddFrame(temperature, new TGLayoutHints(kLHintsLeft,5,5,0,5));
+        hframe->AddFrame(thetaSpectrometer, new TGLayoutHints(kLHintsLeft,5,5,0,5));
     }
 
     {
@@ -2284,24 +2288,30 @@ void ThomsonGUI::DrawSetOfShots()
         return;
 
     uint nSpectrometer = spectrometerNumberSetofShots->GetNumber();
+    uint nTimeLists = N_TIME_LIST;
     //uint nTimePage = timePageNumberSetofShots->GetNumber();
     uint nChannel = channelNumberSetofShots->GetNumber();
+    double Emin = minEnergy->GetNumber();
+    double Emax = maxEnergy->GetNumber();
 
     if (checkButton(drawSignalStatisticSetofShots))
     {
+
         darray signal;
-        signal.reserve(N_TIME_LIST*N_SHOTS);
+        signal.reserve(nTimeLists*N_SHOTS);
         for (uint in = 0; in < N_SHOTS; in++)
         {
-            for (uint it = 0; it < N_TIME_LIST; it++)
+            for (uint it = 0; it < nTimeLists; it++)
             {
-                if (checkButtonDrawTimeSetOfShots[it]->IsDown())
+                double E = getSignalProcessing(it, NUMBER_ENERGY_SPECTROMETER, in)->getSignals()[NUMBER_ENERGY_CHANNEL];
+                if (checkButtonDrawTimeSetOfShots[it]->IsDown() && (Emax <= Emin || (E >= Emin && E <= Emax)))
                     signal.push_back(getSignalProcessing(it, nSpectrometer, in)->getSignals()[nChannel]);
             }
         }
 
         double min = minSignalEntry->GetNumber();
         double max = maxSignalEntry->GetNumber(); 
+
 
         if (signal.size() > 0 && max >= min)
         {
@@ -2325,13 +2335,14 @@ void ThomsonGUI::DrawSetOfShots()
     if (checkButton(drawSignalToEnergyStatisticSetofShots))
     {
         darray signal;
-        signal.reserve(N_TIME_LIST*N_SHOTS);
+        signal.reserve(nTimeLists*N_SHOTS);
         for (uint in = 0; in < N_SHOTS; in++)
         {
-            for (uint it = 0; it < N_TIME_LIST; it++)
+            for (uint it = 0; it < nTimeLists; it++)
             {
-                if (checkButtonDrawTimeSetOfShots[it]->IsDown())
-                    signal.push_back(getSignalProcessing(it, nSpectrometer, in)->getSignals()[nChannel] / getSignalProcessing(it, NUMBER_ENERGY_SPECTROMETER, in)->getSignals()[NUMBER_ENERGY_CHANNEL]);
+                double E = getSignalProcessing(it, NUMBER_ENERGY_SPECTROMETER, in)->getSignals()[NUMBER_ENERGY_CHANNEL];
+                if (checkButtonDrawTimeSetOfShots[it]->IsDown() && (Emax <= Emin || (E >= Emin && E <= Emax)))
+                    signal.push_back(getSignalProcessing(it, nSpectrometer, in)->getSignals()[nChannel] / E);
             }
         }
 
@@ -2360,10 +2371,10 @@ void ThomsonGUI::DrawSetOfShots()
     if (checkButton(drawEnergyStatisticSetofShots))
     {
         darray signal;
-        signal.reserve(N_TIME_LIST*N_SHOTS);
+        signal.reserve(nTimeLists*N_SHOTS);
         for (uint in = 0; in < N_SHOTS; in++)
         {
-            for (uint it = 0; it < N_TIME_LIST; it++)
+            for (uint it = 0; it < nTimeLists; it++)
             {
                 if (checkButtonDrawTimeSetOfShots[it]->IsDown())
                     signal.push_back(getSignalProcessing(it, NUMBER_ENERGY_SPECTROMETER, in)->getSignals()[NUMBER_ENERGY_CHANNEL]);
