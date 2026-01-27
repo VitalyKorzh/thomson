@@ -27,7 +27,7 @@ ClassImp(ThomsonGUI)
 #define N_SPECTROMETERS 6
 #define N_CHANNELS 8
 #define N_WORK_CHANNELS 6 //работают каналы 1 2 3 4 5 6 (7, 8 не работают)
-#define N_TIME_LIST 11
+//#define N_TIME_LIST 11
 #define N_TIME_SIZE 1000
 #define UNUSEFULL 48 // SIZE_ARCHIVE = N_TIME_LIST*(2*N_TIME_SIZE+UNUSEFULL) 
 
@@ -214,16 +214,16 @@ bool ThomsonGUI::writeCalibration(const char *archive_name, const char *calibrat
     return true;
 }
 
-void ThomsonGUI::processingSignalsData(const char *archive_name, int shot, const std::vector<parray> &parametersArray, bool clearArray)
+void ThomsonGUI::processingSignalsData(const char *archive_name, int shot, const std::vector<parray> &parametersArray, bool clearArray, uint nTimeLists)
 {
     if (clearArray) 
         this->clearSpArray();
 
-    spArray.reserve(spArray.size()+N_SPECTROMETERS*N_TIME_LIST);
+    spArray.reserve(spArray.size()+N_SPECTROMETERS*nTimeLists);
 
     for (uint sp = 0; sp < N_SPECTROMETERS; sp++)
     {
-        for (uint it = 0; it < N_TIME_LIST; it++)
+        for (uint it = 0; it < nTimeLists; it++)
         {
             darray t;
             darray U;
@@ -251,7 +251,7 @@ void ThomsonGUI::processingSignalsData(const char *archive_name, int shot, const
 
     if (clearArray)
     {
-        for (uint i = 0; i < N_TIME_LIST; i++) {
+        for (uint i = 0; i < nTimeLists; i++) {
             energy[i] = getSignalProcessing(i, NUMBER_ENERGY_SPECTROMETER)->getSignals()[NUMBER_ENERGY_CHANNEL];
             sigma_energy[i] = ERROR_COEFF*sqrt(energy[i]);
         }
@@ -1159,8 +1159,26 @@ ThomsonGUI::ThomsonGUI(const TGWindow *p, UInt_t width, UInt_t height, TApplicat
             hframeBottom->AddFrame(checkButtonDrawTimeSetOfShots.back(), new TGLayoutHints(kLHintsLeft, 1,1,7,7));
         }
 
+
         TGHorizontalFrame *hframeParametersHist = new TGHorizontalFrame(fTTu, width, 40);
         fTTu->AddFrame(hframeParametersHist, new TGLayoutHints(kLHintsBottom|kLHintsLeft,5,5,5,5));
+
+        TGHorizontalFrame *hframeEnergyLimits = new TGHorizontalFrame(fTTu, width, 40);
+        fTTu->AddFrame(hframeEnergyLimits, new TGLayoutHints(kLHintsBottom|kLHintsLeft,5,5,5,5));
+
+        TGLabel *textMinEnergy = new TGLabel(hframeEnergyLimits, "Emin");
+        TGLabel *textMaxEnergy = new TGLabel(hframeEnergyLimits, "Emax");
+
+        minEnergy = new TGNumberEntryField(hframeEnergyLimits, -1, 0);
+        minEnergy->SetDefaultSize(60, 20);
+        maxEnergy = new TGNumberEntryField(hframeEnergyLimits, -1, 0);
+        maxEnergy->SetDefaultSize(60, 20);
+
+        hframeEnergyLimits->AddFrame(textMinEnergy, new TGLayoutHints(kLHintsLeft,5,5,10,10));  
+        hframeEnergyLimits->AddFrame(minEnergy, new TGLayoutHints(kLHintsLeft,5,5,5,5));
+        hframeEnergyLimits->AddFrame(textMaxEnergy, new TGLayoutHints(kLHintsLeft,5,5,10,10));  
+        hframeEnergyLimits->AddFrame(maxEnergy, new TGLayoutHints(kLHintsLeft,5,5,5,5));
+
         nBinsEntry = new TGNumberEntry(hframeParametersHist, 20, 4, -1, TGNumberFormat::kNESInteger,
                                             TGNumberFormat::kNEAPositive, TGNumberFormat::kNELLimitMin, 1);
         minSignalEntry = new TGNumberEntryField(hframeParametersHist, -1, 0);
@@ -1196,6 +1214,7 @@ ThomsonGUI::ThomsonGUI(const TGWindow *p, UInt_t width, UInt_t height, TApplicat
             channel_result.push_back(new TGNumberEntryField(hframe, -1, 0));
 
             channel_signal.back()->SetToolTipText(TString::Format("signal/E for channel %u", i));
+            channel_signal.back()->
             channel_result.back()->SetToolTipText(TString::Format("result calibration coeff for channel %u", i));
 
             hframe->AddFrame(label, new TGLayoutHints(kLHintsLeft,2,5,3,0));

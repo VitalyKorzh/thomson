@@ -21,6 +21,8 @@
 #include "thomsonCounter/SignalProcessing.h"
 #include "thomsonCounter/ThomsonCounter.h"
 
+#define N_TIME_LIST 11
+
 class ThomsonGUI : public TGMainFrame
 {
     RQ_OBJECT("ThomsonGUI")
@@ -90,6 +92,10 @@ private:
     TGVerticalFrame *fContainer;
     std::list <std::pair<TGNumberEntry*, TGNumberEntry*>> fNumberShot;
 
+
+    TGNumberEntryField *minEnergy;
+    TGNumberEntryField *maxEnergy;
+
     TGNumberEntry *nBinsEntry;
     TGNumberEntryField *minSignalEntry;
     TGNumberEntryField *maxSignalEntry;
@@ -143,7 +149,7 @@ private:
     darray readCalibration(const char *archive_name, const char *calibration_name, int shot) const;
     bool isCalibrationNew(TFile *f, const char *calibration_name) const;
     bool writeCalibration(const char *archive_name, const char *calibration_name, darray &calibration) const;
-    void processingSignalsData(const char *archive_name, int shot, const std::vector<parray> &parametersArray, bool clearArray=true);
+    void processingSignalsData(const char *archive_name, int shot, const std::vector<parray> &parametersArray, bool clearArray=true, uint nTimeLists=N_TIME_LIST);
     bool countThomson(const std::string &srf_file_folder, const std::string &convolution_file_folder, int shot, bool clearArray=true, int selectionMethod=0);
     SignalProcessing * getSignalProcessing(uint it, uint sp, uint nShot=0) const;
     ThomsonCounter * getThomsonCounter(uint it, uint sp, uint nShot=0) const;
