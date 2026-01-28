@@ -68,6 +68,7 @@ void ThomsonGUI::readDataFromArchive(const char *archive_name, const char *kust,
         if (timeList <= 0)
             timeList = signal->GetSize() / (N_POINT);
 
+        //std::cout << "timeLists=" << timeList << " timePoint: " << timePoint << "\n";
 
         if (timePoint < 0)
         {
@@ -216,7 +217,7 @@ bool ThomsonGUI::writeCalibration(const char *archive_name, const char *calibrat
 
 void ThomsonGUI::processingSignalsData(const char *archive_name, int shot, const std::vector<parray> &parametersArray, bool clearArray, uint nTimeLists)
 {
-    if (clearArray) 
+    if (clearArray)
         this->clearSpArray();
 
     spArray.reserve(spArray.size()+N_SPECTROMETERS*nTimeLists);
@@ -251,9 +252,10 @@ void ThomsonGUI::processingSignalsData(const char *archive_name, int shot, const
 
     if (clearArray)
     {
-        for (uint i = 0; i < nTimeLists; i++) {
+        for (uint i = 0; i < N_TIME_LIST; i++) {
             energy[i] = getSignalProcessing(i, NUMBER_ENERGY_SPECTROMETER)->getSignals()[NUMBER_ENERGY_CHANNEL];
-            sigma_energy[i] = ERROR_COEFF*sqrt(energy[i]);
+            //sigma_energy[i] = ERROR_COEFF*sqrt(energy[i]);
+            sigma_energy[i] = 0.;
         }
     }
 }
@@ -335,12 +337,12 @@ bool ThomsonGUI::countThomson(const std::string &srf_file_folder, const std::str
     return thomsonSuccess;
 }
 
-SignalProcessing *ThomsonGUI::getSignalProcessing(uint it, uint sp, uint nShot) const
+SignalProcessing *ThomsonGUI::getSignalProcessing(uint it, uint sp, uint nShot, uint nTimeLists) const
 {
-    if (it >= N_TIME_LIST || sp >= N_SPECTROMETERS || nShot >= N_SHOTS)
+    if (it >= nTimeLists || sp >= N_SPECTROMETERS || nShot >= N_SHOTS)
         return nullptr;
     else
-        return spArray[it+sp*N_TIME_LIST + nShot*N_TIME_LIST*N_SPECTROMETERS];
+        return spArray[it+sp*nTimeLists + nShot*nTimeLists*N_SPECTROMETERS];
 }
 
 ThomsonCounter *ThomsonGUI::getThomsonCounter(uint it, uint sp, uint nShot) const
@@ -357,6 +359,7 @@ void ThomsonGUI::clearSpArray()
         delete it;
 
     spArray.clear();
+    spArray.shrink_to_fit();
 }
 
 void ThomsonGUI::clearCounterArray()
@@ -365,6 +368,7 @@ void ThomsonGUI::clearCounterArray()
         delete it;
 
     counterArray.clear();
+    counterArray.shrink_to_fit();
 }
 
 void ThomsonGUI::readError(const char *file_name, double &A, darray &sigma0)
@@ -1158,6 +1162,11 @@ ThomsonGUI::ThomsonGUI(const TGWindow *p, UInt_t width, UInt_t height, TApplicat
             checkButtonDrawTimeSetOfShots.back()->SetToolTipText(TString::Format("time page %u draw", i));
             hframeBottom->AddFrame(checkButtonDrawTimeSetOfShots.back(), new TGLayoutHints(kLHintsLeft, 1,1,7,7));
         }
+
+        numberTimeListsSetofShots = new TGNumberEntry(hframeBottom, N_TIME_LIST, 4, -1, TGNumberFormat::kNESInteger,
+                                            TGNumberFormat::kNEAPositive, TGNumberEntry::kNELLimitMinMax, 1, 100);
+
+        hframeBottom->AddFrame(numberTimeListsSetofShots, new TGLayoutHints(kLHintsLeft, 5,5,5,5));
 
 
         TGHorizontalFrame *hframeParametersHist = new TGHorizontalFrame(fTTu, width, 40);
@@ -2263,10 +2272,22 @@ void ThomsonGUI::CountSeveralShot()
             if (!fin.fail() && shotArray.size() != 0)
             {
                 fileType = isSetofShots;
-                spArray.reserve(N_SPECTROMETERS*N_TIME_LIST*N_SHOTS);
+                nTimeListSetOfShots = numberTimeListsSetofShots->GetNumber();
+                /*if (nTimeListSetOfShots != N_TIME_LIST)
+                {
+                    checkButtonDrawTimeSetOfShots.front()->SetState(kButtonUp);
+                    checkButtonDrawTimeSetOfShots.front()->SetEnabled(false);
+                }
+                else {
+                    checkButtonDrawTimeSetOfShots.front()->SetEnabled(true);
+                    checkButtonDrawTimeSetOfShots.front()->SetState(checkButtonDrawTimeSetOfShots.front()->IsDown() ? kButtonDown : kButtonUp);
+                }*/
+                clearSpArray();
+                clearCounterArray();
+                spArray.reserve(N_SPECTROMETERS*nTimeListSetOfShots*N_SHOTS);
                 for (uint shot : shotArray)
                 {
-                    processingSignalsData(archive_name.c_str(), shot, parametersArray, false);
+                    processingSignalsData(archive_name.c_str(), shot, parametersArray, false, nTimeListSetOfShots);
                 }
             }
 
@@ -2288,7 +2309,7 @@ void ThomsonGUI::DrawSetOfShots()
         return;
 
     uint nSpectrometer = spectrometerNumberSetofShots->GetNumber();
-    uint nTimeLists = N_TIME_LIST;
+    uint nTimeLists = nTimeListSetOfShots;
     //uint nTimePage = timePageNumberSetofShots->GetNumber();
     uint nChannel = channelNumberSetofShots->GetNumber();
     double Emin = minEnergy->GetNumber();
@@ -2296,16 +2317,20 @@ void ThomsonGUI::DrawSetOfShots()
 
     if (checkButton(drawSignalStatisticSetofShots))
     {
-
         darray signal;
         signal.reserve(nTimeLists*N_SHOTS);
+
         for (uint in = 0; in < N_SHOTS; in++)
         {
+            uint index = nTimeLists == N_TIME_LIST ? 0 : 1;
             for (uint it = 0; it < nTimeLists; it++)
             {
-                double E = getSignalProcessing(it, NUMBER_ENERGY_SPECTROMETER, in)->getSignals()[NUMBER_ENERGY_CHANNEL];
-                if (checkButtonDrawTimeSetOfShots[it]->IsDown() && (Emax <= Emin || (E >= Emin && E <= Emax)))
-                    signal.push_back(getSignalProcessing(it, nSpectrometer, in)->getSignals()[nChannel]);
+                double E = getSignalProcessing(it, NUMBER_ENERGY_SPECTROMETER, in, nTimeLists)->getSignals()[NUMBER_ENERGY_CHANNEL];
+                if (checkButtonDrawTimeSetOfShots[index]->IsDown() && (Emax <= Emin || (E >= Emin && E <= Emax)))
+                    signal.push_back(getSignalProcessing(it, nSpectrometer, in, nTimeLists)->getSignals()[nChannel]);
+                index++;
+                if (index == N_TIME_LIST)
+                    index = nTimeLists == N_TIME_LIST ? 0 : 1;
             }
         }
 
@@ -2338,11 +2363,15 @@ void ThomsonGUI::DrawSetOfShots()
         signal.reserve(nTimeLists*N_SHOTS);
         for (uint in = 0; in < N_SHOTS; in++)
         {
+            uint index = nTimeLists == N_TIME_LIST ? 0 : 1;
             for (uint it = 0; it < nTimeLists; it++)
             {
-                double E = getSignalProcessing(it, NUMBER_ENERGY_SPECTROMETER, in)->getSignals()[NUMBER_ENERGY_CHANNEL];
-                if (checkButtonDrawTimeSetOfShots[it]->IsDown() && (Emax <= Emin || (E >= Emin && E <= Emax)))
-                    signal.push_back(getSignalProcessing(it, nSpectrometer, in)->getSignals()[nChannel] / E);
+                double E = getSignalProcessing(it, NUMBER_ENERGY_SPECTROMETER, in, nTimeLists)->getSignals()[NUMBER_ENERGY_CHANNEL];
+                if (checkButtonDrawTimeSetOfShots[index]->IsDown() && (Emax <= Emin || (E >= Emin && E <= Emax)))
+                    signal.push_back(getSignalProcessing(it, nSpectrometer, in, nTimeLists)->getSignals()[nChannel] / E);
+                index++;
+                if (index == N_TIME_LIST)
+                    index = nTimeLists == N_TIME_LIST ? 0 : 1;
             }
         }
 
@@ -2374,10 +2403,14 @@ void ThomsonGUI::DrawSetOfShots()
         signal.reserve(nTimeLists*N_SHOTS);
         for (uint in = 0; in < N_SHOTS; in++)
         {
+            uint index = nTimeLists == N_TIME_LIST ? 0 : 1;
             for (uint it = 0; it < nTimeLists; it++)
             {
-                if (checkButtonDrawTimeSetOfShots[it]->IsDown())
-                    signal.push_back(getSignalProcessing(it, NUMBER_ENERGY_SPECTROMETER, in)->getSignals()[NUMBER_ENERGY_CHANNEL]);
+                if (checkButtonDrawTimeSetOfShots[index]->IsDown())
+                    signal.push_back(getSignalProcessing(it, NUMBER_ENERGY_SPECTROMETER, in, nTimeLists)->getSignals()[NUMBER_ENERGY_CHANNEL]);
+                index++;
+                if (index == N_TIME_LIST)
+                    index = nTimeLists == N_TIME_LIST ? 0 : 1;
             }
         }
 

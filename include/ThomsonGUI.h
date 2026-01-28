@@ -104,6 +104,7 @@ private:
     //TGNumberEntry *timePageNumberSetofShots;
     TGNumberEntry *channelNumberSetofShots;
     std::vector <TGCheckButton*> checkButtonDrawTimeSetOfShots;
+    TGNumberEntry *numberTimeListsSetofShots;
 
     uint N_SHOTS;
 
@@ -122,6 +123,8 @@ private:
     darray time_points;
     uint shotDiagnostic;
 
+
+    uint nTimeListSetOfShots;
 
     std::vector <TGNumberEntryField*> channel_signal;
     std::vector <TGNumberEntryField*> channel_result;
@@ -151,7 +154,7 @@ private:
     bool writeCalibration(const char *archive_name, const char *calibration_name, darray &calibration) const;
     void processingSignalsData(const char *archive_name, int shot, const std::vector<parray> &parametersArray, bool clearArray=true, uint nTimeLists=N_TIME_LIST);
     bool countThomson(const std::string &srf_file_folder, const std::string &convolution_file_folder, int shot, bool clearArray=true, int selectionMethod=0);
-    SignalProcessing * getSignalProcessing(uint it, uint sp, uint nShot=0) const;
+    SignalProcessing * getSignalProcessing(uint it, uint sp, uint nShot=0, uint nTimeLists=N_TIME_LIST) const;
     ThomsonCounter * getThomsonCounter(uint it, uint sp, uint nShot=0) const;
 
     void clearSpArray();
