@@ -136,6 +136,9 @@ private:
     TGNumberEntry *calibration_spectrometer;
 
     std::string error_file_name;
+    double A;
+    darray sigma0;
+
     void readError(const char *file_name, double &A, darray &sigma0);
 
     std::vector <std::pair<double, double>> raman_parameters;

@@ -262,8 +262,8 @@ void ThomsonGUI::processingSignalsData(const char *archive_name, int shot, const
 
 bool ThomsonGUI::countThomson(const std::string &srf_file_folder, const std::string &convolution_file_folder, int shot, bool clearArray, int selectionMethod)
 {
-    darray sigma0;
-    double A = ERROR_COEFF;
+    // darray sigma0;
+    // double A = ERROR_COEFF;
     readError(error_file_name.c_str(), A, sigma0);
     /*const darray sigma0 = {
         8.11e-2, 9.42e-2, 6.6e-2, 7.68e-2, 1.67e-1, 0.5,2,2,
@@ -309,7 +309,7 @@ bool ThomsonGUI::countThomson(const std::string &srf_file_folder, const std::str
             darray sigma(N_CHANNELS);
 
             for (uint i = 0; i < N_CHANNELS; i++)
-                sigma[i] = sqrt(ERROR_COEFF*ERROR_COEFF*getSignalProcessing(it, sp)->getSignals()[i] + sigma0[sp*N_CHANNELS+i]*sigma0[sp*N_CHANNELS+i]);
+                sigma[i] = sqrt(A*A*getSignalProcessing(it, sp)->getSignals()[i] + sigma0[sp*N_CHANNELS+i]*sigma0[sp*N_CHANNELS+i]);
 
             ThomsonCounter * counter = new ThomsonCounter(srf_file_name, convolution_file_name, *getSignalProcessing(it, sp), sigma, calibrations[sp*N_SPECTROMETER_CALIBRATIONS+ID_THETA], Ki,
             darray(N_CHANNELS, 0) , LAMBDA_REFERENCE, selectionMethod);
@@ -1352,6 +1352,8 @@ void ThomsonGUI::ReadMainFile()
         std::getline(fin, raman_file_name);
         std::getline(fin, archive_name);
         std::getline(fin, error_file_name);
+
+        readError(error_file_name.c_str(), A, sigma0);
         
         std::string work_mask_string[N_SPECTROMETERS];
         for (uint i = 0; i < N_SPECTROMETERS; i++)
@@ -2236,12 +2238,13 @@ void ThomsonGUI::CountSeveralShot()
         std::string srf_file_folder;
         std::string convolution_file_folder;
         std::string raman_file;
-        std::string error_file;
         std::getline(fin, srf_file_folder);
         std::getline(fin, convolution_file_folder);
         std::getline(fin, raman_file);
         std::getline(fin, archive_name);
-        std::getline(fin, error_file);
+        std::getline(fin, error_file_name);
+
+        readError(error_file_name.c_str(), A, sigma0);
         
         std::string work_mask_string[N_SPECTROMETERS];
         for (uint i = 0; i < N_SPECTROMETERS; i++)
