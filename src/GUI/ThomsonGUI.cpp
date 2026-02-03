@@ -774,12 +774,10 @@ void ThomsonGUI::calibrateRaman(double P, double T, double theta, const darray &
     const double h = 6.63e-27; // эрг*с
     const double E0 = h*c*B0; // эрг
     const double psi = E0/(kB*T); // безразмерный
-    const uint I = 1;
-    const double Q = (2.*I+1)*(2.*I+1)/(2.*psi);
-    const double phi = M_PI_2;
-    const double coeff = P / (kB*T*r0*r0*sin(phi)*sin(phi)*SNorma(LAMBDA_REFERENCE, theta)*Q); // возможно dsigma/dOmega = r0^2sin2(fi) где fi=90
-
-    //std::cout << raman_parameters.size() << "\n";
+    const uint I = 1; // ядерный спин
+    const double Q = (2.*I+1)*(2.*I+1)/(2.*psi); // стат сумма
+    //const double phi = M_PI_2;
+    const double coeff = P / (kB*T*r0*r0*SNorma(LAMBDA_REFERENCE, theta)*Q); // возможно dsigma/dOmega = r0^2sin2(fi) где fi=90
 
     for (uint i = 0; i < N_WORK_CHANNELS; i++)
     {
@@ -796,7 +794,7 @@ void ThomsonGUI::calibrateRaman(double P, double T, double theta, const darray &
                 if (lambda_j >= lambda[l] && lambda_j < lambda[l+1])
                 {
                     SRF_j = (SRF[lambda.size()*i+l]+SRF[lambda.size()*i+l+1])/2.;
-                   //std::cout << J << " " << lambda[l] << " " << lambda_j << " " << lambda[l+1] << " " << SRF_j << "\n";
+                    //std::cout << J << " " << lambda[l] << " " << lambda_j << " " << lambda[l+1] << " " << SRF_j << "\n";
                     break;
                 }
             }
@@ -805,8 +803,10 @@ void ThomsonGUI::calibrateRaman(double P, double T, double theta, const darray &
             //std::cout << sigma << "\n";
             double g = J % 2 == 0 ? 6 : 3;
             sum += sigma*(2.*J+1.)*g*exp(-psi*J*(J+1.))*SRF_j;
+            //std::cout << J << " " << sigma << " " << lambda_j << " " << SRF_j << " " <<  sigma*(2.*J+1.)*g*exp(-psi*J*(J+1.))/Q << " " << sigma*(2.*J+1.)*g*exp(-psi*J*(J+1.))/Q*SRF_j  << "\n";
             J++;
         }
+        //std::cout << "\n";
         Ki[i] = coeff*coeff_i*sum;
     }
 
