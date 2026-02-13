@@ -135,7 +135,7 @@ private:
 
     TGNumberEntry *calibration_spectrometer;
 
-    std::string error_file_name;
+    //std::string error_file_name;
     double A;
     darray sigma0;
 
@@ -174,7 +174,7 @@ private:
 
     void addToArrayTFormat(const std::string &srf_file, const std::string &convolution_file,  const darray &signal, const darray &signal_error, double theta);
 
-    void readROOTFormat(const std::string &fileName, const std::string &srf_file_folder, const std::string &convolution_file_folder, std::ifstream &fin);
+    void readROOTFormat(const std::string &fileName, const std::string &srf_file_folder, const std::string &convolution_file_folder, const std::string &processing_parameters, int type);
     void readT1Format(const std::string &fileName, const std::string &srf_file_folder, const std::string &convolution_file_folder);
     void readT2Format(const std::string &fileName, const std::string &srf_file_folder, const std::string &convolution_file_folder);
 
@@ -185,7 +185,7 @@ private:
 
     void writeResultTableToFile(const char *file_name) const;
 
-    std::string readArchiveName(const char *file_name) const;
+    //std::string readArchiveName(const char *file_name) const;
 
     void countNWithCalibration(darray &ne, darray &neError, uint it) const;
 
@@ -196,6 +196,16 @@ private:
 
 
     void calibrateRaman(double P, double T, double theta, const darray &signalRaman_to_ERaman, const darray &lambda, const darray &SRF, darray &Ki) const;
+
+
+    bool readFileInput( std::ifstream &fin,
+                        std::string &srf_file_folder, std::string &convolution_file_folder,
+                        std::string &raman_file_name, std::string &archive_file_name,
+                        std::string &error_file_name, 
+                        std::string *work_mask_string,
+                        std::string &processing_parameters,
+                        int &type
+    ) const;
 
 public:
     ThomsonGUI(const TGWindow *p, UInt_t width, UInt_t height, TApplication *app);

@@ -254,7 +254,6 @@ void ThomsonGUI::processingSignalsData(const char *archive_name, int shot, const
     {
         for (uint i = 0; i < N_TIME_LIST; i++) {
             energy[i] = getSignalProcessing(i, NUMBER_ENERGY_SPECTROMETER)->getSignals()[NUMBER_ENERGY_CHANNEL];
-            //sigma_energy[i] = ERROR_COEFF*sqrt(energy[i]);
             sigma_energy[i] = 0.;
         }
     }
@@ -262,18 +261,6 @@ void ThomsonGUI::processingSignalsData(const char *archive_name, int shot, const
 
 bool ThomsonGUI::countThomson(const std::string &srf_file_folder, const std::string &convolution_file_folder, int shot, bool clearArray, int selectionMethod)
 {
-    // darray sigma0;
-    // double A = ERROR_COEFF;
-    readError(error_file_name.c_str(), A, sigma0);
-    /*const darray sigma0 = {
-        8.11e-2, 9.42e-2, 6.6e-2, 7.68e-2, 1.67e-1, 0.5,2,2,
-        7.42e-2, 1.1e-1, 1.01e-1, 1.94e-1, 1.64e-1, 0.5,2,2,
-        8.47e-2, 9.48e-2, 8.65e-2, 8.43e-2, 1.93e-1, 2,2,2,
-        1, 7.72e-2, 7.59e-2, 1.07e-1, 1.32e-1, 2,2,2,
-        1.47e-1, 1.03e-1, 8.52e-2, 1.15e-1, 2.31e-1, 2,2,2,
-        4.52e-2, 7.81e-2, 1.24e-1, 7.64e-2, 1, 2,2,2
-    };*/
-
     bool thomsonSuccess = true;
     if (clearArray) clearCounterArray();
     counterArray.reserve(counterArray.size()+N_SPECTROMETERS*N_TIME_LIST);
@@ -321,7 +308,6 @@ bool ThomsonGUI::countThomson(const std::string &srf_file_folder, const std::str
             counter->countConcentration();
             counter->countSignalResult();
             tempCounter[sp*N_TIME_LIST+it] = counter;
-            //counterArray.push_back(counter);
         }
 
         if (!thomsonSuccess)
@@ -478,77 +464,6 @@ int &ThomsonGUI::getShot(int &shot) const
     return shot;
 }
 
-/*void ThomsonGUI::readParametersToSignalProcessing(const char *fileName, SignalProcessingParameters &parameters, uint sp, uint ch, uint it, const darray &t)
-{
-    std::ifstream fin;
-    fin.open(fileName);
-
-    if (fin.is_open())
-    {
-        std::string line;
-        double value;
-        std::getline(fin, line);
-
-        for (uint i = 0; i < ch; i++)
-            std::getline(fin, line);
-
-        for (uint i = 0; i < sp; i++)
-            fin >> value >> value;
-
-        double t0;
-        double dt;
-        fin >> t0 >> dt;
-
-        if (fin.fail())
-         std::cerr << "ошибка чтения файла\n";
-
-        parameters.step_from_end_zero_line = 0;
-        parameters.start_point_from_end_zero_line = 0;
-
-        parameters.start_point_from_start_zero_line = 0;
-
-        for (uint i = 0; i < N_TIME_SIZE; i++)
-        {
-            if (t[i+it*N_TIME_SIZE] > t0)
-            {
-                parameters.step_from_start_zero_line = i-1;
-                break;
-            }
-            else if (t[i+it*N_TIME_SIZE] == t0)
-            {
-                parameters.step_from_start_zero_line = i;
-                break;
-            }
-        }
-
-        for (uint i = 0; i < N_TIME_SIZE; i++)
-        {
-            if (t[i+it*N_TIME_SIZE] > t0+dt) {
-                parameters.signal_point_start = i-1;
-                break;
-            }
-            else if (t[i+it*N_TIME_SIZE] == t0+dt)
-            {
-                parameters.signal_point_start = i;
-                break;
-            }
-        }
-
-        if (dt == -1.)
-            parameters.signal_point_start = N_TIME_SIZE-1;
-
-        parameters.signal_point_step = 1;
-        parameters.point_integrate_start = parameters.step_from_start_zero_line;
-
-    }
-    else
-    {
-        std::cerr << "не удалось открыть файл: " << fileName << "\n";
-    }
-
-    fin.close();
-}*/
-
 std::vector<parray> ThomsonGUI::readParametersToSignalProcessing(const std::string &file_name) const
 {
     std::vector <parray> parametersArray(N_SPECTROMETERS, parray(N_CHANNELS));
@@ -618,30 +533,6 @@ void ThomsonGUI::writeResultTableToFile(const char *file_name) const
     }
 
     fout.close();
-}
-
-std::string ThomsonGUI::readArchiveName(const char *file_name) const
-{
-    std::ifstream fin;
-    fin.open(file_name);
-    std::string archive_name = "";
-    if (fin.is_open())
-    {
-        std::string line;
-        std::getline(fin, line);
-        std::getline(fin, line);
-        std::getline(fin, line);
-        std::getline(fin, line);
-
-        if (!fin.fail())
-        {
-            if (line != "")
-                archive_name = line;
-        }
-
-    }
-    fin.close();
-    return archive_name;
 }
 
 void ThomsonGUI::countNWithCalibration(darray &ne, darray &neError, uint it) const
@@ -776,8 +667,9 @@ void ThomsonGUI::calibrateRaman(double P, double T, double theta, const darray &
     const double psi = E0/(kB*T); // безразмерный
     const uint I = 1; // ядерный спин
     const double Q = (2.*I+1)*(2.*I+1)/(2.*psi); // стат сумма
-    //const double phi = M_PI_2;
     const double coeff = P / (kB*T*r0*r0*SNorma(LAMBDA_REFERENCE, theta)*Q); // возможно dsigma/dOmega = r0^2sin2(fi) где fi=90
+
+    double Q0 = 0;
 
     for (uint i = 0; i < N_WORK_CHANNELS; i++)
     {
@@ -794,22 +686,46 @@ void ThomsonGUI::calibrateRaman(double P, double T, double theta, const darray &
                 if (lambda_j >= lambda[l] && lambda_j < lambda[l+1])
                 {
                     SRF_j = (SRF[lambda.size()*i+l]+SRF[lambda.size()*i+l+1])/2.;
-                    //std::cout << J << " " << lambda[l] << " " << lambda_j << " " << lambda[l+1] << " " << SRF_j << "\n";
                     break;
                 }
             }
 
             double sigma = ls.second;
-            //std::cout << sigma << "\n";
             double g = J % 2 == 0 ? 6 : 3;
             sum += sigma*(2.*J+1.)*g*exp(-psi*J*(J+1.))*SRF_j;
-            //std::cout << J << " " << sigma << " " << lambda_j << " " << SRF_j << " " <<  sigma*(2.*J+1.)*g*exp(-psi*J*(J+1.))/Q << " " << sigma*(2.*J+1.)*g*exp(-psi*J*(J+1.))/Q*SRF_j  << "\n";
+            Q0 += (2.*J+1.)*g*exp(-psi*J*(J+1.));
             J++;
         }
-        //std::cout << "\n";
         Ki[i] = coeff*coeff_i*sum;
     }
 
+}
+
+bool ThomsonGUI::readFileInput( std::ifstream &fin,
+    std::string &srf_file_folder, std::string &convolution_file_folder, 
+    std::string &raman_file_name, std::string &archive_file_name, std::string &error_file_name,
+    std::string *work_mask_string, std::string &processing_parameters, int &type) const
+{
+    std::getline(fin, srf_file_folder);
+    std::getline(fin, convolution_file_folder);
+    std::getline(fin, raman_file_name);
+    std::getline(fin, archive_file_name);
+    std::getline(fin, error_file_name);
+
+    //std::string work_mask_string[N_SPECTROMETERS];
+    if (work_mask_string != nullptr)
+        for (uint i = 0; i < N_SPECTROMETERS; i++)
+            std::getline(fin, work_mask_string[i]);
+    else
+    {
+        std::string temp;
+        for (uint i = 0; i < N_SPECTROMETERS; i++)
+            std::getline(fin, temp);
+    }
+
+    std::getline(fin, processing_parameters);
+    fin >> type;
+    return fin.fail();
 }
 
 ThomsonGUI::ThomsonGUI(const TGWindow *p, UInt_t width, UInt_t height, TApplication *app) : TGMainFrame(p, width, height),
@@ -824,19 +740,10 @@ ThomsonGUI::ThomsonGUI(const TGWindow *p, UInt_t width, UInt_t height, TApplicat
 
         TGButton *openMainFileDialogButton = new TGTextButton(hframe, "^");
         mainFileTextEntry = new TGTextEntry(hframe);
-        //TGButton *readMainFileButton = new TGTextButton(hframe, "Count");
-        //writeResultTable = new TGCheckButton(hframe);
-        //writeResultTable->SetToolTipText("write result to last_result_table.dat");
-
-        //readMainFileButton->SetToolTipText("read file until draw graphs for diagnostic");
-
-        //readMainFileButton->Connect("Clicked()", CLASS_NAME, this, "ReadMainFile()");
         openMainFileDialogButton->Connect("Clicked()", CLASS_NAME, this, "OpenMainFileDialog()");
 
         hframe->AddFrame(openMainFileDialogButton, new TGLayoutHints(kLHintsLeft, 5, 5, 5, 5));
         hframe->AddFrame(mainFileTextEntry, new TGLayoutHints(kLHintsExpandX, 5, 5, 5, 5));
-        //hframe->AddFrame(readMainFileButton, new TGLayoutHints(kLHintsLeft, 5, 5, 5, 5));
-        //hframe->AddFrame(writeResultTable, new TGLayoutHints(kLHintsLeft, 1, 1, 7, 7));
     }
 
     TGTab *fTap = new TGTab(this, width, height);
@@ -876,14 +783,7 @@ ThomsonGUI::ThomsonGUI(const TGWindow *p, UInt_t width, UInt_t height, TApplicat
         checkButtonDraw.push_back(drawSignalsInChannels = new TGCheckButton(vframeDraw, "draw signal in channels"));
         checkButtonDraw.push_back(drawIntegralInChannels = new TGCheckButton(vframeDraw, "draw integral in channels"));
         checkButtonDraw.push_back(drawSignalsAndIntegralsInChannels = new TGCheckButton(vframeDraw, "draw integral and signal in channels"));
-        //checkButtonDraw.push_back(drawEnergySignals = new TGCheckButton(vframeDraw, "draw Laser energy signal"));
-        //checkButtonDraw.push_back(drawTemperatureRDependence = new TGCheckButton(vframeDraw, "draw Te(r)"));
-        //checkButtonDraw.push_back(drawConcentrationRDependence = new TGCheckButton(vframeDraw, "draw ne(r)"));
-        //checkButtonDraw.push_back(drawTemperatureRDependenceAll = new TGCheckButton(vframeDraw, "draw Te(r) all"));
-        //checkButtonDraw.push_back(drawConcentrationRDependenceAll = new TGCheckButton(vframeDraw, "draw ne(r) all"));
         checkButtonDraw.push_back(drawCompareSignalAndResult = new TGCheckButton(vframeDraw, "draw synthetic signal in channels"));
-        //drawTemperatureRDependence->SetEnabled(kFALSE);
-        //drawConcentrationRDependence->SetEnabled(kFALSE);
 
 
         TGHorizontalFrame *hframeDrawPoints = new TGHorizontalFrame(vframeDraw, 200, 80);
@@ -911,22 +811,8 @@ ThomsonGUI::ThomsonGUI(const TGWindow *p, UInt_t width, UInt_t height, TApplicat
         vframeTimeList->AddFrame(labelTimeList, new TGLayoutHints(kLHintsLeft,0,0,5,5));
         vframeTimeList->AddFrame(timeListNumber, new TGLayoutHints(kLHintsLeft,0,0,0,0));
 
-
-
-        //TGVerticalFrame *vframeSpectrometer = new TGVerticalFrame(hframeDrawPoints, 80, 80);
-
-        //TGLabel *labelSpectrometer = new TGLabel(vframeSpectrometer, "spectrometer");
-        //spectrometerNumber = new TGNumberEntry(vframeSpectrometer, 0, 4, -1, TGNumberFormat::kNESInteger,
-        //                                    TGNumberFormat::kNEANonNegative, TGNumberEntry::kNELLimitMinMax, 0, N_SPECTROMETERS-1);
-            
-        //vframeSpectrometer->AddFrame(labelSpectrometer, new TGLayoutHints(kLHintsLeft,0,0,5,5));
-        //vframeSpectrometer->AddFrame(spectrometerNumber, new TGLayoutHints(kLHintsCenterX,0,0,0,0));
-
-
         hframeDrawPoints->AddFrame(vframeTimeList, new TGLayoutHints(kLHintsLeft, 5, 5, 5, 5));
-        //hframeDrawPoints->AddFrame(vframeSpectrometer, new TGLayoutHints(kLHintsLeft, 5, 5, 5, 5));
         timeListNumber->GetNumberEntry()->SetToolTipText("time page number");
-        //spectrometerNumber->GetNumberEntry()->SetToolTipText("spectrometer number");
 
         for (uint i = 0; i < checkButtonDraw.size(); i++)
         {
@@ -959,19 +845,10 @@ ThomsonGUI::ThomsonGUI(const TGWindow *p, UInt_t width, UInt_t height, TApplicat
 
         vframeInfo->AddFrame(hframePrintInfo, new TGLayoutHints(kLHintsLeft, 0,0,0,0));
 
-        //const uint N_PAIRS = 5;
-        //TGHorizontalFrame *hframePairs[N_PAIRS];
-
-        //for (uint i = 0; i < N_PAIRS; i++)
-        //    hframePairs[i] = new TGHorizontalFrame(vframeInfo, 40, 40);
-
-        //TGTableLayout *tableLayout = new TGTableLayout(vframeInfo, N_PAIRS, 2, kFALSE);
-        //vframeInfo->SetLayoutManager(tableLayout);
 
         checkButtonInfo.push_back(infoSignal = new TGCheckButton(vframeInfo, "print signals"));
         checkButtonInfo.push_back(infoWorkChannels = new TGCheckButton(vframeInfo, "print work channels"));
         checkButtonInfo.push_back(infoUseRatio = new TGCheckButton(vframeInfo, "print use ratio for Te"));
-        //checkButtonInfo.push_back(infoUseChannelToNe = new TGCheckButton(vframeInfo, "print use channel for ne"));
         checkButtonInfo.push_back(infoTe0 = new TGCheckButton(vframeInfo, "print Te0"));
         checkButtonInfo.push_back(infoTij = new TGCheckButton(vframeInfo, "print Tij"));
         checkButtonInfo.push_back(infoTe = new TGCheckButton(vframeInfo, "print Te"));
@@ -979,16 +856,9 @@ ThomsonGUI::ThomsonGUI(const TGWindow *p, UInt_t width, UInt_t height, TApplicat
         checkButtonInfo.push_back(infoCountSignal = new TGCheckButton(vframeInfo, "print synthetic signals"));
         checkButtonInfo.push_back(infoError = new TGCheckButton(vframeInfo, "print rmse"));
         checkButtonInfo.push_back(infoLaserEntry = new TGCheckButton(vframeInfo, "print Laser energy"));
-        //infoUseChannelToNe->SetEnabled(kFALSE);
         
         for (uint i = 0; i < checkButtonInfo.size(); i++)
         {
-            //vframeInfo->AddFrame(checkButtonInfo[2*i], new TGTableLayoutHints(0, 1, i, i+1, kLHintsLeft | kLHintsCenterY));
-            //vframeInfo->AddFrame(checkButtonInfo[2*i+1], new TGTableLayoutHints(1, 2, i, i+1, kLHintsLeft | kLHintsCenterY));
-            //TGHorizontalFrame *hframePrintPairs = new TGHorizontalFrame(vframeInfo, 40, 40);
-            //hframePrintPairs->AddFrame(checkButtonInfo[i], new TGLayoutHints(kLHintsLeft, 1, 1, 2, 2));
-            //hframePrintPairs->AddFrame(checkButtonInfo[i+1], new TGLayoutHints(kLHintsLeft, 1, 1, 2, 2));
-            //vframeInfo->AddFrame(hframePairs[i], new TGLayoutHints(kLHintsLeft, 0, 0, 0, 0));
             vframeInfo->AddFrame(checkButtonInfo[i], new TGLayoutHints(kLHintsLeft, 1, 1, 2, 2));
         }
         
@@ -1050,14 +920,8 @@ ThomsonGUI::ThomsonGUI(const TGWindow *p, UInt_t width, UInt_t height, TApplicat
         drawButton->Connect("Clicked()", CLASS_NAME, this, "DrawGraphs()");
         drawButton->Connect("Clicked()", CLASS_NAME, this, "PrintInfo()");
 
-        //timeListNumber = new TGNumberEntry(hframe_button, 1, 4, -1, TGNumberFormat::kNESInteger,
-        //                                    TGNumberFormat::kNEANonNegative, TGNumberEntry::kNELLimitMinMax, 0, N_TIME_LIST-1);
-        //spectrometerNumber = new TGNumberEntry(hframe_button, 0, 4, -1, TGNumberFormat::kNESInteger,
-        //                                    TGNumberFormat::kNEANonNegative, TGNumberEntry::kNELLimitMinMax, 0, N_SPECTROMETERS-1);
 
         drawButton->SetToolTipText("draw selected graphs");
-        //timeListNumber->GetNumberEntry()->SetToolTipText("time page number");
-        //spectrometerNumber->GetNumberEntry()->SetToolTipText("spectrometer number");
         
         hframe_button->AddFrame(drawButton, new TGLayoutHints(kLHintsLeft, 5, 5, 5, 5));
 
@@ -1069,18 +933,6 @@ ThomsonGUI::ThomsonGUI(const TGWindow *p, UInt_t width, UInt_t height, TApplicat
         statusEntry->SetToolTipText("status");
         hframe_button->AddFrame(statusEntry, new TGLayoutHints(kLHintsLeft, 5,5,5,5));
 
-        //hframe_button->AddFrame(timeListNumber, new TGLayoutHints(kLHintsLeft, 5, 5, 5, 5));
-        //hframe_button->AddFrame(spectrometerNumber, new TGLayoutHints(kLHintsLeft, 5, 10, 5, 5));
-
-        // for (uint i = 0; i < N_TIME_LIST; i++)
-        // {
-        //     checkButtonDrawTime.push_back(new TGCheckButton(hframe_button));
-        //     checkButtonDrawTime.back()->SetState(kButtonDown);
-        //     checkButtonDrawTime.back()->SetToolTipText(TString::Format("time page %u draw", i));
-        //     hframe_button->AddFrame(checkButtonDrawTime.back(), new TGLayoutHints(kLHintsLeft, 1,1,7,7));
-        // }
-        // checkButtonDrawTime.front()->SetState(kButtonUp);
-        // checkButtonDrawTime.front()->SetEnabled(false);
 
     }
 
@@ -1136,8 +988,6 @@ ThomsonGUI::ThomsonGUI(const TGWindow *p, UInt_t width, UInt_t height, TApplicat
         drawButton->Connect("Clicked()", CLASS_NAME, this, "DrawSetOfShots()");
         hframeBottom->AddFrame(drawButton, new TGLayoutHints(kLHintsLeft, 5,5,5,10));
 
-        //timePageNumberSetofShots = new TGNumberEntry(hframeBottom, 1, 4, -1, TGNumberFormat::kNESInteger,
-        //                                    TGNumberFormat::kNEANonNegative, TGNumberEntry::kNELLimitMinMax, 0, N_TIME_LIST-1);
         spectrometerNumberSetofShots = new TGNumberEntry(hframeBottom, 0, 4, -1, TGNumberFormat::kNESInteger,
                                             TGNumberFormat::kNEANonNegative, TGNumberEntry::kNELLimitMinMax, 0, N_SPECTROMETERS-1);
 
@@ -1145,12 +995,9 @@ ThomsonGUI::ThomsonGUI(const TGWindow *p, UInt_t width, UInt_t height, TApplicat
                                             TGNumberFormat::kNEANonNegative, TGNumberEntry::kNELLimitMinMax, 0, N_CHANNELS-1);
 
         drawButton->SetToolTipText("draw selected graphs");
-        //timePageNumberSetofShots->GetNumberEntry()->SetToolTipText("time page number");
         spectrometerNumberSetofShots->GetNumberEntry()->SetToolTipText("spectrometer number");
         channelNumberSetofShots->GetNumberEntry()->SetToolTipText("channel number");
 
-
-        //hframeBottom->AddFrame(timePageNumberSetofShots, new TGLayoutHints(kLHintsLeft, 5, 5, 5, 5));
         hframeBottom->AddFrame(spectrometerNumberSetofShots, new TGLayoutHints(kLHintsLeft, 5, 5, 5, 5));
         hframeBottom->AddFrame(channelNumberSetofShots, new TGLayoutHints(kLHintsLeft, 5, 10, 5, 5));
 
@@ -1347,19 +1194,16 @@ void ThomsonGUI::ReadMainFile()
         std::string srf_file_folder;
         std::string convolution_file_folder;
         std::string raman_file_name;
-        std::getline(fin, srf_file_folder);
-        std::getline(fin, convolution_file_folder);
-        std::getline(fin, raman_file_name);
-        std::getline(fin, archive_name);
-        std::getline(fin, error_file_name);
+        std::string error_file_name;
+        std::string work_mask_string[N_SPECTROMETERS];
+        std::string processing_paramters;
+        int type;
+
+
+        readFileInput(fin, srf_file_folder, convolution_file_folder, 
+        raman_file_name, archive_name, error_file_name, work_mask_string, processing_paramters, type);
 
         readError(error_file_name.c_str(), A, sigma0);
-        
-        std::string work_mask_string[N_SPECTROMETERS];
-        for (uint i = 0; i < N_SPECTROMETERS; i++)
-           std::getline(fin, work_mask_string[i]);
-        
-
         readRamanCrossSection(raman_file_name.c_str());
 
         if (!fin.fail())
@@ -1379,7 +1223,7 @@ void ThomsonGUI::ReadMainFile()
             if (file_format == "root")
             {
                 fileType = isROOT;
-                readROOTFormat(archive_name, srf_file_folder, convolution_file_folder, fin);
+                readROOTFormat(archive_name, srf_file_folder, convolution_file_folder, processing_paramters, type);
             }
             else if (file_format == "t1")
             {
@@ -1428,8 +1272,23 @@ void ThomsonGUI::ReadMainFile()
 
 void ThomsonGUI::ReadCalibration()
 {
-    std::string archive_name = readArchiveName(mainFileTextEntry->GetText());
-    if (archive_name == "" || getFileFormat(archive_name) != "root")
+    std::string archive_name = "";
+    bool fail = false;
+    std::ifstream fin;
+    fin.open(mainFileTextEntry->GetText());
+
+    if (fin.is_open())
+    {
+        std::string temp;
+        int t;
+        fail = readFileInput(fin, temp, temp, temp, archive_name, temp, nullptr, temp, t);
+    }
+    else
+        return;
+
+    fin.close();
+
+    if (archive_name == "" || getFileFormat(archive_name) != "root" || fail)
         return;
 
     int shot = calibrationShot->GetNumber();
@@ -1445,16 +1304,32 @@ void ThomsonGUI::ReadCalibration()
         }
     }
     else {
-        std::cerr << "не удалось прочитать калибровку\n";
+        calibration.resize(N_SPECTROMETERS*N_SPECTROMETER_CALIBRATIONS, 0.);
+        std::cout << "калибровка дополнена нулями\n";
     }
 
 }
 
 void ThomsonGUI::WriteCalibration()
 {
-    std::string archive_name = readArchiveName(mainFileTextEntry->GetText());
-    if (archive_name == "" || getFileFormat(archive_name) != "root")
+    std::string archive_name = "";
+    bool fail = true;
+    std::ifstream fin;
+    fin.open(mainFileTextEntry->GetText());
+
+    if (fin.is_open())
+    {
+        std::string temp;
+        int t;
+        fail = readFileInput(fin, temp, temp, temp, archive_name, temp, nullptr, temp, t);
+    }
+    else
         return;
+    fin.close();
+
+    if (archive_name == "" || getFileFormat(archive_name) != "root" || fail)
+        return;
+
 
     darray calibration(N_SPECTROMETERS*N_SPECTROMETER_CALIBRATIONS);
 
@@ -1553,21 +1428,21 @@ void ThomsonGUI::addToArrayTFormat(const std::string &srf_file, const std::strin
         fileType = -1;
 }
 
-void ThomsonGUI::readROOTFormat(const std::string &fileName, const std::string &srf_file_folder, const std::string &convolution_file_folder, std::ifstream &fin)
+void ThomsonGUI::readROOTFormat(const std::string &fileName, const std::string &srf_file_folder, const std::string &convolution_file_folder, const std::string &processing_parameters, int selectionMethod)
 {
     int shot = shotNumber->GetNumber();
-    std::string parameters_file_name;
-    fin >> parameters_file_name;
+    //std::string parameters_file_name;
+    //fin >> parameters_file_name;
 
-    std::vector <parray> parametersArray = readParametersToSignalProcessing(parameters_file_name);
+    std::vector <parray> parametersArray = readParametersToSignalProcessing(processing_parameters);
 
     /*fin >> shot >> parameters.start_point_from_start_zero_line >> parameters.step_from_start_zero_line >> parameters.start_point_from_end_zero_line >> 
     parameters.step_from_end_zero_line >> parameters.signal_point_start >> 
     parameters.signal_point_step >> parameters.point_integrate_start >> parameters.threshold >> parameters.increase_point >> parameters.decrease_point;*/
-    int selectionMethod;
-    fin >> selectionMethod;
+    //int selectionMethod;
+    //fin >> selectionMethod;
     processingSignalsData(archive_name.c_str(), shot, parametersArray, true);
-    if (fin.fail() || !countThomson(srf_file_folder, convolution_file_folder, shot, true, selectionMethod)) {
+    if (!countThomson(srf_file_folder, convolution_file_folder, shot, true, selectionMethod)) {
         std::cerr << "ошибка чтения файла!\n";
         fileType = -1;
     }
@@ -2108,7 +1983,7 @@ void ThomsonGUI::PrintInfo()
     }
     if (checkButton(infoNe))
     {
-        std::cout << "ne=" << counter->getN() << " +/- " << counter->getNError() << "\n";
+        std::cout << "ne=" << counter->getN() / energy[nTimePage] * 1e13 << " +/- " << counter->getNError() << "\n";
     }
     if (checkButton(infoCountSignal))
     {
@@ -2238,17 +2113,24 @@ void ThomsonGUI::CountSeveralShot()
         std::string srf_file_folder;
         std::string convolution_file_folder;
         std::string raman_file;
-        std::getline(fin, srf_file_folder);
-        std::getline(fin, convolution_file_folder);
-        std::getline(fin, raman_file);
-        std::getline(fin, archive_name);
-        std::getline(fin, error_file_name);
+        std::string error_file_name;
+        std::string work_mask_string[N_SPECTROMETERS];
+        std::string processing_parameters;
+        int type;
+
+        readFileInput(fin, srf_file_folder, convolution_file_folder, raman_file, archive_name, error_file_name, work_mask_string, processing_parameters, type);
+        //std::getline(fin, srf_file_folder);
+        //std::getline(fin, convolution_file_folder);
+        //std::getline(fin, raman_file);
+        //std::getline(fin, archive_name);
+        //std::getline(fin, error_file_name);
 
         readError(error_file_name.c_str(), A, sigma0);
+        readRamanCrossSection(raman_file.c_str());
+
         
-        std::string work_mask_string[N_SPECTROMETERS];
-        for (uint i = 0; i < N_SPECTROMETERS; i++)
-           std::getline(fin, work_mask_string[i]);
+        // for (uint i = 0; i < N_SPECTROMETERS; i++)
+        //    std::getline(fin, work_mask_string[i]);
 
 
         if (!fin.fail() && getFileFormat(archive_name) == "root")
@@ -2458,10 +2340,11 @@ void ThomsonGUI::Calibrate()
     fin.open(file_name);
     if (fin.is_open())
     {
-        std::getline(fin, srf_file);
+        std::string temp;
+        int t;
+        readFileInput(fin, srf_file, temp, raman_file, temp, temp, nullptr, temp, t);
+
         srf_file = srf_file + "SRF_Spectro-" + std::to_string(sp+1)+".dat";
-        std::getline(fin, raman_file);
-        std::getline(fin, raman_file);
         readRamanCrossSection(raman_file.c_str());
 
         double lMin;
