@@ -159,7 +159,7 @@ void ThomsonDraw::convolution_draw(TCanvas *c, TMultiGraph *mg, const darray &SC
     uint color = 1;
     for (uint i = 0; i < N_CHANNELS; i++)
     {
-        mg->Add(createGraph(N_TEMPERATURE, T.data(), SCount.data()+i*N_TEMPERATURE, color, 1, 2, TString::Format("ch%u", i+1)));
+        mg->Add(createGraph(N_TEMPERATURE, T.data(), SCount.data()+i*N_TEMPERATURE, color, 1, 2, TString::Format("ch%u", i)));
 
         Color(color);
     }
