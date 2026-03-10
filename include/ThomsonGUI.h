@@ -108,7 +108,7 @@ private:
 
     uint N_SHOTS;
 
-    int fileType;
+    int countType;
     std::string archive_name;
 
     std::vector<barray> work_mask;
@@ -139,6 +139,9 @@ private:
     double A;
     darray sigma0;
 
+    bool getline(std::ifstream &fin, std::string &line, char comment='#') const;
+
+
     void readError(const char *file_name, double &A, darray &sigma0);
 
     std::vector <std::pair<double, double>> raman_parameters;
@@ -168,15 +171,15 @@ private:
     static TString getFileFormat(TString fileName);
 
 
-    double gaussian_noise(double sigma) const;
-    darray createSignal(const darray &SRF, double lMin, double lMax, double dl, uint N_LAMBDA, double Te_true, double theta, double Aampl=10., const darray &sigma_noise={}) const;
-    darray createSignal(const std::string &srf_name, const darray &sigma_channel, double Te, double ne, double theta) const;
+    //double gaussian_noise(double sigma) const;
+    //darray createSignal(const darray &SRF, double lMin, double lMax, double dl, uint N_LAMBDA, double Te_true, double theta, double Aampl=10., const darray &sigma_noise={}) const;
+    //darray createSignal(const std::string &srf_name, const darray &sigma_channel, double Te, double ne, double theta) const;
 
-    void addToArrayTFormat(const std::string &srf_file, const std::string &convolution_file,  const darray &signal, const darray &signal_error, double theta);
+    //void addToArrayTFormat(const std::string &srf_file, const std::string &convolution_file,  const darray &signal, const darray &signal_error, double theta);
 
     void readROOTFormat(const std::string &fileName, const std::string &srf_file_folder, const std::string &convolution_file_folder, const std::string &processing_parameters, int type);
-    void readT1Format(const std::string &fileName, const std::string &srf_file_folder, const std::string &convolution_file_folder);
-    void readT2Format(const std::string &fileName, const std::string &srf_file_folder, const std::string &convolution_file_folder);
+    //void readT1Format(const std::string &fileName, const std::string &srf_file_folder, const std::string &convolution_file_folder);
+    //void readT2Format(const std::string &fileName, const std::string &srf_file_folder, const std::string &convolution_file_folder);
 
     bool checkButton(TGCheckButton *ch, bool lookEnable=true) const { return ch->IsDown() && (!lookEnable || ch->IsEnabled()); }
     //void readParametersToSignalProcessing(const char *fileName, SignalProcessingParameters &parameters, uint sp, uint ch, uint it, const darray &t);
@@ -187,10 +190,11 @@ private:
 
     //std::string readArchiveName(const char *file_name) const;
 
+    void diactiveDiagnosticFrame(const char* text="press count");
+
     void countNWithCalibration(darray &ne, darray &neError, uint it) const;
 
     uiarray createArrayShots();
-
 
     void createTimePointsArray(int shot);
 
