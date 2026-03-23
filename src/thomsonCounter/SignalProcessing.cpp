@@ -84,10 +84,15 @@ double SignalProcessing::findZeroLine(const darray &t, const darray &U, uint cha
 
 bool SignalProcessing::checkSignal(const darray &t, const darray &U, const darray &UTintegral, uint channel, double signal, double sigma, double threshold, int increase_point, int decrease_point, double klim, uint signal_point_start)
 {
+    //std::cout << sigma << "\n";
     if (signal > 0)
     {
-        if (threshold <= 0)
-            return true;
+        if (signal < sigma) {
+            //std::cout << "channel: " << channel << " signal < sigma!\n";
+            return false;
+        }
+        // if (threshold_sigma <= 0)
+        //     return true;
 
         bool start_impulse = false;
         bool isImpulse = false;
@@ -96,6 +101,7 @@ bool SignalProcessing::checkSignal(const darray &t, const darray &U, const darra
         uint impulse_start_point = 0;
         uint impulse_end_point = 0;
         uint impulse_max_point = 0;
+        //threshold *= sigma;
         double max_signal = threshold;
 
         for (uint i = 0; i < tSize; i++)
@@ -132,7 +138,10 @@ bool SignalProcessing::checkSignal(const darray &t, const darray &U, const darra
 
         }
 
-        if (isImpulse && klim > 0.)
+        if (threshold < 0.)
+            isImpulse = true;
+
+        if (isImpulse && klim > 0. && signal_point_start != tSize-1)
         {
             double T = 0;
             double Y = 0;
@@ -152,9 +161,10 @@ bool SignalProcessing::checkSignal(const darray &t, const darray &U, const darra
             } 
             //std::cout << "\n";
 
-
+            double t1 = t[index+signal_point_start];
+            double t2 = t[index+tSize-1];
             double k = (N*TY - T*Y ) / (N*T2-T*T);
-            if (std::abs(k) > klim)
+            if (std::abs(k*(t2-t1)) > klim*sigma)
                 isImpulse = false;
 
         }
