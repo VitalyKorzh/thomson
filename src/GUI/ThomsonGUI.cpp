@@ -246,7 +246,7 @@ void ThomsonGUI::processingSignalsData(const char *archive_name, int shot, const
                     }
                 }
             }
-            spArray.push_back(new SignalProcessing(t, U, N_CHANNELS, parametersArray[sp], work_mask[sp]));
+            spArray.push_back(new SignalProcessing(t, U, N_CHANNELS, parametersArray[sp], sigmaCoeff, work_mask[sp]));
         }
     }
 
@@ -293,12 +293,9 @@ bool ThomsonGUI::countThomson(const std::string &srf_file_folder, const std::str
 
         for (uint it = 0; it < N_TIME_LIST; it++)
         {
-            darray sigma(N_CHANNELS);
+            //darray sigma = getSigma(sigmaCoeff, sp, it);
 
-            for (uint i = 0; i < N_CHANNELS; i++)
-                sigma[i] = sqrt(A*A*getSignalProcessing(it, sp)->getSignals()[i] + sigma0[sp*N_CHANNELS+i]*sigma0[sp*N_CHANNELS+i]);
-
-            ThomsonCounter * counter = new ThomsonCounter(srf_file_name, convolution_file_name, *getSignalProcessing(it, sp), sigma, calibrations[sp*N_SPECTROMETER_CALIBRATIONS+ID_THETA], Ki,
+            ThomsonCounter * counter = new ThomsonCounter(srf_file_name, convolution_file_name, *getSignalProcessing(it, sp), calibrations[sp*N_SPECTROMETER_CALIBRATIONS+ID_THETA], Ki,
             darray(N_CHANNELS, 0) , LAMBDA_REFERENCE, selectionMethod);
             if (!counter->isWork()) {
                 thomsonSuccess = false;
@@ -357,6 +354,18 @@ void ThomsonGUI::clearCounterArray()
     counterArray.shrink_to_fit();
 }
 
+/*darray ThomsonGUI::getSigma(std::vector<std::pair<double, double>> &sigmaCoeff, uint sp, uint it) const
+{
+    darray sigma(N_CHANNELS, 0.);
+    for (uint i = 0; i < N_CHANNELS; i++) { // вычисляем погрешность
+        double A0_i = sigmaCoeff[sp*N_CHANNELS+i].first;
+        double sigma0_i = sigmaCoeff[sp*N_CHANNELS+i].second;
+        sigma[i] = sqrt(A0_i*A0_i*getSignalProcessing(it, sp)->getSignals()[i] + sigma0_i*sigma0_i);
+    }
+
+    return sigma;
+}*/
+
 bool ThomsonGUI::getline(std::ifstream &fin, std::string &line, char comment) const
 {
     while (std::getline(fin, line))
@@ -368,23 +377,23 @@ bool ThomsonGUI::getline(std::ifstream &fin, std::string &line, char comment) co
     return false;
 }
 
-void ThomsonGUI::readError(const char *file_name, double &A, darray &sigma0)
+void ThomsonGUI::readError(const char *file_name, std::vector<std::pair<double, double>> &sigmaCoeff)
 {
-    sigma0.resize(N_CHANNELS*N_SPECTROMETERS, 0);
 
-    A = 0;
-    for (uint i = 0; i < N_CHANNELS*N_SPECTROMETERS; i++)
-        sigma0[i] = 0;
+    sigmaCoeff.clear();
+    sigmaCoeff.resize(N_CHANNELS*N_SPECTROMETERS, std::pair<double, double> (0, 0));
+
 
     std::ifstream fin;
     fin.open(file_name);
 
     if (fin.is_open())
     {
-        fin >> A;
+        for (uint i = 0; i < N_CHANNELS*N_SPECTROMETERS; i++)
+            fin >> sigmaCoeff[i].first;
 
         for (uint i = 0; i < N_CHANNELS*N_SPECTROMETERS; i++)
-            fin >> sigma0[i];
+            fin >> sigmaCoeff[i].second;
 
     }   
     else
@@ -1236,7 +1245,7 @@ void ThomsonGUI::ReadMainFile()
             CloseArchive();
 
             createTimePointsArray(shotDiagnostic);
-            readError(error_file_name.c_str(), A, sigma0);
+            readError(error_file_name.c_str(), sigmaCoeff);
             readRamanCrossSection(raman_file_name.c_str());
             std::vector <parray> parametersArray = readParametersToSignalProcessing(processing_paramters);
 
@@ -2146,7 +2155,7 @@ void ThomsonGUI::CountSeveralShot()
         //std::getline(fin, archive_name);
         //std::getline(fin, error_file_name);
 
-        readError(error_file_name.c_str(), A, sigma0);
+        readError(error_file_name.c_str(), sigmaCoeff);
         readRamanCrossSection(raman_file.c_str());
 
         

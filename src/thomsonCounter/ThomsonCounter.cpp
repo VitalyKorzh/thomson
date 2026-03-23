@@ -281,8 +281,8 @@ ThomsonCounter::ThomsonCounter(const std::string &srf_file_name, const std::stri
     }
 }
 
-ThomsonCounter::ThomsonCounter(const std::string &srf_file_name, const std::string &convolution_file_name, const SignalProcessing &sp, const darray &sigma_channels, double theta, const darray &Ki, const darray &sigmaKi, double lambda_reference, int selectionMethod) :
-                                 ThomsonCounter(srf_file_name, convolution_file_name, sp.getSignals(), sigma_channels, theta, Ki, sigmaKi, sp.getWorkSignals(), lambda_reference, selectionMethod)
+ThomsonCounter::ThomsonCounter(const std::string &srf_file_name, const std::string &convolution_file_name, const SignalProcessing &sp, double theta, const darray &Ki, const darray &sigmaKi, double lambda_reference, int selectionMethod) :
+                                 ThomsonCounter(srf_file_name, convolution_file_name, sp.getSignals(), sp.getSignalsSigma(), theta, Ki, sigmaKi, sp.getWorkSignals(), lambda_reference, selectionMethod)
 {
 }
 

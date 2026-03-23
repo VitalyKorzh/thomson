@@ -47,6 +47,18 @@ double SignalProcessing::countChannelSignal(const darray &UTintegrate, uint chan
         return signal_mean / signal_point_step_real;
 }
 
+double SignalProcessing::countChannelSignalSigma(double signal, const std::vector<std::pair<double, double>> &sigmaCoeff, uint channel) const
+{
+    double sigma = 0;
+
+    double A0 = sigmaCoeff[channel].first;
+    double sigma0 = sigmaCoeff[channel].second;
+
+    sigma = sqrt(sigma0*sigma0 + A0*A0*signal);
+
+    return sigma;
+}
+
 double SignalProcessing::findZeroLine(const darray &t, const darray &U, uint channel, uint step_from_start_zero_line, uint step_from_end_zero_line, uint start_point_from_start_zero_line, uint start_point_from_end_zero_line) const
 {
     double shift = 0.;
@@ -70,7 +82,7 @@ double SignalProcessing::findZeroLine(const darray &t, const darray &U, uint cha
     return shift/use_points;
 }
 
-bool SignalProcessing::checkSignal(const darray &t, const darray &U, const darray &UTintegral, uint channel, double signal, double threshold, int increase_point, int decrease_point, double klim, uint signal_point_start)
+bool SignalProcessing::checkSignal(const darray &t, const darray &U, const darray &UTintegral, uint channel, double signal, double sigma, double threshold, int increase_point, int decrease_point, double klim, uint signal_point_start)
 {
     if (signal > 0)
     {
@@ -153,8 +165,8 @@ bool SignalProcessing::checkSignal(const darray &t, const darray &U, const darra
         return false;
 }
 
-SignalProcessing::SignalProcessing(const darray &t_full, const darray &U_full, uint N_CHANNELS, const parray &parametersArray, const barray &work_mask) : N_CHANNELS(N_CHANNELS),
-                                    signals(N_CHANNELS, 0), work_signal(N_CHANNELS, true), shifts(N_CHANNELS, 0.), UTintegrate_full(t_full.size()), t(t_full), UShift(t_full.size()), signal_box(3*N_CHANNELS), parametersArray(parametersArray)
+SignalProcessing::SignalProcessing(const darray &t_full, const darray &U_full, uint N_CHANNELS, const parray &parametersArray, const std::vector<std::pair<double, double>> &sigmaCoeff, const barray &work_mask) : N_CHANNELS(N_CHANNELS),
+                                    signals(N_CHANNELS, 0), signals_sigma(N_CHANNELS, 0.), work_signal(N_CHANNELS, true), shifts(N_CHANNELS, 0.), UTintegrate_full(t_full.size()), t(t_full), UShift(t_full.size()), signal_box(3*N_CHANNELS), parametersArray(parametersArray)
 {
     tSize = t_full.size() / N_CHANNELS;
 
@@ -167,10 +179,12 @@ SignalProcessing::SignalProcessing(const darray &t_full, const darray &U_full, u
         integrateSignal(t_full, U_full, i, shift, parameters.point_integrate_start);
         shiftSignal(U_full, i, shift);
         double signal = countChannelSignal(UTintegrate_full, i, parameters.signal_point_start, parameters.signal_point_step);
-
-        work_signal[i] = checkSignal(t_full, UShift, UTintegrate_full, i, signal, parameters.threshold, parameters.increase_point, parameters.decrease_point, parameters.klim, parameters.signal_point_start);
+        double sigma = countChannelSignalSigma(signal, sigmaCoeff, i);
+        //double sigma = 0.;
+        work_signal[i] = checkSignal(t_full, UShift, UTintegrate_full, i, signal, sigma, parameters.threshold, parameters.increase_point, parameters.decrease_point, parameters.klim, parameters.signal_point_start);
 
         signals[i] = signal;
+        signals_sigma[i] = sigma;
         shifts[i] = shift;
     }
 
@@ -180,9 +194,11 @@ SignalProcessing::SignalProcessing(const darray &t_full, const darray &U_full, u
 
 }
 
-SignalProcessing::SignalProcessing(const darray &signals, const barray &work_signal) : N_CHANNELS(signals.size()), signals(signals), work_signal(work_signal)
+SignalProcessing::SignalProcessing(const darray &signals, const darray &signals_sigma, const barray &work_signal) : N_CHANNELS(signals.size()), signals(signals), 
+signals_sigma(signals_sigma), work_signal(work_signal)
 {
     this->work_signal.resize(N_CHANNELS, true);
+    this->signals_sigma.resize(N_CHANNELS, 0);
 
     for (uint i = 0; i < N_CHANNELS; i++)
         if (signals[i] <= 0.)

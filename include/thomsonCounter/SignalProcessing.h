@@ -51,6 +51,7 @@ private:
 
     uint N_CHANNELS;
     darray signals; // массив значений сигнала в канале
+    darray signals_sigma;
     barray work_signal; // true - канал с импульсом, false - канал без импульса
 
     darray shifts; // массив значений нулевой линии сигнала от времени
@@ -63,18 +64,21 @@ private:
     darray signal_box;
     parray parametersArray;
 
-    bool checkSignal(const darray &t, const darray &U, const darray &UTintegral, uint channel, double signal, double threshold=0., int increase_point=0, int decrease_point=0, double klim=-1., uint signal_points_start=1); // проверить был ли импульс в канале
+
+    bool checkSignal(const darray &t, const darray &U, const darray &UTintegral, uint channel, double signal, double sigma, double threshold=0., int increase_point=0, int decrease_point=0, double klim=-1., uint signal_points_start=1); // проверить был ли импульс в канале
     void integrateSignal(const darray &t, const darray &U, uint channel, double UZero, uint point_integrate_start);    
     void shiftSignal(const darray &U, uint channel, double UZero);
     double countChannelSignal(const darray &UTintegrate, uint channel, uint signal_point_start, uint signal_point_step) const;
+    double countChannelSignalSigma(double signal, const std::vector <std::pair<double, double>> &sigmaCoeff, uint channel) const;
     double findZeroLine(const darray &t, const darray &U, uint channel, uint step_from_start_zero_line, uint step_from_end_zero_line, uint start_point_from_start_zero_line, uint start_point_from_end_zero_line) const;
     
 public:
     
-    SignalProcessing(const darray &t_full, const darray &U_full, uint N_CHANNELS, const parray &parametersArray, const barray &work_mask={});
-    SignalProcessing(const darray &signals, const barray &work_signal={});
+    SignalProcessing(const darray &t_full, const darray &U_full, uint N_CHANNELS, const parray &parametersArray, const std::vector<std::pair<double, double>> &sigmaCoeff, const barray &work_mask={});
+    SignalProcessing(const darray &signals, const darray &signals_sigma, const barray &work_signal={});
 
     const darray &getSignals() const { return signals; }
+    const darray &getSignalsSigma() const { return signals_sigma; }
     const barray &getWorkSignals() const { return work_signal; }
     const darray &getShifts() const { return shifts; }
     const darray &getUShift() const { return UShift; }

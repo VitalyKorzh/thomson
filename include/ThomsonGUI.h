@@ -136,13 +136,17 @@ private:
     TGNumberEntry *calibration_spectrometer;
 
     //std::string error_file_name;
-    double A;
-    darray sigma0;
+    std::vector <std::pair<double, double>> sigmaCoeff;
+    //darray A;
+    //darray sigma0;
+
+
+    //darray getSigma(std::vector<std::pair<double, double>> &sigmaCoeff, uint sp, uint it) const;
 
     bool getline(std::ifstream &fin, std::string &line, char comment='#') const;
 
 
-    void readError(const char *file_name, double &A, darray &sigma0);
+    void readError(const char *file_name, std::vector<std::pair<double, double>> &sigmaCoeff);
 
     std::vector <std::pair<double, double>> raman_parameters;
 
@@ -177,7 +181,7 @@ private:
 
     //void addToArrayTFormat(const std::string &srf_file, const std::string &convolution_file,  const darray &signal, const darray &signal_error, double theta);
 
-    void readROOTFormat(const std::string &fileName, const std::string &srf_file_folder, const std::string &convolution_file_folder, const std::string &processing_parameters, int type);
+    //void readROOTFormat(const std::string &fileName, const std::string &srf_file_folder, const std::string &convolution_file_folder, const std::string &processing_parameters, int type);
     //void readT1Format(const std::string &fileName, const std::string &srf_file_folder, const std::string &convolution_file_folder);
     //void readT2Format(const std::string &fileName, const std::string &srf_file_folder, const std::string &convolution_file_folder);
 
