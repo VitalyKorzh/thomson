@@ -104,9 +104,10 @@ private:
     //TGNumberEntry *timePageNumberSetofShots;
     TGNumberEntry *channelNumberSetofShots;
     std::vector <TGCheckButton*> checkButtonDrawTimeSetOfShots;
-    TGNumberEntry *numberTimeListsSetofShots;
+    //TGNumberEntry *numberTimeListsSetofShots;
 
     uint N_SHOTS;
+    uiarray shotArray;
 
     int countType;
     std::string archive_name;
@@ -143,6 +144,8 @@ private:
 
     //darray getSigma(std::vector<std::pair<double, double>> &sigmaCoeff, uint sp, uint it) const;
 
+    bool shotNumberFromSetOfShots(uint &shot_number_from_set_of_shots, uint &shotDiagnostic, int shot);
+
     bool getline(std::ifstream &fin, std::string &line, char comment='#') const;
 
 
@@ -152,7 +155,7 @@ private:
 
     void readRamanCrossSection(const char *raman_file_name);
 
-    void setDrawEnable(int signal, int thomson);
+    void setDrawEnable(int signal, int thomson, int set_of_shots=-1);
 
     barray createWorkMask(const std::string &work_mask_string) const;
 
@@ -194,7 +197,7 @@ private:
 
     //std::string readArchiveName(const char *file_name) const;
 
-    void diactiveDiagnosticFrame(const char* text="press count");
+    void diactiveDiagnosticFrame(const char* text="press count", int signal=0);
 
     void countNWithCalibration(darray &ne, darray &neError, uint it) const;
 
