@@ -169,7 +169,7 @@ private:
     void processingSignalsData(const char *archive_name, int shot, const std::vector<parray> &parametersArray, bool clearArray=true, uint nTimeLists=N_TIME_LIST);
     bool countThomson(const std::string &srf_file_folder, const std::string &convolution_file_folder, int shot, bool clearArray=true, int selectionMethod=0);
     SignalProcessing * getSignalProcessing(uint it, uint sp, uint nShot=0, uint nTimeLists=N_TIME_LIST) const;
-    ThomsonCounter * getThomsonCounter(uint it, uint sp, uint nShot=0) const;
+    ThomsonCounter * getThomsonCounter(uint it, uint sp, uint nShot=0, uint nTimeListts=N_TIME_LIST) const;
 
     void clearSpArray();
     void clearCounterArray();

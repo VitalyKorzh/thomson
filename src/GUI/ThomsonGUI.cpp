@@ -330,12 +330,12 @@ SignalProcessing *ThomsonGUI::getSignalProcessing(uint it, uint sp, uint nShot, 
         return spArray[it+sp*nTimeLists + nShot*nTimeLists*N_SPECTROMETERS];
 }
 
-ThomsonCounter *ThomsonGUI::getThomsonCounter(uint it, uint sp, uint nShot) const
+ThomsonCounter *ThomsonGUI::getThomsonCounter(uint it, uint sp, uint nShot, uint nTimeLists) const
 {
     if (it >= N_TIME_LIST || sp >= N_SPECTROMETERS || nShot >= N_SHOTS)
         return nullptr;
     else
-        return counterArray[it+sp*N_TIME_LIST+nShot*N_SPECTROMETERS*N_TIME_LIST];
+        return counterArray[it+sp*nTimeLists+nShot*nTimeLists*N_SPECTROMETERS];
 }
 
 void ThomsonGUI::clearSpArray()
