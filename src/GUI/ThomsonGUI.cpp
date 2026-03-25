@@ -595,6 +595,7 @@ void ThomsonGUI::writeResultTableToFile(const char *file_name) const
 void ThomsonGUI::diactiveDiagnosticFrame(const char *text, int signal)
 {
     statusEntry->SetText(text);
+    statusEntrySetOfShots->SetText(STATUS_ENTRY_TEXT);
     gClient->ForceRedraw();
     gSystem->ProcessEvents();
     N_SHOTS = 1;
@@ -1082,6 +1083,14 @@ ThomsonGUI::ThomsonGUI(const TGWindow *p, UInt_t width, UInt_t height, TApplicat
             checkButtonDrawTimeSetOfShots.back()->SetToolTipText(TString::Format("time page %u draw", i));
             hframeBottom->AddFrame(checkButtonDrawTimeSetOfShots.back(), new TGLayoutHints(kLHintsLeft, 1,1,7,7));
         }
+
+        statusEntrySetOfShots = new TGTextEntry(hframeBottom, STATUS_ENTRY_TEXT);
+        statusEntrySetOfShots->SetWidth(130);
+        statusEntrySetOfShots->SetEnabled(kFALSE);
+        statusEntrySetOfShots->SetTextColor(0x666666);
+        statusEntrySetOfShots->SetToolTipText("status");
+        hframeBottom->AddFrame(statusEntrySetOfShots, new TGLayoutHints(kLHintsLeft, 5,5,5,5));
+
 
         //numberTimeListsSetofShots = new TGNumberEntry(hframeBottom, N_TIME_LIST, 4, -1, TGNumberFormat::kNESInteger,
         //                                    TGNumberFormat::kNEAPositive, TGNumberEntry::kNELLimitMinMax, 1, 100);
@@ -2313,10 +2322,14 @@ void ThomsonGUI::CountSeveralShot()
                 spArray.reserve(N_SPECTROMETERS*nTimeListSetOfShots*N_SHOTS);
                 for (uint shot : shotArray)
                 {
+                    statusEntrySetOfShots->SetText(TString::Format("count start, shot %u", shot));
+                    gClient->ForceRedraw();
+                    gSystem->ProcessEvents();
                     processingSignalsData(archive_name.c_str(), shot, parametersArray, false, nTimeListSetOfShots);
                 }
             }
 
+            statusEntrySetOfShots->SetText("ready");
             std::cout << "обработка сигналов завершена!\n\n";
 
         }

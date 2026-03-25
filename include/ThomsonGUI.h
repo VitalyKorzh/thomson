@@ -69,6 +69,7 @@ private:
 
 
     TGTextEntry *statusEntry;
+    TGTextEntry *statusEntrySetOfShots;
 
     TGCheckButton *drawSignalStatisticSetofShots;
     TGCheckButton *drawSignalToEnergyStatisticSetofShots;
