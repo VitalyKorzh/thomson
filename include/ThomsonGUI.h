@@ -167,7 +167,7 @@ private:
     bool isCalibrationNew(TFile *f, const char *calibration_name) const;
     bool writeCalibration(const char *archive_name, const char *calibration_name, darray &calibration) const;
     void processingSignalsData(const char *archive_name, int shot, const std::vector<parray> &parametersArray, bool clearArray=true, uint nTimeLists=N_TIME_LIST);
-    bool countThomson(const std::string &srf_file_folder, const std::string &convolution_file_folder, int shot, bool clearArray=true, int selectionMethod=0);
+    bool countThomson(const std::string &srf_file_folder, const std::string &convolution_file_folder, int shot, bool clearArray=true, int selectionMethod=0, bool count=true);
     SignalProcessing * getSignalProcessing(uint it, uint sp, uint nShot=0, uint nTimeLists=N_TIME_LIST) const;
     ThomsonCounter * getThomsonCounter(uint it, uint sp, uint nShot=0, uint nTimeListts=N_TIME_LIST) const;
 

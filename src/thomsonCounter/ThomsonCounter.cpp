@@ -275,6 +275,10 @@ ThomsonCounter::ThomsonCounter(const std::string &srf_file_name, const std::stri
             normalizeChannel = index;
     }
 
+    signalResult.resize(N_CHANNELS, 0);
+    signalResultMinus.resize(N_CHANNELS, 0);
+    signalResultPlus.resize(N_CHANNELS, 0);
+
     if (work) {
         createChannelsNumberArray();
         Te0 = findTZeroApproximation();
@@ -539,15 +543,10 @@ bool ThomsonCounter::countSignalResult()
     this->neResult = ne;
     this->ne_error = ne_error;
     
-    signalResult.resize(N_CHANNELS, 0);
     rmse = 0;
 
     if (N_CHANNELS_WORK < 2)
         return true;
-
-
-    signalResultPlus.resize(N_CHANNELS, 0);
-    signalResultMinus.resize(N_CHANNELS, 0);
 
     for (uint i = 0; i < N_CHANNELS; i++)
     {

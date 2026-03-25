@@ -261,7 +261,7 @@ void ThomsonGUI::processingSignalsData(const char *archive_name, int shot, const
     }
 }
 
-bool ThomsonGUI::countThomson(const std::string &srf_file_folder, const std::string &convolution_file_folder, int shot, bool clearArray, int selectionMethod)
+bool ThomsonGUI::countThomson(const std::string &srf_file_folder, const std::string &convolution_file_folder, int shot, bool clearArray, int selectionMethod, bool count)
 {
     bool thomsonSuccess = true;
     if (clearArray) clearCounterArray();
@@ -303,9 +303,14 @@ bool ThomsonGUI::countThomson(const std::string &srf_file_folder, const std::str
                 thomsonSuccess = false;
                 break;
             }
-            counter->count();
-            counter->countConcentration();
-            counter->countSignalResult();
+
+            if (count)
+            {
+                counter->count();
+                counter->countConcentration();
+                counter->countSignalResult();
+            }
+            
             tempCounter[sp*N_TIME_LIST+it] = counter;
         }
 
