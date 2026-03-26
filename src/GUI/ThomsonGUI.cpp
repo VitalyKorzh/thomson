@@ -1746,7 +1746,7 @@ void ThomsonGUI::DrawGraphs()
     if (checkButton(drawSRF) && countType == isROOT)
     {
         TString canvas_name = "SRF";
-        TCanvas *c = ThomsonDraw::createCanvas(canvas_name, canvasTitle(canvas_name, shotDiagnostic, nTimePage), width, height, NxUpdate, NyUpdate);
+        TCanvas *c = ThomsonDraw::createCanvas(canvas_name, canvasTitle(canvas_name), width, height, NxUpdate, NyUpdate);
         uint index = 1;
         for (uint i = 0; i < N_SPECTROMETERS; i++)
         {
