@@ -2256,6 +2256,10 @@ void ThomsonGUI::CountSeveralShot()
     if (fin.is_open())
     {
         diactiveDiagnosticFrame(STATUS_ENTRY_TEXT, 1);
+        for (uint it = 0; it < N_TIME_LIST; it++)
+        {
+            time_points[it] = 0;
+        }
         // statusEntry->SetText(STATUS_ENTRY_TEXT);
         // N_SHOTS = 1;
         // fileType = -1;
