@@ -77,6 +77,9 @@ private:
     double rmseMinus;
     double rmse;
 
+    double energy;
+    double sigmaEnergy;
+
     void createChannelsNumberArray();
 
     int delta(uint i, uint j) const {
@@ -109,8 +112,8 @@ private:
     double countRMSE(const darray &signal_result);
  
 public:
-    ThomsonCounter(const std::string &srf_file_name, const std::string &convolution_file_name, const darray &signal, const darray & signal_error, double theta, const darray &Ki, const darray &sigmaKi, const barray &channel_work={}, double lambda_reference=W_REFERENCE, int selectionMethod=0);
-    ThomsonCounter(const std::string &srf_file_name, const std::string &convolution_file_name, const SignalProcessing &sp, double theta, const darray &Ki, const darray &sigmaKi, double lambda_reference=W_REFERENCE, int selectionMethod=0);
+    ThomsonCounter(const std::string &srf_file_name, const std::string &convolution_file_name, const darray &signal, const darray & signal_error, double theta, const darray &Ki, const darray &sigmaKi, double energy, double sigmaEnergy, const barray &channel_work={}, double lambda_reference=W_REFERENCE, int selectionMethod=0);
+    ThomsonCounter(const std::string &srf_file_name, const std::string &convolution_file_name, const SignalProcessing &sp, double theta, const darray &Ki, const darray &sigmaKi, double energy, double sigmaEnergy, double lambda_reference=W_REFERENCE, int selectionMethod=0);
 
     bool count(const double alpha=0.001, const uint iter_limit=10000, const double epsilon=1e-12);
     bool countConcentration(double Te=-1.);
@@ -156,6 +159,8 @@ public:
     double getRMSEPlus() const { return rmsePlus; }
     double getRMSEMinus() const { return rmseMinus; }
     double getTheta() const { return theta; }
+    double getEnergy() const { return energy; }
+    double getSigmaEnergy() const { return sigmaEnergy; }
 
 
     const darray &getSRF() const { return SRF; }

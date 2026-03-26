@@ -202,7 +202,7 @@ private:
 
     void diactiveDiagnosticFrame(const char* text="press count", int signal=0);
 
-    void countNWithCalibration(darray &ne, darray &neError, uint it, uint shot_from_several_shots=0) const;
+    //void countNWithCalibration(darray &ne, darray &neError, uint it, uint shot_from_several_shots=0) const;
 
     uiarray createArrayShots();
 

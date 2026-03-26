@@ -231,10 +231,12 @@ int ThomsonCounter::findRatioNumber(uint ch1, uint ch2) const
 }
 
 ThomsonCounter::ThomsonCounter(const std::string &srf_file_name, const std::string &convolution_file_name,
-                               const darray &signal, const darray &signal_error, double theta, const darray &Ki, const darray &sigmaKi, const barray &channel_work, 
+                               const darray &signal, const darray &signal_error, double theta, const darray &Ki, const darray &sigmaKi,
+                               double energy, double sigmaEnergy,
+                               const barray &channel_work, 
                                double lambda_reference, int selectionMethod) : selectionMethod(selectionMethod),
                                lim_percent(0.5), work(false), signal(signal), signal_error(signal_error), channel_work(channel_work),
-                               theta(theta), lambda_reference(lambda_reference), Ki(Ki), sigmaKi(sigmaKi)
+                               theta(theta), lambda_reference(lambda_reference), Ki(Ki), sigmaKi(sigmaKi), energy(energy), sigmaEnergy(sigmaEnergy)
 
 {
 
@@ -285,8 +287,10 @@ ThomsonCounter::ThomsonCounter(const std::string &srf_file_name, const std::stri
     }
 }
 
-ThomsonCounter::ThomsonCounter(const std::string &srf_file_name, const std::string &convolution_file_name, const SignalProcessing &sp, double theta, const darray &Ki, const darray &sigmaKi, double lambda_reference, int selectionMethod) :
-                                 ThomsonCounter(srf_file_name, convolution_file_name, sp.getSignals(), sp.getSignalsSigma(), theta, Ki, sigmaKi, sp.getWorkSignals(), lambda_reference, selectionMethod)
+ThomsonCounter::ThomsonCounter(const std::string &srf_file_name, const std::string &convolution_file_name, const SignalProcessing &sp, double theta, const darray &Ki, const darray &sigmaKi,
+                                double energy, double sigmaEnergy,
+                                double lambda_reference, int selectionMethod) :
+                                ThomsonCounter(srf_file_name, convolution_file_name, sp.getSignals(), sp.getSignalsSigma(), theta, Ki, sigmaKi, energy, sigmaEnergy, sp.getWorkSignals(), lambda_reference, selectionMethod)
 {
 }
 
@@ -504,6 +508,14 @@ bool ThomsonCounter::countConcentration(double Te)
 
     ne_error = sqrt(1./W); //пока не учитываю корреляцию
 
+
+    {//учитываем энергию лазера
+        double A = 1./energy;
+        double AError2 = sigmaEnergy*sigmaEnergy*A*A;
+        ne_error = A*neResult*sqrt(AError2+ne_error*ne_error/(neResult*neResult));
+        neResult *= A;
+    }
+
     /*uint ch = 0;
     for (uint i = 0; i < N_CHANNELS; i++)
     {
@@ -558,9 +570,9 @@ bool ThomsonCounter::countSignalResult()
             double sig = convolution(getSRFch(i), S, lMin, lMax)/Ki[i];
             double sigPlus = convolution(getSRFch(i), SPlus, lMin, lMax)/Ki[i];
             double sigMinus = convolution(getSRFch(i), SMinus, lMin, lMax)/Ki[i];
-            signalResult[i] = sig;
-            signalResultMinus[i] = sigMinus;
-            signalResultPlus[i] = sigPlus;
+            signalResult[i] = sig*energy;
+            signalResultMinus[i] = sigMinus*energy;
+            signalResultPlus[i] = sigPlus*energy;
         }
         else
         {

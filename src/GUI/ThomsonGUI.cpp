@@ -296,9 +296,9 @@ bool ThomsonGUI::countThomson(const std::string &srf_file_folder, const std::str
         for (uint it = 0; it < N_TIME_LIST; it++)
         {
             //darray sigma = getSigma(sigmaCoeff, sp, it);
-
+            double energy = getSignalProcessing(it, NUMBER_ENERGY_SPECTROMETER, shot_index)->getSignals()[NUMBER_ENERGY_CHANNEL];
             ThomsonCounter * counter = new ThomsonCounter(srf_file_name, convolution_file_name, *getSignalProcessing(it, sp, shot_index), calibrations[sp*N_SPECTROMETER_CALIBRATIONS+ID_THETA], Ki,
-            darray(N_CHANNELS, 0) , LAMBDA_REFERENCE, selectionMethod);
+            darray(N_CHANNELS, 0), energy, 0, LAMBDA_REFERENCE, selectionMethod);
             if (!counter->isWork()) {
                 thomsonSuccess = false;
                 break;
@@ -579,16 +579,17 @@ void ThomsonGUI::writeResultTableToFile(const char *file_name) const
         fout << "mm\teV\teV\t10^13 cm^-3\t10^13 cm^-3\n";
         fout << "Radius\tTe\tTe error\tne\t ne error\n";
 
-        darray ne(N_SPECTROMETERS);
-        darray neError(N_SPECTROMETERS);
+        // darray ne(N_SPECTROMETERS);
+        // darray neError(N_SPECTROMETERS);
 
         for (uint it = 0; it < N_TIME_LIST; it++)
         {
-            countNWithCalibration(ne, neError, it);
+            //countNWithCalibration(ne, neError, it);
             for (uint sp = 0; sp < N_SPECTROMETERS; sp++)
             {
                 ThomsonCounter *counter = getThomsonCounter(it, sp);
-                fout << xPosition[sp] << "\t" << counter->getT() << "\t" << counter->getTError() << "\t" << ne[sp] << "\t" << neError[sp] << "\n";
+                fout << xPosition[sp] << "\t" << counter->getT() << "\t" << counter->getTError() << "\t" << 
+                counter->getN() << "\t" << counter->getNError() << "\n";
             }
         }
 
@@ -612,22 +613,22 @@ void ThomsonGUI::diactiveDiagnosticFrame(const char *text, int signal)
     clearSpArray();
 }
 
-void ThomsonGUI::countNWithCalibration(darray &ne, darray &neError, uint it, uint shot_from_several_shots) const
-{
-    for (uint i = 0; i < N_SPECTROMETERS; i++) {
-        double energy = getSignalProcessing(it, NUMBER_ENERGY_SPECTROMETER, shot_from_several_shots)->getSignals()[NUMBER_ENERGY_CHANNEL];
-        double A = 1./energy;
-        ne[i] = getThomsonCounter(it, i, shot_from_several_shots)->getN();
+// void ThomsonGUI::countNWithCalibration(darray &ne, darray &neError, uint it, uint shot_from_several_shots) const
+// {
+//     for (uint i = 0; i < N_SPECTROMETERS; i++) {
+//         double energy = getSignalProcessing(it, NUMBER_ENERGY_SPECTROMETER, shot_from_several_shots)->getSignals()[NUMBER_ENERGY_CHANNEL];
+//         double A = 1./energy;
+//         ne[i] = getThomsonCounter(it, i, shot_from_several_shots)->getN();
 
-        //double AError2 = sigma_energy[it]*sigma_energy[it] / (energy*energy);
-        double AError2 = 0;
+//         //double AError2 = sigma_energy[it]*sigma_energy[it] / (energy*energy);
+//         double AError2 = 0;
 
-        neError[i] = getThomsonCounter(it, i, shot_from_several_shots)->getNError();
-        neError[i] = A*ne[i]*sqrt(AError2 + 
-                            neError[i]*neError[i] / (ne[i]*ne[i]));
-        ne[i] *= A;
-    }
-}
+//         neError[i] = getThomsonCounter(it, i, shot_from_several_shots)->getNError();
+//         neError[i] = A*ne[i]*sqrt(AError2 + 
+//                             neError[i]*neError[i] / (ne[i]*ne[i]));
+//         ne[i] *= A;
+//     }
+// }
 
 uiarray ThomsonGUI::createArrayShots()
 {
@@ -1923,7 +1924,13 @@ void ThomsonGUI::DrawGraphs()
             if (!checkButtonDrawTime[it]->IsDown())
                 continue;
 
-            countNWithCalibration(ne, neError, it, shot_from_several_shots);
+            for (uint sp = 0; sp < N_SPECTROMETERS; sp++)
+            {
+                ne[sp] = getThomsonCounter(it, sp, shot_from_several_shots)->getN();
+                neError[sp] = getThomsonCounter(it, sp, shot_from_several_shots)->getNError();
+            }
+
+            //countNWithCalibration(ne, neError, it, shot_from_several_shots);
             ThomsonDraw::draw_result_from_r(c, mg, xPosition, ne, neError, 21, 1.5, color_map[it], 1, 7, color_map[it], timeLabel(it, time_points), false);
         }
 
@@ -1997,8 +2004,8 @@ void ThomsonGUI::DrawGraphs()
 
         darray ne(N_TIME_LIST-1);
         darray neError(N_TIME_LIST-1);
-        darray neTemp(N_SPECTROMETERS);
-        darray neTempError(N_SPECTROMETERS);
+        //darray neTemp(N_SPECTROMETERS);
+        //darray neTempError(N_SPECTROMETERS);
         darray t(N_TIME_LIST-1);
 
         for (uint i = 0; i < N_SPECTROMETERS; i++)
@@ -2008,11 +2015,10 @@ void ThomsonGUI::DrawGraphs()
 
             for (uint it = 1; it < N_TIME_LIST; it++)
             {
-                countNWithCalibration(neTemp, neTempError, it, shot_from_several_shots);
-
+                //countNWithCalibration(neTemp, neTempError, it, shot_from_several_shots);
                 t[it-1] = time_points[it];
-                ne[it-1]= neTemp[i];
-                neError[it-1] = neTempError[i];
+                ne[it-1]= getThomsonCounter(it, i, shot_from_several_shots)->getN();
+                neError[it-1] = getThomsonCounter(it, i, shot_from_several_shots)->getNError();
             }
 
             ThomsonDraw::draw_result_from_r(c, mg, t, ne, neError, 21, 1.5, color_map[i+1], 1, 7, color_map[i+1], rLabel(i, xPosition), false);
@@ -2134,8 +2140,7 @@ void ThomsonGUI::PrintInfo()
     if (checkButton(infoNe) && thomsonDraw)
     {
         ThomsonCounter *counter = getThomsonCounter(nTimePage, nSpectrometer);
-        double energy = getSignalProcessing(nTimePage, NUMBER_ENERGY_SPECTROMETER, shot_from_several_shots)->getSignals()[NUMBER_ENERGY_CHANNEL];
-        oss << "ne=" << counter->getN() / energy * 1e13 << " +/- " << counter->getNError() << "\n";
+        oss << "ne=" << counter->getN() << " +/- " << counter->getNError() << "\n";
     }
     if (checkButton(infoCountSignal) && thomsonDraw)
     {
