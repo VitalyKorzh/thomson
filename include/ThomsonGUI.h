@@ -107,6 +107,8 @@ private:
     std::vector <TGCheckButton*> checkButtonDrawTimeSetOfShots;
     //TGNumberEntry *numberTimeListsSetofShots;
 
+    TGCheckButton *cheakButtonCountThomsonSeveralShots;
+
     uint N_SHOTS;
     uiarray shotArray;
 
@@ -119,8 +121,8 @@ private:
     std::vector <SignalProcessing*> spArray;
     std::vector <ThomsonCounter *> counterArray;
 
-    darray energy;
-    darray sigma_energy;
+    //darray energy;
+    //darray sigma_energy;
 
     darray time_points;
     uint shotDiagnostic;
@@ -167,7 +169,7 @@ private:
     bool isCalibrationNew(TFile *f, const char *calibration_name) const;
     bool writeCalibration(const char *archive_name, const char *calibration_name, darray &calibration) const;
     void processingSignalsData(const char *archive_name, int shot, const std::vector<parray> &parametersArray, bool clearArray=true, uint nTimeLists=N_TIME_LIST);
-    bool countThomson(const std::string &srf_file_folder, const std::string &convolution_file_folder, int shot, bool clearArray=true, int selectionMethod=0, bool count=true);
+    bool countThomson(const std::string &srf_file_folder, const std::string &convolution_file_folder, int shot, bool clearArray=true, int selectionMethod=0, uint shot_index=0, bool count=true);
     SignalProcessing * getSignalProcessing(uint it, uint sp, uint nShot=0, uint nTimeLists=N_TIME_LIST) const;
     ThomsonCounter * getThomsonCounter(uint it, uint sp, uint nShot=0, uint nTimeListts=N_TIME_LIST) const;
 
@@ -200,7 +202,7 @@ private:
 
     void diactiveDiagnosticFrame(const char* text="press count", int signal=0);
 
-    void countNWithCalibration(darray &ne, darray &neError, uint it) const;
+    void countNWithCalibration(darray &ne, darray &neError, uint it, uint shot_from_several_shots=0) const;
 
     uiarray createArrayShots();
 
