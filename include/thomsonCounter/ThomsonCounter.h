@@ -132,6 +132,9 @@ public:
 
     bool countSignalResult();
 
+
+    darray countSyntheticSignal(double Te, double ne) const; // считаем синтетический сигнал Te эВ ne 10^13 см^-3
+
     bool isWork() const { return work; }
 
     uint getNChannels() const { return N_CHANNELS; }

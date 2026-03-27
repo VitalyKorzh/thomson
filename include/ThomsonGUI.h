@@ -77,6 +77,11 @@ private:
     TGCheckButton *drawEnergyStatisticSetofShots;
     std::vector <TGCheckButton *> checkButtonSetofShots;
 
+    TGCheckButton *drawTeSetOfShots;
+    TGCheckButton *drawNeSetOfShots;
+    TGCheckButton *drawCompareSignalWithSynthectic;
+    std::vector <TGCheckButton *> checkButtonSetofShotsThomson;
+
     std::vector <TGCheckButton *> checkButtonDraw;
     std::vector <TGCheckButton *> checkButtonInfo;
     std::vector <TGCheckButton *> checkButtonDrawTime;
@@ -159,7 +164,7 @@ private:
 
     void readRamanCrossSection(const char *raman_file_name);
 
-    void setDrawEnable(int signal, int thomson, int set_of_shots=-1);
+    void setDrawEnable(int signal, int thomson, int set_of_shots, int set_of_shots_thomson);
 
     barray createWorkMask(const std::string &work_mask_string) const;
 
@@ -221,6 +226,9 @@ private:
                         std::string &processing_parameters,
                         int &type
     ) const;
+
+
+    uint getNumberActiveCheck(const std::vector <TGCheckButton *> &buttonArray) const;
 
 public:
     ThomsonGUI(const TGWindow *p, UInt_t width, UInt_t height, TApplication *app);

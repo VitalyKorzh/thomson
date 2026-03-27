@@ -462,7 +462,7 @@ void ThomsonGUI::readRamanCrossSection(const char *raman_file_name)
     fin.close();
 }
 
-void ThomsonGUI::setDrawEnable(int signal, int thomson, int set_of_shots)
+void ThomsonGUI::setDrawEnable(int signal, int thomson, int set_of_shots_statistics, int set_of_shots_thomson)
 {
     if (thomson >= 0)
     {
@@ -498,11 +498,16 @@ void ThomsonGUI::setDrawEnable(int signal, int thomson, int set_of_shots)
         infoWorkChannels->SetEnabled(signal);
         infoLaserEntry->SetEnabled(signal);
     }
-    if (set_of_shots >= 0)
+    if (set_of_shots_statistics >= 0)
     {
-        drawSignalStatisticSetofShots->SetEnabled(set_of_shots);
-        drawEnergyStatisticSetofShots->SetEnabled(set_of_shots);
-        drawSignalToEnergyStatisticSetofShots->SetEnabled(set_of_shots);
+        drawSignalStatisticSetofShots->SetEnabled(set_of_shots_statistics);
+        drawEnergyStatisticSetofShots->SetEnabled(set_of_shots_statistics);
+        drawSignalToEnergyStatisticSetofShots->SetEnabled(set_of_shots_statistics);
+    }
+    if (set_of_shots_thomson >= 0)
+    {
+        drawTeSetOfShots->SetEnabled(set_of_shots_thomson);
+        drawNeSetOfShots->SetEnabled(set_of_shots_thomson);
     }
 
 }
@@ -609,7 +614,7 @@ void ThomsonGUI::diactiveDiagnosticFrame(const char *text, int signal)
     gSystem->ProcessEvents();
     N_SHOTS = 1;
     countType = -1;
-    setDrawEnable(signal, 0);
+    setDrawEnable(signal, 0, 0, 0);
     shotDiagnostic = 0;
     shotArray.clear();
     clearCounterArray();
@@ -814,6 +819,15 @@ bool ThomsonGUI::readFileInput( std::ifstream &fin,
     getline(fin, processing_parameters);
     fin >> type;
     return fin.fail();
+}
+
+uint ThomsonGUI::getNumberActiveCheck(const std::vector<TGCheckButton *> &buttonArray) const
+{
+    uint count = 0;
+    for (const TGCheckButton * const button : buttonArray)
+        if (button->IsDown())
+            count++;
+    return count;
 }
 
 ThomsonGUI::ThomsonGUI(const TGWindow *p, UInt_t width, UInt_t height, TApplication *app) : TGMainFrame(p, width, height),
@@ -1062,16 +1076,22 @@ ThomsonGUI::ThomsonGUI(const TGWindow *p, UInt_t width, UInt_t height, TApplicat
         fTTu->AddFrame(hframeDraw, new TGLayoutHints(kLHintsLeft,5,5,5,5));
 
         TGGroupFrame *vframeDraw = new TGGroupFrame(hframeDraw, "draw statistics", kVerticalFrame);
+        TGGroupFrame *vframeDrawThomson = new TGGroupFrame(hframeDraw, "draw (time pages)", kVerticalFrame);
         hframeDraw->AddFrame(vframeDraw, new TGLayoutHints(kLHintsLeft,5,5,5,5));
+        hframeDraw->AddFrame(vframeDrawThomson, new TGLayoutHints(kLHintsLeft,5,5,5,5));
 
         checkButtonSetofShots.push_back(drawSignalStatisticSetofShots = new TGCheckButton(vframeDraw, "draw signal statistics"));
         checkButtonSetofShots.push_back(drawSignalToEnergyStatisticSetofShots = new TGCheckButton(vframeDraw, "draw signal/energy statistics"));
         checkButtonSetofShots.push_back(drawEnergyStatisticSetofShots = new TGCheckButton(vframeDraw, "draw energy statistics"));
 
+        checkButtonSetofShotsThomson.push_back(drawTeSetOfShots = new TGCheckButton(vframeDrawThomson, "draw Te(r)"));
+        checkButtonSetofShotsThomson.push_back(drawNeSetOfShots = new TGCheckButton(vframeDrawThomson, "draw ne(r)"));
+
+        for (uint i = 0; i < checkButtonSetofShotsThomson.size(); i++)
+            vframeDrawThomson->AddFrame(checkButtonSetofShotsThomson[i], new TGLayoutHints(kLHintsLeft, 1, 1, 2, 2));
+
         for (uint i = 0; i < checkButtonSetofShots.size(); i++)
-        {
             vframeDraw->AddFrame(checkButtonSetofShots[i], new TGLayoutHints(kLHintsLeft, 1, 1, 2, 2));
-        }
 
         TGHorizontalFrame *hframeBottom = new TGHorizontalFrame(fTTu, width, 40);
         fTTu->AddFrame(hframeBottom, new TGLayoutHints(kLHintsBottom|kLHintsExpandX,5,5,5,5));
@@ -1268,7 +1288,7 @@ ThomsonGUI::ThomsonGUI(const TGWindow *p, UInt_t width, UInt_t height, TApplicat
 
     this->AddFrame(fTap, new TGLayoutHints(kLHintsTop|kLHintsLeft|kLHintsExpandX|kLHintsExpandY, 10, 10, 5, 5));
 
-    setDrawEnable(0, 0, 0);
+    setDrawEnable(0, 0, 0, 0);
     SetName("Thomson");
     SetWindowName("Thomson");
     Resize();
@@ -1352,7 +1372,7 @@ void ThomsonGUI::ReadMainFile()
     if (thomsonSuccess)
     {
         countType = isROOT;
-        setDrawEnable(1, 1, 0);
+        setDrawEnable(1, 1, 0, 0);
         shotNumber->GetNumberEntry()->SetToolTipText(TString::Format("%u", shotDiagnostic));
         if (writeResultTable->IsDown())
             writeResultTableToFile("last_result_table.dat");
@@ -1763,289 +1783,297 @@ void ThomsonGUI::DrawGraphs()
     for (uint it = 0; it < N_TIME_LIST; it++) // дастаем точки по времени из counter
         time_points[it] = getThomsonCounter(it, NUMBER_ENERGY_SPECTROMETER, shot_from_several_shots)->getTimePoint();
 
-    if (checkButton(drawSRF) && thomsonDraw)
+    if (getNumberActiveCheck(checkButtonDrawSpectrometers) != 0)
     {
-        TString canvas_name = "SRF";
-        TCanvas *c = ThomsonDraw::createCanvas(canvas_name, canvasTitle(canvas_name), width, height, NxUpdate, NyUpdate);
-        uint index = 1;
-        for (uint i = 0; i < N_SPECTROMETERS; i++)
+        if (checkButton(drawSRF) && thomsonDraw)
         {
-            if (!checkButtonDrawSpectrometers[i]->IsDown())
-                continue;
-            c->cd(index);
-            index++;
-            ThomsonCounter *counter = getThomsonCounter(nTimePage, i, shot_from_several_shots);
-            TMultiGraph *mg = ThomsonDraw::createMultiGraph(groupName(canvas_name, i), spectrometerName(i));
-            ThomsonDraw::srf_draw(c, mg,counter->getSRF(), N_WORK_CHANNELS, counter->getLMin(), counter->getLMax(),
-                                    counter->getNLambda(), LAMBDA_REFERENCE, {counter->getT()}, {counter->getTheta()}, true, false);
-        }
+            TString canvas_name = "SRF";
+            TCanvas *c = ThomsonDraw::createCanvas(canvas_name, canvasTitle(canvas_name), width, height, NxUpdate, NyUpdate);
+            uint index = 1;
+            for (uint i = 0; i < N_SPECTROMETERS; i++)
+            {
+                if (!checkButtonDrawSpectrometers[i]->IsDown())
+                    continue;
+                c->cd(index);
+                index++;
+                ThomsonCounter *counter = getThomsonCounter(nTimePage, i, shot_from_several_shots);
+                TMultiGraph *mg = ThomsonDraw::createMultiGraph(groupName(canvas_name, i), spectrometerName(i));
+                ThomsonDraw::srf_draw(c, mg,counter->getSRF(), N_WORK_CHANNELS, counter->getLMin(), counter->getLMax(),
+                                        counter->getNLambda(), LAMBDA_REFERENCE, {counter->getT()}, {counter->getTheta()}, true, false);
+            }
 
-        c->Modified();
-        c->Update();
-    }
-    if (checkButton(drawConvolution) && thomsonDraw)
-    {
-        TString canvas_name = "convolution";
-        TCanvas *c = ThomsonDraw::createCanvas(canvas_name, canvasTitle(canvas_name), width, height, NxUpdate, NyUpdate);
-        uint index = 1;
-        for (uint i = 0; i < N_SPECTROMETERS; i++)
-        {
-            if (!checkButtonDrawSpectrometers[i]->IsDown())
-                continue;
-            c->cd(index);
-            index++;
-            ThomsonCounter *counter = getThomsonCounter(nTimePage, i, shot_from_several_shots);
-            TMultiGraph *mg = ThomsonDraw::createMultiGraph(groupName(canvas_name, i), spectrometerName(i));
-            ThomsonDraw::convolution_draw(c, mg, counter->getConvolution(), N_WORK_CHANNELS, counter->getTMin(), counter->getDT(), counter->getNTemperature(), true, true);
+            c->Modified();
+            c->Update();
         }
-        c->Modified();
-        c->Update();
-    
-    }
-    if (checkButton(drawSignalsInChannels) && signalDraw ) 
-    {
-        TString canvas_name = "signal";
-        TCanvas *c = ThomsonDraw::createCanvas(canvas_name, canvasTitle(canvas_name, shotDiagnostic, nTimePage), width, height, NxUpdate, NyUpdate);
-        uint index = 1;
-        for (uint i = 0; i < N_SPECTROMETERS; i++)
+        if (checkButton(drawConvolution) && thomsonDraw)
         {
-            if (!checkButtonDrawSpectrometers[i]->IsDown())
-                continue;
-            c->cd(index);
-            index++;
-            TMultiGraph *mg = ThomsonDraw::createMultiGraph(groupName(canvas_name, i), spectrometerName(i));
-            ThomsonDraw::thomson_signal_draw(c, mg, getSignalProcessing(nTimePage, i, shot_from_several_shots), 0, true, true, false, N_WORK_CHANNELS, work_mask[i]);
+            TString canvas_name = "convolution";
+            TCanvas *c = ThomsonDraw::createCanvas(canvas_name, canvasTitle(canvas_name), width, height, NxUpdate, NyUpdate);
+            uint index = 1;
+            for (uint i = 0; i < N_SPECTROMETERS; i++)
+            {
+                if (!checkButtonDrawSpectrometers[i]->IsDown())
+                    continue;
+                c->cd(index);
+                index++;
+                ThomsonCounter *counter = getThomsonCounter(nTimePage, i, shot_from_several_shots);
+                TMultiGraph *mg = ThomsonDraw::createMultiGraph(groupName(canvas_name, i), spectrometerName(i));
+                ThomsonDraw::convolution_draw(c, mg, counter->getConvolution(), N_WORK_CHANNELS, counter->getTMin(), counter->getDT(), counter->getNTemperature(), true, true);
+            }
+            c->Modified();
+            c->Update();
+        
         }
-    
-        c->Modified();
-        c->Update();
-    }
-    if (checkButton(drawIntegralInChannels) && signalDraw)
-    {
-        TString canvas_name = "integral";
-        TCanvas *c = ThomsonDraw::createCanvas(canvas_name, canvasTitle(canvas_name, shotDiagnostic, nTimePage), width, height, NxUpdate, NyUpdate);
-        uint index = 1;
-        for (uint i = 0; i < N_SPECTROMETERS; i++)
+        if (checkButton(drawSignalsInChannels) && signalDraw ) 
         {
-            if (!checkButtonDrawSpectrometers[i]->IsDown())
-                continue;
-            c->cd(index);
-            index++;
-            TMultiGraph *mg = ThomsonDraw::createMultiGraph(groupName(canvas_name, i), spectrometerName(i));
-            ThomsonDraw::thomson_signal_draw(c, mg, getSignalProcessing(nTimePage, i, shot_from_several_shots), 1, true, true, false, N_WORK_CHANNELS, work_mask[i]);
+            TString canvas_name = "signal";
+            TCanvas *c = ThomsonDraw::createCanvas(canvas_name, canvasTitle(canvas_name, shotDiagnostic, nTimePage), width, height, NxUpdate, NyUpdate);
+            uint index = 1;
+            for (uint i = 0; i < N_SPECTROMETERS; i++)
+            {
+                if (!checkButtonDrawSpectrometers[i]->IsDown())
+                    continue;
+                c->cd(index);
+                index++;
+                TMultiGraph *mg = ThomsonDraw::createMultiGraph(groupName(canvas_name, i), spectrometerName(i));
+                ThomsonDraw::thomson_signal_draw(c, mg, getSignalProcessing(nTimePage, i, shot_from_several_shots), 0, true, true, false, N_WORK_CHANNELS, work_mask[i]);
+            }
+        
+            c->Modified();
+            c->Update();
         }
-        c->Modified();
-        c->Update();
-    }
-    if (checkButton(drawSignalsAndIntegralsInChannels) && signalDraw)
-    {
-        TString canvas_name = "signal_integral";
-        TCanvas *c = ThomsonDraw::createCanvas(canvas_name, canvasTitle(canvas_name, shotDiagnostic, nTimePage), width, height, NxUpdate, NyUpdate);
-        uint index = 1;
-        for (uint i = 0; i < N_SPECTROMETERS; i++)
+        if (checkButton(drawIntegralInChannels) && signalDraw)
         {
-            if (!checkButtonDrawSpectrometers[i]->IsDown())
-                continue;
-            c->cd(index);
-            index++;
+            TString canvas_name = "integral";
+            TCanvas *c = ThomsonDraw::createCanvas(canvas_name, canvasTitle(canvas_name, shotDiagnostic, nTimePage), width, height, NxUpdate, NyUpdate);
+            uint index = 1;
+            for (uint i = 0; i < N_SPECTROMETERS; i++)
+            {
+                if (!checkButtonDrawSpectrometers[i]->IsDown())
+                    continue;
+                c->cd(index);
+                index++;
+                TMultiGraph *mg = ThomsonDraw::createMultiGraph(groupName(canvas_name, i), spectrometerName(i));
+                ThomsonDraw::thomson_signal_draw(c, mg, getSignalProcessing(nTimePage, i, shot_from_several_shots), 1, true, true, false, N_WORK_CHANNELS, work_mask[i]);
+            }
+            c->Modified();
+            c->Update();
+        }
+        if (checkButton(drawSignalsAndIntegralsInChannels) && signalDraw)
+        {
+            TString canvas_name = "signal_integral";
+            TCanvas *c = ThomsonDraw::createCanvas(canvas_name, canvasTitle(canvas_name, shotDiagnostic, nTimePage), width, height, NxUpdate, NyUpdate);
+            uint index = 1;
+            for (uint i = 0; i < N_SPECTROMETERS; i++)
+            {
+                if (!checkButtonDrawSpectrometers[i]->IsDown())
+                    continue;
+                c->cd(index);
+                index++;
+                TMultiGraph *mg = ThomsonDraw::createMultiGraph(groupName(canvas_name), "");
+                ThomsonDraw::thomson_signal_draw(c, mg, getSignalProcessing(nTimePage, i, shot_from_several_shots), 0, false, false, false, N_WORK_CHANNELS, work_mask[i], 10., false);
+                mg->SetTitle(spectrometerName(i)); // чтобы использовать title для интеграла
+                ThomsonDraw::thomson_signal_draw(c, mg, getSignalProcessing(nTimePage, i, shot_from_several_shots), 1, true, true, false, N_WORK_CHANNELS, work_mask[i]);
+            }
+
+            c->Modified();
+            c->Update();
+        }
+        if (checkButton(drawCompareSignalAndResult)  && thomsonDraw)
+        {
+            TString canvas_name = "synthetic_signal";
+            TCanvas *c = ThomsonDraw::createCanvas(canvas_name, canvasTitle(canvas_name, shotDiagnostic, nTimePage), width, height, NxUpdate, NyUpdate);
+            uint index = 1;
+            for (uint i = 0; i < N_SPECTROMETERS; i++)
+            {
+                if (!checkButtonDrawSpectrometers[i]->IsDown())
+                    continue;
+                c->cd(index);
+                index++;
+                ThomsonCounter *counter = getThomsonCounter(nTimePage, i, shot_from_several_shots);
+                THStack *hs = ThomsonDraw::createHStack(groupName(canvas_name, i, "hs_"), spectrometerName(i, counter->getRMSE()));
+                ThomsonDraw::draw_compare_signals(c, hs, N_WORK_CHANNELS, counter->getSignal(), counter->getSignalError(), counter->getSignalResult(), counter->getWorkSignal(), true);
+            }
+            c->Modified();
+            c->Update();
+        }
+    }
+
+    if (getNumberActiveCheck(checkButtonDrawTime) != 0) // если нажата хотя бы одна кнопка
+    {
+        if (checkButton(drawEnergySignals) && signalDraw)
+        {
+            TString canvas_name = "signal_laser_energy";
+            TCanvas *c = ThomsonDraw::createCanvas(canvas_name, canvasTitle(canvas_name, shotDiagnostic), width, height);
             TMultiGraph *mg = ThomsonDraw::createMultiGraph(groupName(canvas_name), "");
-            ThomsonDraw::thomson_signal_draw(c, mg, getSignalProcessing(nTimePage, i, shot_from_several_shots), 0, false, false, false, N_WORK_CHANNELS, work_mask[i], 10., false);
-            mg->SetTitle(spectrometerName(i)); // чтобы использовать title для интеграла
-            ThomsonDraw::thomson_signal_draw(c, mg, getSignalProcessing(nTimePage, i, shot_from_several_shots), 1, true, true, false, N_WORK_CHANNELS, work_mask[i]);
-        }
 
-        c->Modified();
-        c->Update();
-    }
-    if (checkButton(drawEnergySignals) && signalDraw)
-    {
-        TString canvas_name = "signal_laser_energy";
-        TCanvas *c = ThomsonDraw::createCanvas(canvas_name, canvasTitle(canvas_name, shotDiagnostic), width, height);
-        TMultiGraph *mg = ThomsonDraw::createMultiGraph(groupName(canvas_name), "");
+            const barray mask(N_CHANNELS, true);
 
-        const barray mask(N_CHANNELS, true);
-
-        for (uint it = 0; it < N_TIME_LIST; it++)
-        {
-            if (!checkButtonDrawTime[it]->IsDown())
-                continue;
-
-            ThomsonDraw::thomson_signal_draw(c, mg, getSignalProcessing(it, NUMBER_ENERGY_SPECTROMETER, shot_from_several_shots), 0, false, false, false, 8, mask, 10., true, false, NUMBER_ENERGY_CHANNEL, color_map[it]); 
-            ((TGraph*)mg->GetListOfGraphs()->Last())->SetTitle(timeLabel(it, time_points));
-            ThomsonDraw::thomson_signal_draw(c, mg, getSignalProcessing(it, NUMBER_ENERGY_SPECTROMETER, shot_from_several_shots), 1, false, false, false, 8, mask, 1., false, true, NUMBER_ENERGY_CHANNEL, color_map[it]); 
-        }
-
-        {
-                mg->GetXaxis()->CenterTitle();
-                mg->GetYaxis()->CenterTitle();
-                mg->Draw("A");
-
-                ThomsonDraw::createLegend(mg);
-        }
-
-        c->Modified();
-        c->Update();
-
-    }
-
-    if (checkButton(drawTemperatureRDependenceAll) && thomsonDraw)
-    {
-        TString canvas_name = "Te_from_r";
-        TCanvas *c = ThomsonDraw::createCanvas(canvas_name, canvasTitle(canvas_name, shotDiagnostic), width, height);
-        TMultiGraph *mg = ThomsonDraw::createMultiGraph(groupName(canvas_name), "");
-        mg->SetTitle(";x, cm;T_{e}, eV");
-
-        darray Te(N_SPECTROMETERS);
-        darray TeError(N_SPECTROMETERS);
-
-        for (uint it = 0; it < N_TIME_LIST; it++)
-        {
-            if (!checkButtonDrawTime[it]->IsDown())
-                continue;
-
-            for (uint i = 0; i < N_SPECTROMETERS; i++) {
-                Te[i] = getThomsonCounter(it, i, shot_from_several_shots)->getT();
-                TeError[i] = getThomsonCounter(it, i, shot_from_several_shots)->getTError();
-            }
-
-            ThomsonDraw::draw_result_from_r(c, mg, xPosition, Te, TeError, 21, 1.5, color_map[it], 1, 7, color_map[it], timeLabel(it, time_points), false);
-        }
-
-        mg->GetXaxis()->CenterTitle();
-        mg->GetYaxis()->CenterTitle();
-        mg->Draw("A");
-
-        ThomsonDraw::createLegend(mg, 0.72, 0.6, 0.88, 0.88);
-
-        c->Modified();
-        c->Update();
-    }
-    if (checkButton(drawConcentrationRDependenceAll) && thomsonDraw)
-    {
-        TString canvas_name = "ne_from_r";
-        TCanvas *c = ThomsonDraw::createCanvas(canvas_name, canvasTitle(canvas_name, shotDiagnostic), width, height);
-        TMultiGraph *mg = ThomsonDraw::createMultiGraph(groupName(canvas_name), "");
-        mg->SetTitle(";x, cm;n_{e}, 10^{13} cm^{-3}");
-
-        darray ne(N_SPECTROMETERS);
-        darray neError(N_SPECTROMETERS);
-
-        for (uint it = 0; it < N_TIME_LIST; it++)
-        {
-            if (!checkButtonDrawTime[it]->IsDown())
-                continue;
-
-            for (uint sp = 0; sp < N_SPECTROMETERS; sp++)
+            for (uint it = 0; it < N_TIME_LIST; it++)
             {
-                ne[sp] = getThomsonCounter(it, sp, shot_from_several_shots)->getN();
-                neError[sp] = getThomsonCounter(it, sp, shot_from_several_shots)->getNError();
+                if (!checkButtonDrawTime[it]->IsDown())
+                    continue;
+
+                ThomsonDraw::thomson_signal_draw(c, mg, getSignalProcessing(it, NUMBER_ENERGY_SPECTROMETER, shot_from_several_shots), 0, false, false, false, 8, mask, 10., true, false, NUMBER_ENERGY_CHANNEL, color_map[it]); 
+                ((TGraph*)mg->GetListOfGraphs()->Last())->SetTitle(timeLabel(it, time_points));
+                ThomsonDraw::thomson_signal_draw(c, mg, getSignalProcessing(it, NUMBER_ENERGY_SPECTROMETER, shot_from_several_shots), 1, false, false, false, 8, mask, 1., false, true, NUMBER_ENERGY_CHANNEL, color_map[it]); 
             }
 
-            //countNWithCalibration(ne, neError, it, shot_from_several_shots);
-            ThomsonDraw::draw_result_from_r(c, mg, xPosition, ne, neError, 21, 1.5, color_map[it], 1, 7, color_map[it], timeLabel(it, time_points), false);
-        }
-
-        mg->GetXaxis()->CenterTitle();
-        mg->GetYaxis()->CenterTitle();
-        mg->Draw("A");
-        ThomsonDraw::createLegend(mg, 0.72, 0.6, 0.88, 0.88);
-
-        c->Modified();
-        c->Update();
-    }
-    if (checkButton(drawCompareSignalAndResult)  && thomsonDraw)
-    {
-        TString canvas_name = "synthetic_signal";
-        TCanvas *c = ThomsonDraw::createCanvas(canvas_name, canvasTitle(canvas_name, shotDiagnostic, nTimePage), width, height, NxUpdate, NyUpdate);
-        uint index = 1;
-        for (uint i = 0; i < N_SPECTROMETERS; i++)
-        {
-            if (!checkButtonDrawSpectrometers[i]->IsDown())
-                continue;
-            c->cd(index);
-            index++;
-            ThomsonCounter *counter = getThomsonCounter(nTimePage, i, shot_from_several_shots);
-            THStack *hs = ThomsonDraw::createHStack(groupName(canvas_name, i, "hs_"), spectrometerName(i, counter->getRMSE()));
-            ThomsonDraw::draw_compare_signals(c, hs, N_WORK_CHANNELS, counter->getSignal(), counter->getSignalError(), counter->getSignalResult(), counter->getWorkSignal(), true);
-        }
-        c->Modified();
-        c->Update();
-    }
-    if (checkButton(drawTeFromTime) && thomsonDraw)
-    {
-        TString canvas_name = "Te_from_t";
-        TCanvas *c = ThomsonDraw::createCanvas(canvas_name, canvasTitle(canvas_name, shotDiagnostic), width, height);
-        TMultiGraph *mg = ThomsonDraw::createMultiGraph(groupName(canvas_name), "");
-        mg->SetTitle(";t, ms;T_{e}, eV");
-
-        darray Te(N_TIME_LIST-1);
-        darray TeError(N_TIME_LIST-1);
-        darray t(N_TIME_LIST-1);
-        for (uint i = 0; i < N_SPECTROMETERS; i++)
-        {
-            if (!checkButtonDrawSpectrometersFromTime[i]->IsDown())
-                continue;
-
-            for (uint it = 1; it < N_TIME_LIST; it++)
             {
-                t[it-1] = time_points[it]; 
-                Te[it-1] = getThomsonCounter(it, i, shot_from_several_shots)->getT();
-                TeError[it-1] = getThomsonCounter(it, i, shot_from_several_shots)->getTError();
+                    mg->GetXaxis()->CenterTitle();
+                    mg->GetYaxis()->CenterTitle();
+                    mg->Draw("A");
+
+                    ThomsonDraw::createLegend(mg);
             }
 
-            ThomsonDraw::draw_result_from_r(c, mg, t, Te, TeError, 21, 1.5, color_map[i+1], 1, 7, color_map[i+1], rLabel(i, xPosition), false);
+            c->Modified();
+            c->Update();
+
         }
-
-        mg->GetXaxis()->CenterTitle();
-        mg->GetYaxis()->CenterTitle();
-        mg->Draw("A");
-
-        ThomsonDraw::createLegend(mg);
-
-        c->Modified();
-        c->Update();
-
-    }
-    if (checkButton(drawNeFromTime) && thomsonDraw)
-    {
-        TString canvas_name = "ne_from_t";
-        TCanvas *c = ThomsonDraw::createCanvas(canvas_name, canvasTitle(canvas_name, shotDiagnostic), width, height);
-        TMultiGraph *mg = ThomsonDraw::createMultiGraph(groupName(canvas_name), "");
-        mg->SetTitle(";t, ms;n_{e}, 10^{13} cm^{-3}");
-
-        darray ne(N_TIME_LIST-1);
-        darray neError(N_TIME_LIST-1);
-        //darray neTemp(N_SPECTROMETERS);
-        //darray neTempError(N_SPECTROMETERS);
-        darray t(N_TIME_LIST-1);
-
-        for (uint i = 0; i < N_SPECTROMETERS; i++)
+        if (checkButton(drawTemperatureRDependenceAll) && thomsonDraw)
         {
-            if (!checkButtonDrawSpectrometersFromTime[i]->IsDown())
-                continue;
+            TString canvas_name = "Te_from_r";
+            TCanvas *c = ThomsonDraw::createCanvas(canvas_name, canvasTitle(canvas_name, shotDiagnostic), width, height);
+            TMultiGraph *mg = ThomsonDraw::createMultiGraph(groupName(canvas_name), "");
+            mg->SetTitle(";x, cm;T_{e}, eV");
 
-            for (uint it = 1; it < N_TIME_LIST; it++)
+            darray Te(N_SPECTROMETERS);
+            darray TeError(N_SPECTROMETERS);
+
+            for (uint it = 0; it < N_TIME_LIST; it++)
             {
-                //countNWithCalibration(neTemp, neTempError, it, shot_from_several_shots);
-                t[it-1] = time_points[it];
-                ne[it-1]= getThomsonCounter(it, i, shot_from_several_shots)->getN();
-                neError[it-1] = getThomsonCounter(it, i, shot_from_several_shots)->getNError();
+                if (!checkButtonDrawTime[it]->IsDown())
+                    continue;
+
+                for (uint i = 0; i < N_SPECTROMETERS; i++) {
+                    Te[i] = getThomsonCounter(it, i, shot_from_several_shots)->getT();
+                    TeError[i] = getThomsonCounter(it, i, shot_from_several_shots)->getTError();
+                }
+
+                ThomsonDraw::draw_result_from_r(c, mg, xPosition, Te, TeError, 21, 1.5, color_map[it], 1, 7, color_map[it], timeLabel(it, time_points), false);
             }
 
-            ThomsonDraw::draw_result_from_r(c, mg, t, ne, neError, 21, 1.5, color_map[i+1], 1, 7, color_map[i+1], rLabel(i, xPosition), false);
+            mg->GetXaxis()->CenterTitle();
+            mg->GetYaxis()->CenterTitle();
+            mg->Draw("A");
+
+            ThomsonDraw::createLegend(mg, 0.72, 0.6, 0.88, 0.88);
+
+            c->Modified();
+            c->Update();
         }
+        if (checkButton(drawConcentrationRDependenceAll) && thomsonDraw)
+        {
+            TString canvas_name = "ne_from_r";
+            TCanvas *c = ThomsonDraw::createCanvas(canvas_name, canvasTitle(canvas_name, shotDiagnostic), width, height);
+            TMultiGraph *mg = ThomsonDraw::createMultiGraph(groupName(canvas_name), "");
+            mg->SetTitle(";x, cm;n_{e}, 10^{13} cm^{-3}");
 
+            darray ne(N_SPECTROMETERS);
+            darray neError(N_SPECTROMETERS);
 
-        mg->GetXaxis()->CenterTitle();
-        mg->GetYaxis()->CenterTitle();
-        mg->Draw("A");
+            for (uint it = 0; it < N_TIME_LIST; it++)
+            {
+                if (!checkButtonDrawTime[it]->IsDown())
+                    continue;
 
-        ThomsonDraw::createLegend(mg);
+                for (uint sp = 0; sp < N_SPECTROMETERS; sp++)
+                {
+                    ne[sp] = getThomsonCounter(it, sp, shot_from_several_shots)->getN();
+                    neError[sp] = getThomsonCounter(it, sp, shot_from_several_shots)->getNError();
+                }
 
-        c->Modified();
-        c->Update();
+                //countNWithCalibration(ne, neError, it, shot_from_several_shots);
+                ThomsonDraw::draw_result_from_r(c, mg, xPosition, ne, neError, 21, 1.5, color_map[it], 1, 7, color_map[it], timeLabel(it, time_points), false);
+            }
+
+            mg->GetXaxis()->CenterTitle();
+            mg->GetYaxis()->CenterTitle();
+            mg->Draw("A");
+            ThomsonDraw::createLegend(mg, 0.72, 0.6, 0.88, 0.88);
+
+            c->Modified();
+            c->Update();
+        }
     }
+    if (getNumberActiveCheck(checkButtonDrawSpectrometersFromTime) != 0)
+    {
+        if (checkButton(drawTeFromTime) && thomsonDraw)
+        {
+            TString canvas_name = "Te_from_t";
+            TCanvas *c = ThomsonDraw::createCanvas(canvas_name, canvasTitle(canvas_name, shotDiagnostic), width, height);
+            TMultiGraph *mg = ThomsonDraw::createMultiGraph(groupName(canvas_name), "");
+            mg->SetTitle(";t, ms;T_{e}, eV");
 
+            darray Te(N_TIME_LIST-1);
+            darray TeError(N_TIME_LIST-1);
+            darray t(N_TIME_LIST-1);
+            for (uint i = 0; i < N_SPECTROMETERS; i++)
+            {
+                if (!checkButtonDrawSpectrometersFromTime[i]->IsDown())
+                    continue;
+
+                for (uint it = 1; it < N_TIME_LIST; it++)
+                {
+                    t[it-1] = time_points[it]; 
+                    Te[it-1] = getThomsonCounter(it, i, shot_from_several_shots)->getT();
+                    TeError[it-1] = getThomsonCounter(it, i, shot_from_several_shots)->getTError();
+                }
+
+                ThomsonDraw::draw_result_from_r(c, mg, t, Te, TeError, 21, 1.5, color_map[i+1], 1, 7, color_map[i+1], rLabel(i, xPosition), false);
+            }
+
+            mg->GetXaxis()->CenterTitle();
+            mg->GetYaxis()->CenterTitle();
+            mg->Draw("A");
+
+            ThomsonDraw::createLegend(mg);
+
+            c->Modified();
+            c->Update();
+
+        }
+        if (checkButton(drawNeFromTime) && thomsonDraw)
+        {
+            TString canvas_name = "ne_from_t";
+            TCanvas *c = ThomsonDraw::createCanvas(canvas_name, canvasTitle(canvas_name, shotDiagnostic), width, height);
+            TMultiGraph *mg = ThomsonDraw::createMultiGraph(groupName(canvas_name), "");
+            mg->SetTitle(";t, ms;n_{e}, 10^{13} cm^{-3}");
+
+            darray ne(N_TIME_LIST-1);
+            darray neError(N_TIME_LIST-1);
+            //darray neTemp(N_SPECTROMETERS);
+            //darray neTempError(N_SPECTROMETERS);
+            darray t(N_TIME_LIST-1);
+
+            for (uint i = 0; i < N_SPECTROMETERS; i++)
+            {
+                if (!checkButtonDrawSpectrometersFromTime[i]->IsDown())
+                    continue;
+
+                for (uint it = 1; it < N_TIME_LIST; it++)
+                {
+                    //countNWithCalibration(neTemp, neTempError, it, shot_from_several_shots);
+                    t[it-1] = time_points[it];
+                    ne[it-1]= getThomsonCounter(it, i, shot_from_several_shots)->getN();
+                    neError[it-1] = getThomsonCounter(it, i, shot_from_several_shots)->getNError();
+                }
+
+                ThomsonDraw::draw_result_from_r(c, mg, t, ne, neError, 21, 1.5, color_map[i+1], 1, 7, color_map[i+1], rLabel(i, xPosition), false);
+            }
+
+
+            mg->GetXaxis()->CenterTitle();
+            mg->GetYaxis()->CenterTitle();
+            mg->Draw("A");
+
+            ThomsonDraw::createLegend(mg);
+
+            c->Modified();
+            c->Update();
+        }
+    }
 }
 
 void ThomsonGUI::PrintInfo()
@@ -2290,7 +2318,7 @@ void ThomsonGUI::CountSeveralShot()
     if (fin.is_open())
     {
         diactiveDiagnosticFrame(STATUS_ENTRY_TEXT, 1);
-        setDrawEnable(-1, -1, 0);
+        setDrawEnable(-1, -1, 0, 0);
         // statusEntry->SetText(STATUS_ENTRY_TEXT);
         // N_SHOTS = 1;
         // fileType = -1;
@@ -2384,7 +2412,7 @@ void ThomsonGUI::CountSeveralShot()
         return;
     }
 
-    setDrawEnable(-1, cheakButtonCountThomsonSeveralShots->IsDown(), 1);
+    setDrawEnable(-1, cheakButtonCountThomsonSeveralShots->IsDown(), 1, cheakButtonCountThomsonSeveralShots->IsDown());
 }
 
 void ThomsonGUI::DrawSetOfShots()
@@ -2399,125 +2427,148 @@ void ThomsonGUI::DrawSetOfShots()
     double Emin = minEnergy->GetNumber();
     double Emax = maxEnergy->GetNumber();
 
-    if (checkButton(drawSignalStatisticSetofShots))
+
+    bool thomsonDraw = cheakButtonCountThomsonSeveralShots->IsDown();
+
+    if (thomsonDraw) //рисуем усредненые графики температуры плотности
     {
-        darray signal;
-        signal.reserve(nTimeLists*N_SHOTS);
-
-        for (uint in = 0; in < N_SHOTS; in++)
+        if (checkButton(drawTeSetOfShots)) 
         {
-            uint index = nTimeLists == N_TIME_LIST ? 0 : 1;
-            for (uint it = 0; it < nTimeLists; it++)
-            {
-                double E = getSignalProcessing(it, NUMBER_ENERGY_SPECTROMETER, in, nTimeLists)->getSignals()[NUMBER_ENERGY_CHANNEL];
-                if (checkButtonDrawTimeSetOfShots[index]->IsDown() && (Emax <= Emin || (E >= Emin && E <= Emax)))
-                    signal.push_back(getSignalProcessing(it, nSpectrometer, in, nTimeLists)->getSignals()[nChannel]);
-                index++;
-                if (index == N_TIME_LIST)
-                    index = nTimeLists == N_TIME_LIST ? 0 : 1;
-            }
+
         }
-
-        double min = minSignalEntry->GetNumber();
-        double max = maxSignalEntry->GetNumber(); 
-
-
-        if (signal.size() > 0 && max >= min)
+        if (checkButton(drawNeSetOfShots)) 
         {
-            uint nBins = nBinsEntry->GetNumber();
 
-            if (min == max) {
-                min = *std::min_element(signal.begin(), signal.end())*1.-0.25;
-                max = *std::max_element(signal.begin(), signal.end())*1.+0.25;
-            }
-
-            TString canvas_name = TString::Format("signal_statistics_sp_%u_ch_%u", nSpectrometer, nChannel);
-            TCanvas *c = ThomsonDraw::createCanvas(canvas_name, canvas_name);
-            THStack *hs=  ThomsonDraw::createHStack("hs_"+canvas_name, "");
-
-            ThomsonDraw::draw_signal_statistics(c, hs, signal, min, max, nBins, true);
-            c->Modified();
-            c->Update();
         }
-
-    }
-    if (checkButton(drawSignalToEnergyStatisticSetofShots))
-    {
-        darray signal;
-        signal.reserve(nTimeLists*N_SHOTS);
-        for (uint in = 0; in < N_SHOTS; in++)
+        if (checkButton(drawCompareSignalWithSynthectic))
         {
-            uint index = nTimeLists == N_TIME_LIST ? 0 : 1;
-            for (uint it = 0; it < nTimeLists; it++)
-            {
-                double E = getSignalProcessing(it, NUMBER_ENERGY_SPECTROMETER, in, nTimeLists)->getSignals()[NUMBER_ENERGY_CHANNEL];
-                if (checkButtonDrawTimeSetOfShots[index]->IsDown() && (Emax <= Emin || (E >= Emin && E <= Emax)))
-                    signal.push_back(getSignalProcessing(it, nSpectrometer, in, nTimeLists)->getSignals()[nChannel] / E);
-                index++;
-                if (index == N_TIME_LIST)
-                    index = nTimeLists == N_TIME_LIST ? 0 : 1;
-            }
-        }
 
-        double min = minSignalEntry->GetNumber();
-        double max = maxSignalEntry->GetNumber(); 
-
-        if (signal.size() > 0 && max >= min)
-        {
-            uint nBins = nBinsEntry->GetNumber();
-
-            if (min == max) {
-                min = *std::min_element(signal.begin(), signal.end())*1.-0.25;
-                max = *std::max_element(signal.begin(), signal.end())*1.+0.25;
-            }
-
-            TString canvas_name = TString::Format("signal_to_energy_statistics_sp_%u_ch_%u", nSpectrometer, nChannel);
-            TCanvas *c = ThomsonDraw::createCanvas(canvas_name, canvas_name);
-            THStack *hs=  ThomsonDraw::createHStack("hs_"+canvas_name, "");
-
-            ThomsonDraw::draw_signal_statistics(c, hs, signal, min, max, nBins, true);
-            hs->SetTitle(";V/E, a.u.;counts");
-            c->Modified();
-            c->Update();
         }
     }
-    if (checkButton(drawEnergyStatisticSetofShots))
+
+
+    if (getNumberActiveCheck(checkButtonDrawTimeSetOfShots) != 0)
     {
-        darray signal;
-        signal.reserve(nTimeLists*N_SHOTS);
-        for (uint in = 0; in < N_SHOTS; in++)
+        if (checkButton(drawSignalStatisticSetofShots))
         {
-            uint index = nTimeLists == N_TIME_LIST ? 0 : 1;
-            for (uint it = 0; it < nTimeLists; it++)
+            darray signal;
+            signal.reserve(nTimeLists*N_SHOTS);
+
+            for (uint in = 0; in < N_SHOTS; in++)
             {
-                if (checkButtonDrawTimeSetOfShots[index]->IsDown())
-                    signal.push_back(getSignalProcessing(it, NUMBER_ENERGY_SPECTROMETER, in, nTimeLists)->getSignals()[NUMBER_ENERGY_CHANNEL]);
-                index++;
-                if (index == N_TIME_LIST)
-                    index = nTimeLists == N_TIME_LIST ? 0 : 1;
+                uint index = nTimeLists == N_TIME_LIST ? 0 : 1;
+                for (uint it = 0; it < nTimeLists; it++)
+                {
+                    double E = getSignalProcessing(it, NUMBER_ENERGY_SPECTROMETER, in, nTimeLists)->getSignals()[NUMBER_ENERGY_CHANNEL];
+                    if (checkButtonDrawTimeSetOfShots[index]->IsDown() && (Emax <= Emin || (E >= Emin && E <= Emax)))
+                        signal.push_back(getSignalProcessing(it, nSpectrometer, in, nTimeLists)->getSignals()[nChannel]);
+                    index++;
+                    if (index == N_TIME_LIST)
+                        index = nTimeLists == N_TIME_LIST ? 0 : 1;
+                }
+            }
+
+            double min = minSignalEntry->GetNumber();
+            double max = maxSignalEntry->GetNumber(); 
+
+
+            if (signal.size() > 0 && max >= min)
+            {
+                uint nBins = nBinsEntry->GetNumber();
+
+                if (min == max) {
+                    min = *std::min_element(signal.begin(), signal.end())*1.-0.25;
+                    max = *std::max_element(signal.begin(), signal.end())*1.+0.25;
+                }
+
+                TString canvas_name = TString::Format("signal_statistics_sp_%u_ch_%u", nSpectrometer, nChannel);
+                TCanvas *c = ThomsonDraw::createCanvas(canvas_name, canvas_name);
+                THStack *hs=  ThomsonDraw::createHStack("hs_"+canvas_name, "");
+
+                ThomsonDraw::draw_signal_statistics(c, hs, signal, min, max, nBins, true);
+                c->Modified();
+                c->Update();
+            }
+
+        }
+        if (checkButton(drawSignalToEnergyStatisticSetofShots))
+        {
+            darray signal;
+            signal.reserve(nTimeLists*N_SHOTS);
+            for (uint in = 0; in < N_SHOTS; in++)
+            {
+                uint index = nTimeLists == N_TIME_LIST ? 0 : 1;
+                for (uint it = 0; it < nTimeLists; it++)
+                {
+                    double E = getSignalProcessing(it, NUMBER_ENERGY_SPECTROMETER, in, nTimeLists)->getSignals()[NUMBER_ENERGY_CHANNEL];
+                    if (checkButtonDrawTimeSetOfShots[index]->IsDown() && (Emax <= Emin || (E >= Emin && E <= Emax)))
+                        signal.push_back(getSignalProcessing(it, nSpectrometer, in, nTimeLists)->getSignals()[nChannel] / E);
+                    index++;
+                    if (index == N_TIME_LIST)
+                        index = nTimeLists == N_TIME_LIST ? 0 : 1;
+                }
+            }
+
+            double min = minSignalEntry->GetNumber();
+            double max = maxSignalEntry->GetNumber(); 
+
+            if (signal.size() > 0 && max >= min)
+            {
+                uint nBins = nBinsEntry->GetNumber();
+
+                if (min == max) {
+                    min = *std::min_element(signal.begin(), signal.end())*1.-0.25;
+                    max = *std::max_element(signal.begin(), signal.end())*1.+0.25;
+                }
+
+                TString canvas_name = TString::Format("signal_to_energy_statistics_sp_%u_ch_%u", nSpectrometer, nChannel);
+                TCanvas *c = ThomsonDraw::createCanvas(canvas_name, canvas_name);
+                THStack *hs=  ThomsonDraw::createHStack("hs_"+canvas_name, "");
+
+                ThomsonDraw::draw_signal_statistics(c, hs, signal, min, max, nBins, true);
+                hs->SetTitle(";V/E, a.u.;counts");
+                c->Modified();
+                c->Update();
             }
         }
-
-        double min = minSignalEntry->GetNumber();
-        double max = maxSignalEntry->GetNumber(); 
-
-        if (signal.size() > 0 && max >= min)
+        if (checkButton(drawEnergyStatisticSetofShots))
         {
-            uint nBins = nBinsEntry->GetNumber();
-
-            if (min == max) {
-                min = *std::min_element(signal.begin(), signal.end())*1.-0.25;
-                max = *std::max_element(signal.begin(), signal.end())*1.+0.25;
+            darray signal;
+            signal.reserve(nTimeLists*N_SHOTS);
+            for (uint in = 0; in < N_SHOTS; in++)
+            {
+                uint index = nTimeLists == N_TIME_LIST ? 0 : 1;
+                for (uint it = 0; it < nTimeLists; it++)
+                {
+                    if (checkButtonDrawTimeSetOfShots[index]->IsDown())
+                        signal.push_back(getSignalProcessing(it, NUMBER_ENERGY_SPECTROMETER, in, nTimeLists)->getSignals()[NUMBER_ENERGY_CHANNEL]);
+                    index++;
+                    if (index == N_TIME_LIST)
+                        index = nTimeLists == N_TIME_LIST ? 0 : 1;
+                }
             }
 
-            TString canvas_name = TString::Format("energy_statistics");
-            TCanvas *c = ThomsonDraw::createCanvas(canvas_name, canvas_name);
-            THStack *hs=  ThomsonDraw::createHStack("hs_"+canvas_name, "");
+            double min = minSignalEntry->GetNumber();
+            double max = maxSignalEntry->GetNumber(); 
 
-            ThomsonDraw::draw_signal_statistics(c, hs, signal, min, max, nBins, true);
-            hs->SetTitle(";E, V*ns;counts");
-            c->Modified();
-            c->Update();
+            if (signal.size() > 0 && max >= min)
+            {
+                uint nBins = nBinsEntry->GetNumber();
+
+                if (min == max) {
+                    min = *std::min_element(signal.begin(), signal.end())*1.-0.25;
+                    max = *std::max_element(signal.begin(), signal.end())*1.+0.25;
+                }
+
+                TString canvas_name = TString::Format("energy_statistics");
+                TCanvas *c = ThomsonDraw::createCanvas(canvas_name, canvas_name);
+                THStack *hs=  ThomsonDraw::createHStack("hs_"+canvas_name, "");
+
+                ThomsonDraw::draw_signal_statistics(c, hs, signal, min, max, nBins, true);
+                hs->SetTitle(";E, V*ns;counts");
+                c->Modified();
+                c->Update();
+            }
         }
     }
     

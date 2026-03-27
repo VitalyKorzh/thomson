@@ -573,27 +573,32 @@ bool ThomsonCounter::countSignalResult()
     if (N_CHANNELS_WORK < 2)
         return true;
 
-    for (uint i = 0; i < N_CHANNELS; i++)
-    {
-        if (channel_work[i])
-        {
-            darray S = countSArray(N_LAMBDA, lMin, dl, countA(Te), ne, theta, lambda_reference);
-            darray SPlus = countSArray(N_LAMBDA, lMin, dl, countA(Te+dTe), nePlus, theta, lambda_reference);
-            darray SMinus = countSArray(N_LAMBDA, lMin, dl, countA(Te-dTe), neMinus, theta, lambda_reference);
-            double sig = convolution(getSRFch(i), S, lMin, lMax)/Ki[i];
-            double sigPlus = convolution(getSRFch(i), SPlus, lMin, lMax)/Ki[i];
-            double sigMinus = convolution(getSRFch(i), SMinus, lMin, lMax)/Ki[i];
-            signalResult[i] = sig*energy;
-            signalResultMinus[i] = sigMinus*energy;
-            signalResultPlus[i] = sigPlus*energy;
-        }
-        else
-        {
-            signalResult[i] = 0.;
-            signalResultMinus[i] = 0.;
-            signalResultPlus[i] = 0.;
-        }
-    }
+
+    signalResult = countSyntheticSignal(Te, ne);
+    signalResultMinus = countSyntheticSignal(Te-dTe, neMinus);
+    signalResultPlus = countSyntheticSignal(Te+dTe, nePlus);
+
+    // for (uint i = 0; i < N_CHANNELS; i++)
+    // {
+    //     if (channel_work[i])
+    //     {
+    //         darray S = countSArray(N_LAMBDA, lMin, dl, countA(Te), ne, theta, lambda_reference);
+    //         darray SPlus = countSArray(N_LAMBDA, lMin, dl, countA(Te+dTe), nePlus, theta, lambda_reference);
+    //         darray SMinus = countSArray(N_LAMBDA, lMin, dl, countA(Te-dTe), neMinus, theta, lambda_reference);
+    //         double sig = convolution(getSRFch(i), S, lMin, lMax)/Ki[i];
+    //         double sigPlus = convolution(getSRFch(i), SPlus, lMin, lMax)/Ki[i];
+    //         double sigMinus = convolution(getSRFch(i), SMinus, lMin, lMax)/Ki[i];
+    //         signalResult[i] = sig*energy;
+    //         signalResultMinus[i] = sigMinus*energy;
+    //         signalResultPlus[i] = sigPlus*energy;
+    //     }
+    //     else
+    //     {
+    //         signalResult[i] = 0.;
+    //         signalResultMinus[i] = 0.;
+    //         signalResultPlus[i] = 0.;
+    //     }
+    // }
 
     rmseMinus = countRMSE(signalResultMinus);
     rmsePlus = countRMSE(signalResultPlus);
@@ -601,4 +606,20 @@ bool ThomsonCounter::countSignalResult()
 
 
     return true;
+}
+
+darray ThomsonCounter::countSyntheticSignal(double Te, double ne) const
+{
+    darray S = countSArray(N_LAMBDA, lMin, dl, countA(Te), ne*energy, theta, lambda_reference);
+    darray synthcetic_signal(N_CHANNELS, 0.);
+
+    for (uint ch = 0; ch < N_CHANNELS; ch++)
+    {
+        if (channel_work[ch])
+        {
+            synthcetic_signal[ch] = convolution(getSRFch(ch), S, lMin, lMax)/Ki[ch];
+        }
+    }
+
+    return synthcetic_signal;
 }
