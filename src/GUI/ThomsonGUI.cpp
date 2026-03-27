@@ -286,6 +286,8 @@ bool ThomsonGUI::countThomson(const std::string &srf_file_folder, const std::str
 
     std::vector <ThomsonCounter*> tempCounter(N_TIME_LIST*N_SPECTROMETERS, nullptr);
 
+    darray time_points = createTimePointsArray(shot);
+
     for (uint sp = 0; sp < N_SPECTROMETERS; sp++)
     {
         std::string srf_file_name = srf_file_folder+"SRF_Spectro-" + std::to_string(sp+1)+".dat";
@@ -298,7 +300,7 @@ bool ThomsonGUI::countThomson(const std::string &srf_file_folder, const std::str
             //darray sigma = getSigma(sigmaCoeff, sp, it);
             double energy = getSignalProcessing(it, NUMBER_ENERGY_SPECTROMETER, shot_index)->getSignals()[NUMBER_ENERGY_CHANNEL];
             ThomsonCounter * counter = new ThomsonCounter(srf_file_name, convolution_file_name, *getSignalProcessing(it, sp, shot_index), calibrations[sp*N_SPECTROMETER_CALIBRATIONS+ID_THETA], Ki,
-            darray(N_CHANNELS, 0), energy, 0, LAMBDA_REFERENCE, selectionMethod);
+            darray(N_CHANNELS, 0), energy, 0, time_points[it], LAMBDA_REFERENCE, selectionMethod);
             if (!counter->isWork()) {
                 thomsonSuccess = false;
                 break;
@@ -483,6 +485,7 @@ void ThomsonGUI::setDrawEnable(int signal, int thomson, int set_of_shots)
         infoNe->SetEnabled(thomson);
         infoCountSignal->SetEnabled(thomson);
         infoError->SetEnabled(thomson);
+        infoTimePoints->SetEnabled(thomson);
     }
     if (signal >= 0)
     {
@@ -681,8 +684,9 @@ uiarray ThomsonGUI::createArrayShots()
     return shotArray;
 }
 
-void ThomsonGUI::createTimePointsArray(int shot)
+darray ThomsonGUI::createTimePointsArray(int shot) const
 {
+    darray time_points(N_TIME_LIST, 0.);
     TFile *file = OpenArchive(archive_name.c_str());
 
     if (file != nullptr)
@@ -732,6 +736,8 @@ void ThomsonGUI::createTimePointsArray(int shot)
     }
 
     CloseArchive();
+
+    return time_points;
 }
 
 void ThomsonGUI::calibrateRaman(double P, double T, double theta, const darray &signalRaman_to_ERaman, const darray &lambda, const darray &SRF, darray &Ki) const
@@ -811,8 +817,7 @@ bool ThomsonGUI::readFileInput( std::ifstream &fin,
 }
 
 ThomsonGUI::ThomsonGUI(const TGWindow *p, UInt_t width, UInt_t height, TApplication *app) : TGMainFrame(p, width, height),
-                                                                                            app(app), N_SHOTS(1),countType(-1), work_mask(N_SPECTROMETERS, barray(N_CHANNELS)), calibrations(N_SPECTROMETER_CALIBRATIONS*N_SPECTROMETERS, 0.),
-                                                                                            time_points(N_TIME_LIST, 0.)
+                                                                                            app(app), N_SHOTS(1),countType(-1), work_mask(N_SPECTROMETERS, barray(N_CHANNELS)), calibrations(N_SPECTROMETER_CALIBRATIONS*N_SPECTROMETERS, 0.)
 {
     SetCleanup(kDeepCleanup);
 
@@ -930,6 +935,7 @@ ThomsonGUI::ThomsonGUI(const TGWindow *p, UInt_t width, UInt_t height, TApplicat
 
         checkButtonInfo.push_back(infoSignal = new TGCheckButton(vframeInfo, "print signals"));
         checkButtonInfo.push_back(infoWorkChannels = new TGCheckButton(vframeInfo, "print work channels"));
+        checkButtonInfo.push_back(infoTimePoints = new TGCheckButton(vframeInfo, "print time points"));
         checkButtonInfo.push_back(infoUseRatio = new TGCheckButton(vframeInfo, "print use ratio for Te"));
         checkButtonInfo.push_back(infoTe0 = new TGCheckButton(vframeInfo, "print Te0"));
         checkButtonInfo.push_back(infoTij = new TGCheckButton(vframeInfo, "print Tij"));
@@ -1021,7 +1027,7 @@ ThomsonGUI::ThomsonGUI(const TGWindow *p, UInt_t width, UInt_t height, TApplicat
 
     {
         nrow = 0;
-        TGCompositeFrame *fTTu = fTap->AddTab("Set of shots");
+        TGCompositeFrame *fTTu = fTap->AddTab("Set of shots.");
         
         TGHorizontalFrame *hframe_button = new TGHorizontalFrame(fTTu, width, 40);
 
@@ -1055,7 +1061,7 @@ ThomsonGUI::ThomsonGUI(const TGWindow *p, UInt_t width, UInt_t height, TApplicat
         TGHorizontalFrame *hframeDraw = new TGHorizontalFrame(fTTu, width, 40);
         fTTu->AddFrame(hframeDraw, new TGLayoutHints(kLHintsLeft,5,5,5,5));
 
-        TGGroupFrame *vframeDraw = new TGGroupFrame(hframeDraw, "draw", kVerticalFrame);
+        TGGroupFrame *vframeDraw = new TGGroupFrame(hframeDraw, "draw statistics", kVerticalFrame);
         hframeDraw->AddFrame(vframeDraw, new TGLayoutHints(kLHintsLeft,5,5,5,5));
 
         checkButtonSetofShots.push_back(drawSignalStatisticSetofShots = new TGCheckButton(vframeDraw, "draw signal statistics"));
@@ -1752,6 +1758,11 @@ void ThomsonGUI::DrawGraphs()
     bool thomsonDraw = countType == isROOT || (countType == isSetofShots && cheakButtonCountThomsonSeveralShots->IsDown());
     bool signalDraw = thomsonDraw || countType == isSetofShots;
 
+    darray time_points(N_TIME_LIST, 0.);
+
+    for (uint it = 0; it < N_TIME_LIST; it++) // дастаем точки по времени из counter
+        time_points[it] = getThomsonCounter(it, NUMBER_ENERGY_SPECTROMETER, shot_from_several_shots)->getTimePoint();
+
     if (checkButton(drawSRF) && thomsonDraw)
     {
         TString canvas_name = "SRF";
@@ -2097,6 +2108,12 @@ void ThomsonGUI::PrintInfo()
             oss << (sp->getWorkSignals()[i] ? "+" : "-");
         oss << "\n";
     }
+    if (checkButton(infoTimePoints) && thomsonDraw)
+    {
+        oss << "time points:\n";
+        for (uint it = 0; it < N_TIME_LIST; it++)
+            oss << "\t" << getThomsonCounter(it, NUMBER_ENERGY_SPECTROMETER, shot_from_several_shots)->getTimePoint() << "\n";
+    }
     if (checkButton(infoUseRatio) && thomsonDraw)
     {
         ThomsonCounter *counter = getThomsonCounter(nTimePage, nSpectrometer);
@@ -2274,10 +2291,6 @@ void ThomsonGUI::CountSeveralShot()
     {
         diactiveDiagnosticFrame(STATUS_ENTRY_TEXT, 1);
         setDrawEnable(-1, -1, 0);
-        for (uint it = 0; it < N_TIME_LIST; it++)
-        {
-            time_points[it] = 0;
-        }
         // statusEntry->SetText(STATUS_ENTRY_TEXT);
         // N_SHOTS = 1;
         // fileType = -1;

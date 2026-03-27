@@ -65,7 +65,8 @@ private:
                     *infoNe,
                     *infoCountSignal,
                     *infoLaserEntry,
-                    *infoError;
+                    *infoError,
+                    *infoTimePoints;
 
 
     TGTextEntry *statusEntry;
@@ -124,7 +125,7 @@ private:
     //darray energy;
     //darray sigma_energy;
 
-    darray time_points;
+    //darray time_points;
     uint shotDiagnostic;
 
 
@@ -206,7 +207,7 @@ private:
 
     uiarray createArrayShots();
 
-    void createTimePointsArray(int shot);
+    darray createTimePointsArray(int shot) const;
 
 
     void calibrateRaman(double P, double T, double theta, const darray &signalRaman_to_ERaman, const darray &lambda, const darray &SRF, darray &Ki) const;

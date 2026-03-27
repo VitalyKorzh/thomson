@@ -73,12 +73,18 @@ private:
     double neResult;
     double ne_error;
 
+    double rmse;
     double rmsePlus;
     double rmseMinus;
-    double rmse;
+
+    // double xi2;
+    // double xi2Plus;
+    // double xi2Minus;
 
     double energy;
     double sigmaEnergy;
+
+    double time_point;
 
     void createChannelsNumberArray();
 
@@ -110,10 +116,15 @@ private:
     bool isChannelUseToCount(uint ch1, uint ch2, const barray &is_channel_use) const;
 
     double countRMSE(const darray &signal_result);
+    //double countXi2(const darray &signal_result);
  
 public:
-    ThomsonCounter(const std::string &srf_file_name, const std::string &convolution_file_name, const darray &signal, const darray & signal_error, double theta, const darray &Ki, const darray &sigmaKi, double energy, double sigmaEnergy, const barray &channel_work={}, double lambda_reference=W_REFERENCE, int selectionMethod=0);
-    ThomsonCounter(const std::string &srf_file_name, const std::string &convolution_file_name, const SignalProcessing &sp, double theta, const darray &Ki, const darray &sigmaKi, double energy, double sigmaEnergy, double lambda_reference=W_REFERENCE, int selectionMethod=0);
+    ThomsonCounter(const std::string &srf_file_name, const std::string &convolution_file_name, const darray &signal, const darray & signal_error, double theta, const darray &Ki, const darray &sigmaKi,
+                    double energy, double sigmaEnergy, double time_point=0., const barray &channel_work={}, 
+                    double lambda_reference=W_REFERENCE, int selectionMethod=0);
+    ThomsonCounter(const std::string &srf_file_name, const std::string &convolution_file_name, const SignalProcessing &sp, double theta, const darray &Ki, const darray &sigmaKi,
+                     double energy, double sigmaEnergy, double time_points=0.,
+                     double lambda_reference=W_REFERENCE, int selectionMethod=0);
 
     bool count(const double alpha=0.001, const uint iter_limit=10000, const double epsilon=1e-12);
     bool countConcentration(double Te=-1.);
@@ -158,9 +169,13 @@ public:
     double getRMSE() const { return rmse; }
     double getRMSEPlus() const { return rmsePlus; }
     double getRMSEMinus() const { return rmseMinus; }
+    // double getXi2() const { return xi2; }
+    // double getXi2Plus() const { return xi2Plus; }
+    // double getXi2Minus() const { return xi2Minus; }
     double getTheta() const { return theta; }
     double getEnergy() const { return energy; }
     double getSigmaEnergy() const { return sigmaEnergy; }
+    double getTimePoint() const { return time_point; }
 
 
     const darray &getSRF() const { return SRF; }

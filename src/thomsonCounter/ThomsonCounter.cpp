@@ -232,11 +232,15 @@ int ThomsonCounter::findRatioNumber(uint ch1, uint ch2) const
 
 ThomsonCounter::ThomsonCounter(const std::string &srf_file_name, const std::string &convolution_file_name,
                                const darray &signal, const darray &signal_error, double theta, const darray &Ki, const darray &sigmaKi,
-                               double energy, double sigmaEnergy,
+                               double energy, double sigmaEnergy, double time_point,
                                const barray &channel_work, 
                                double lambda_reference, int selectionMethod) : selectionMethod(selectionMethod),
                                lim_percent(0.5), work(false), signal(signal), signal_error(signal_error), channel_work(channel_work),
-                               theta(theta), lambda_reference(lambda_reference), Ki(Ki), sigmaKi(sigmaKi), energy(energy), sigmaEnergy(sigmaEnergy)
+                               theta(theta), lambda_reference(lambda_reference), Ki(Ki), sigmaKi(sigmaKi),
+                               TResult(0.), t_error(0.), neResult(0.), ne_error(0.),
+                               rmse(0.), rmsePlus(0.), rmseMinus(0.),
+                               energy(energy), sigmaEnergy(sigmaEnergy),
+                               time_point(time_point)
 
 {
 
@@ -288,9 +292,11 @@ ThomsonCounter::ThomsonCounter(const std::string &srf_file_name, const std::stri
 }
 
 ThomsonCounter::ThomsonCounter(const std::string &srf_file_name, const std::string &convolution_file_name, const SignalProcessing &sp, double theta, const darray &Ki, const darray &sigmaKi,
-                                double energy, double sigmaEnergy,
+                                double energy, double sigmaEnergy, double time_point,
                                 double lambda_reference, int selectionMethod) :
-                                ThomsonCounter(srf_file_name, convolution_file_name, sp.getSignals(), sp.getSignalsSigma(), theta, Ki, sigmaKi, energy, sigmaEnergy, sp.getWorkSignals(), lambda_reference, selectionMethod)
+                                ThomsonCounter(srf_file_name, convolution_file_name, sp.getSignals(), sp.getSignalsSigma(), theta, Ki, 
+                                sigmaKi, energy, sigmaEnergy, time_point,
+                                sp.getWorkSignals(), lambda_reference, selectionMethod)
 {
 }
 
@@ -304,7 +310,7 @@ bool ThomsonCounter::isChannelUseToCount(uint ch1, uint ch2, const barray &is_ch
     return false;
 }
 
-double ThomsonCounter::countRMSE(const darray &signalResult)
+double ThomsonCounter::countRMSE(const darray &signalResult) // корень sum (ai-ai_synt)^2*1/sigma_ai^2
 {
     double Wi = 0;
     double rmse = 0;
@@ -321,6 +327,11 @@ double ThomsonCounter::countRMSE(const darray &signalResult)
     rmse = sqrt(rmse/Wi);
     return rmse;
 }
+
+// double ThomsonCounter::countXi2(const darray &signal_result) //подумать над подсчётом хи квадарат
+// {
+//     return 0.0;
+// }
 
 bool ThomsonCounter::count(const double alpha, const uint iter_limit, const double epsilon)
 {
@@ -548,9 +559,11 @@ bool ThomsonCounter::countSignalResult()
     double ne = getN();
     double ne_error = getNError();
 
-    countConcentration(Te+getTError()/2.);
+    double dTe = getTError() / 2;
+
+    countConcentration(Te+dTe);
     double nePlus = this->neResult;
-    countConcentration(Te-getTError()/2.);
+    countConcentration(Te-dTe);
     double neMinus = this->neResult;
     this->neResult = ne;
     this->ne_error = ne_error;
@@ -565,8 +578,8 @@ bool ThomsonCounter::countSignalResult()
         if (channel_work[i])
         {
             darray S = countSArray(N_LAMBDA, lMin, dl, countA(Te), ne, theta, lambda_reference);
-            darray SPlus = countSArray(N_LAMBDA, lMin, dl, countA(Te+getTError()/2.), nePlus, theta, lambda_reference);
-            darray SMinus = countSArray(N_LAMBDA, lMin, dl, countA(Te-getTError()/2.), neMinus, theta, lambda_reference);
+            darray SPlus = countSArray(N_LAMBDA, lMin, dl, countA(Te+dTe), nePlus, theta, lambda_reference);
+            darray SMinus = countSArray(N_LAMBDA, lMin, dl, countA(Te-dTe), neMinus, theta, lambda_reference);
             double sig = convolution(getSRFch(i), S, lMin, lMax)/Ki[i];
             double sigPlus = convolution(getSRFch(i), SPlus, lMin, lMax)/Ki[i];
             double sigMinus = convolution(getSRFch(i), SMinus, lMin, lMax)/Ki[i];
