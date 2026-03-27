@@ -268,7 +268,7 @@ bool ThomsonGUI::countThomson(const std::string &srf_file_folder, const std::str
     counterArray.reserve(counterArray.size()+N_SPECTROMETERS*N_TIME_LIST);
 
 
-    calibrations = readCalibration(archive_name.c_str(), CALIBRATION_NAME, shot);
+    darray calibrations = readCalibration(archive_name.c_str(), CALIBRATION_NAME, shot);
 
     if (calibrations.size() == 0)
     {
@@ -294,13 +294,13 @@ bool ThomsonGUI::countThomson(const std::string &srf_file_folder, const std::str
         std::string convolution_file_name = convolution_file_folder+"Convolution_Spectro-" + std::to_string(sp+1)+".dat";
 
         darray Ki(N_CHANNELS, calibrations[sp*N_SPECTROMETER_CALIBRATIONS+ID_N_COEFF]);
-
+        double x_positon = -calibrations[sp*N_SPECTROMETER_CALIBRATIONS+ID_X]/10.;
         for (uint it = 0; it < N_TIME_LIST; it++)
         {
             //darray sigma = getSigma(sigmaCoeff, sp, it);
             double energy = getSignalProcessing(it, NUMBER_ENERGY_SPECTROMETER, shot_index)->getSignals()[NUMBER_ENERGY_CHANNEL];
             ThomsonCounter * counter = new ThomsonCounter(srf_file_name, convolution_file_name, *getSignalProcessing(it, sp, shot_index), calibrations[sp*N_SPECTROMETER_CALIBRATIONS+ID_THETA], Ki,
-            darray(N_CHANNELS, 0), energy, 0, time_points[it], LAMBDA_REFERENCE, selectionMethod);
+            darray(N_CHANNELS, 0), energy, 0, time_points[it], x_positon, LAMBDA_REFERENCE, selectionMethod);
             if (!counter->isWork()) {
                 thomsonSuccess = false;
                 break;
@@ -374,6 +374,72 @@ void ThomsonGUI::clearCounterArray()
 
     return sigma;
 }*/
+
+void ThomsonGUI::meanThomsonData(uint N_SHOTS, darray &Te, darray &TeError, darray &ne, darray &neError, darray &xPositon, darray &time_points) const
+{
+
+    for (uint sp = 0; sp < N_SPECTROMETERS; sp++)
+    {
+        xPositon[sp] = 0.;
+        for (uint ishot = 0; ishot < N_SHOTS; ishot++)
+        {
+            ThomsonCounter *counter = getThomsonCounter(0, sp, ishot);
+            xPositon[sp] += counter->getXPositon()/N_SHOTS;
+        }
+    } //усредняем позицию
+
+    for (uint it = 0; it < N_TIME_LIST; it++)
+    {
+        time_points[it] = 0.;
+        for (uint ishot = 0; ishot < N_SHOTS; ishot++)
+        {
+            ThomsonCounter *counter = getThomsonCounter(it, NUMBER_ENERGY_SPECTROMETER, ishot);
+            time_points[it] += counter->getTimePoint()/N_SHOTS;
+        }
+    }//усредняем время
+
+
+    for (uint it = 0; it < N_TIME_LIST; it++)
+    {
+        for (uint sp = 0; sp < N_SPECTROMETERS; sp++)
+        {
+            uint index = sp+it*N_SPECTROMETERS;
+            Te[index] = 0.;
+            ne[index] = 0.;
+
+            double wT=0.;
+            double wN=0.;
+
+            for (uint ishot = 0; ishot < N_SHOTS; ishot++)
+            {
+                ThomsonCounter *counter = getThomsonCounter(it, sp, ishot);
+
+                double w1 = 1./(counter->getTError()*counter->getTError());
+                double w2 = 1./(counter->getNError()*counter->getNError());
+
+                wT += w1;
+                wN += w2;
+
+                Te[index] += counter->getT()*w1;
+                ne[index] += counter->getN()*w2;
+            }
+
+            Te[index] /= wT;
+            ne[index] /= wN;
+            TeError[index] = 1./sqrt(wT);
+            neError[index] = 1./sqrt(wN);
+
+            if (std::isnan(Te[index]) || std::isnan(TeError[index]) || std::isnan(ne[index]) || std::isnan(neError[index])) 
+            {
+                Te[index] = 0.;
+                ne[index] = 0.;
+                TeError[index] = 0.;
+                neError[index] = 0.;
+            }
+        }
+    }
+
+}
 
 bool ThomsonGUI::shotNumberFromSetOfShots(uint &shot_number_from_set_of_shots, uint &shotDiagnostic, int shot)
 {
@@ -508,6 +574,7 @@ void ThomsonGUI::setDrawEnable(int signal, int thomson, int set_of_shots_statist
     {
         drawTeSetOfShots->SetEnabled(set_of_shots_thomson);
         drawNeSetOfShots->SetEnabled(set_of_shots_thomson);
+        drawCompareSignalWithSynthectic->SetEnabled(set_of_shots_thomson);
     }
 
 }
@@ -580,7 +647,7 @@ void ThomsonGUI::writeResultTableToFile(const char *file_name) const
     {
         darray xPosition(N_SPECTROMETERS);
         for (uint i = 0; i < N_SPECTROMETERS; i++)
-            xPosition[i] = calibrations[i*N_SPECTROMETER_CALIBRATIONS+ID_X];
+            xPosition[i] = getThomsonCounter(0, i)->getXPositon();
         fout << std::scientific;
         fout.precision(10);
         fout << "X\tTe\tTeError\tne\tneError\n";
@@ -831,7 +898,7 @@ uint ThomsonGUI::getNumberActiveCheck(const std::vector<TGCheckButton *> &button
 }
 
 ThomsonGUI::ThomsonGUI(const TGWindow *p, UInt_t width, UInt_t height, TApplication *app) : TGMainFrame(p, width, height),
-                                                                                            app(app), N_SHOTS(1),countType(-1), work_mask(N_SPECTROMETERS, barray(N_CHANNELS)), calibrations(N_SPECTROMETER_CALIBRATIONS*N_SPECTROMETERS, 0.)
+                                                                                            app(app), N_SHOTS(1),countType(-1), work_mask(N_SPECTROMETERS, barray(N_CHANNELS))
 {
     SetCleanup(kDeepCleanup);
 
@@ -1086,6 +1153,7 @@ ThomsonGUI::ThomsonGUI(const TGWindow *p, UInt_t width, UInt_t height, TApplicat
 
         checkButtonSetofShotsThomson.push_back(drawTeSetOfShots = new TGCheckButton(vframeDrawThomson, "draw Te(r)"));
         checkButtonSetofShotsThomson.push_back(drawNeSetOfShots = new TGCheckButton(vframeDrawThomson, "draw ne(r)"));
+        checkButtonSetofShotsThomson.push_back(drawCompareSignalWithSynthectic = new TGCheckButton(vframeDrawThomson, "draw synthetic signals in channels"));
 
         for (uint i = 0; i < checkButtonSetofShotsThomson.size(); i++)
             vframeDrawThomson->AddFrame(checkButtonSetofShotsThomson[i], new TGLayoutHints(kLHintsLeft, 1, 1, 2, 2));
@@ -1666,15 +1734,6 @@ void ThomsonGUI::DrawGraphs()
 
     //const barray &work_mask = this->work_mask[nSpectrometer];
 
-    darray xPosition(N_SPECTROMETERS);
-    for (uint i = 0; i < N_SPECTROMETERS; i++) {
-        if (calibrations[i*N_SPECTROMETER_CALIBRATIONS+ID_X] != 0)
-            xPosition[i] = -calibrations[i*N_SPECTROMETER_CALIBRATIONS+ID_X] / 10.;
-        else
-            xPosition[i] = 0;
-    }
-
-    const uiarray color_map = {8,1,2,3,4,5,6,7, 209, 46, 11};
     const uint Nx = 3;
     const uint Ny = N_SPECTROMETERS / Nx;
 
@@ -1698,43 +1757,6 @@ void ThomsonGUI::DrawGraphs()
         NxUpdate = 2;
         NyUpdate = 2;
     }
-
-    const uint width = 700;
-    const uint height = 800;
-
-    auto spectrometerName = [](uint sp, double rmse=-1.){
-        if (rmse < 0)
-            return TString::Format("spectrometer %u", sp);
-        else
-            return TString::Format("spectrometer %u, rmse=%.3f", sp, rmse);
-    };
-
-    auto groupName = [](TString canvas_name, int sp = -1, TString type="mg_") {
-        TString name = type + canvas_name;
-        if (sp >= 0)
-            name += std::to_string(sp);
-        return name;
-    };
-
-    auto canvasTitle = [](TString canvas_name, uint shot = 0, int tp=-1, int sp=-1) {
-        TString title = canvas_name;
-        if (tp >= 0)
-            title += TString::Format("_tp_%u", tp);
-        if (sp >= 0)
-            title += TString::Format("_sp_%u", sp);
-        if (shot > 0)
-            title += TString::Format(", %u", shot);
-        return title;
-    }; 
-
-    auto timeLabel = [](uint it, const darray &time_points) {
-        return TString::Format("%u (%.2f ms)", it, time_points[it]);
-    };
-
-    auto rLabel = [](uint i, const darray &xPosition) {
-        return TString::Format("%u (%.1f cm)", i, xPosition[i]);
-    };
-
 
     uint shot_from_several_shots = 0; //рисовать какой выстрел из set of shots
 
@@ -1779,9 +1801,13 @@ void ThomsonGUI::DrawGraphs()
     bool signalDraw = thomsonDraw || countType == isSetofShots;
 
     darray time_points(N_TIME_LIST, 0.);
+    darray xPosition(N_SPECTROMETERS, 0.);
 
     for (uint it = 0; it < N_TIME_LIST; it++) // дастаем точки по времени из counter
         time_points[it] = getThomsonCounter(it, NUMBER_ENERGY_SPECTROMETER, shot_from_several_shots)->getTimePoint();
+
+    for (uint i = 0; i < N_SPECTROMETERS; i++)
+        xPosition[i] = getThomsonCounter(0, i, shot_from_several_shots)->getXPositon();
 
     if (getNumberActiveCheck(checkButtonDrawSpectrometers) != 0)
     {
@@ -2430,24 +2456,93 @@ void ThomsonGUI::DrawSetOfShots()
 
     bool thomsonDraw = cheakButtonCountThomsonSeveralShots->IsDown();
 
-    if (thomsonDraw) //рисуем усредненые графики температуры плотности
+    uint active = getNumberActiveCheck(checkButtonDrawTimeSetOfShots);
+
+    if (thomsonDraw && active != 0) //рисуем усредненые графики температуры плотности
     {
+        darray TeFull(N_TIME_LIST*N_SPECTROMETERS, 0.);
+        darray neFull(N_TIME_LIST*N_SPECTROMETERS, 0.);
+        darray TeErrorFull(N_TIME_LIST*N_SPECTROMETERS, 0.);
+        darray neErrorFull(N_TIME_LIST*N_SPECTROMETERS, 0.);
+        darray xPosition(N_SPECTROMETERS, 0.);
+        darray time_points(N_TIME_LIST, 0.);
+
+        meanThomsonData(N_SHOTS, TeFull, TeErrorFull, neFull, neErrorFull, xPosition, time_points);
+
         if (checkButton(drawTeSetOfShots)) 
         {
+            TString canvas_name = "Te_from_r_set_of_shots";
+            TCanvas *c = ThomsonDraw::createCanvas(canvas_name, canvasTitle(canvas_name, shotDiagnostic), width, height);
+            TMultiGraph *mg = ThomsonDraw::createMultiGraph(groupName(canvas_name), "");
+            mg->SetTitle(";x, cm;T_{e}, eV");
 
+            darray Te(N_SPECTROMETERS, 0.);
+            darray TeError(N_SPECTROMETERS, 0.);
+
+            for (uint it = 0; it < N_TIME_LIST; it++)
+            {
+                if (!checkButtonDrawTimeSetOfShots[it]->IsDown())
+                    continue;
+
+                for (uint sp = 0; sp < N_SPECTROMETERS; sp++)
+                {
+                    Te[sp] = TeFull[sp+N_SPECTROMETERS*it];
+                    TeError[sp] = TeErrorFull[sp+N_SPECTROMETERS*it];
+                }
+
+                ThomsonDraw::draw_result_from_r(c, mg, xPosition, Te, TeError, 21, 1.5, color_map[it], 1, 7, color_map[it], timeLabel(it, time_points), false);
+            }
+
+            mg->GetXaxis()->CenterTitle();
+            mg->GetYaxis()->CenterTitle();
+            mg->Draw("A");
+
+            ThomsonDraw::createLegend(mg, 0.72, 0.6, 0.88, 0.88);
+
+            c->Modified();
+            c->Update();
         }
         if (checkButton(drawNeSetOfShots)) 
         {
+            TString canvas_name = "ne_from_r_set_of_shots";
+            TCanvas *c = ThomsonDraw::createCanvas(canvas_name, canvasTitle(canvas_name, shotDiagnostic), width, height);
+            TMultiGraph *mg = ThomsonDraw::createMultiGraph(groupName(canvas_name), "");
+            mg->SetTitle(";x, cm;n_{e}, 10^{13} cm^{-3}");
 
+            darray ne(N_SPECTROMETERS);
+            darray neError(N_SPECTROMETERS);
+
+            for (uint it = 0; it < N_TIME_LIST; it++)
+            {
+                if (!checkButtonDrawTimeSetOfShots[it]->IsDown())
+                    continue;
+
+                for (uint sp = 0; sp < N_SPECTROMETERS; sp++)
+                {
+                    ne[sp] = neFull[sp + N_SPECTROMETERS*it];
+                    neError[sp] = neErrorFull[sp + N_SPECTROMETERS*it];
+                }
+
+                //countNWithCalibration(ne, neError, it, shot_from_several_shots);
+                ThomsonDraw::draw_result_from_r(c, mg, xPosition, ne, neError, 21, 1.5, color_map[it], 1, 7, color_map[it], timeLabel(it, time_points), false);
+            }
+
+            mg->GetXaxis()->CenterTitle();
+            mg->GetYaxis()->CenterTitle();
+            mg->Draw("A");
+            ThomsonDraw::createLegend(mg, 0.72, 0.6, 0.88, 0.88);
+
+            c->Modified();
+            c->Update();
         }
-        if (checkButton(drawCompareSignalWithSynthectic))
+        if (checkButton(drawCompareSignalWithSynthectic) && active == 1)
         {
 
         }
     }
 
 
-    if (getNumberActiveCheck(checkButtonDrawTimeSetOfShots) != 0)
+    if (active != 0)
     {
         if (checkButton(drawSignalStatisticSetofShots))
         {

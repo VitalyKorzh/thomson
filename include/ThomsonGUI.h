@@ -28,6 +28,11 @@ class ThomsonGUI : public TGMainFrame
     RQ_OBJECT("ThomsonGUI")
 
 private:
+
+    const uiarray color_map = {8,1,2,3,4,5,6,7, 209, 46, 11};
+    const uint width = 700;
+    const uint height = 800; // обшие настройки графиков
+
     TApplication *app;
 
     TGTextEntry *mainFileTextEntry;
@@ -122,7 +127,7 @@ private:
     std::string archive_name;
 
     std::vector<barray> work_mask;
-    darray calibrations;
+    //darray calibrations;
 
     std::vector <SignalProcessing*> spArray;
     std::vector <ThomsonCounter *> counterArray;
@@ -150,6 +155,38 @@ private:
     //darray A;
     //darray sigma0;
 
+
+    TString spectrometerName(uint sp, double rmse=-1.) {
+        if (rmse < 0)
+            return TString::Format("spectrometer %u", sp);
+        else
+            return TString::Format("spectrometer %u, rmse=%.3f", sp, rmse);
+    }
+    TString groupName(TString canvas_name, int sp = -1, TString type="mg_") {
+        TString name = type + canvas_name;
+        if (sp >= 0)
+            name += std::to_string(sp);
+        return name;
+    }
+    TString canvasTitle(TString canvas_name, uint shot = 0, int tp=-1, int sp=-1) {
+        TString title = canvas_name;
+        if (tp >= 0)
+            title += TString::Format("_tp_%u", tp);
+        if (sp >= 0)
+            title += TString::Format("_sp_%u", sp);
+        if (shot > 0)
+            title += TString::Format(", %u", shot);
+        return title;
+    }
+    TString timeLabel(uint it, const darray &time_points) {
+        return TString::Format("%u (%.2f ms)", it, time_points[it]);
+    }
+    TString rLabel(uint i, const darray &xPosition) {
+        return TString::Format("%u (%.1f cm)", i, xPosition[i]);
+    }
+
+
+    void meanThomsonData(uint N_SHOTS, darray & Te, darray & TeError, darray & ne, darray &neError, darray &xPositon, darray &time_points) const;
 
     //darray getSigma(std::vector<std::pair<double, double>> &sigmaCoeff, uint sp, uint it) const;
 

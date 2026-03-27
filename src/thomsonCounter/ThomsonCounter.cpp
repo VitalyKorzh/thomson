@@ -232,7 +232,7 @@ int ThomsonCounter::findRatioNumber(uint ch1, uint ch2) const
 
 ThomsonCounter::ThomsonCounter(const std::string &srf_file_name, const std::string &convolution_file_name,
                                const darray &signal, const darray &signal_error, double theta, const darray &Ki, const darray &sigmaKi,
-                               double energy, double sigmaEnergy, double time_point,
+                               double energy, double sigmaEnergy, double time_point, double x_positon,
                                const barray &channel_work, 
                                double lambda_reference, int selectionMethod) : selectionMethod(selectionMethod),
                                lim_percent(0.5), work(false), signal(signal), signal_error(signal_error), channel_work(channel_work),
@@ -240,7 +240,7 @@ ThomsonCounter::ThomsonCounter(const std::string &srf_file_name, const std::stri
                                TResult(0.), t_error(0.), neResult(0.), ne_error(0.),
                                rmse(0.), rmsePlus(0.), rmseMinus(0.),
                                energy(energy), sigmaEnergy(sigmaEnergy),
-                               time_point(time_point)
+                               time_point(time_point), x_positon(x_positon)
 
 {
 
@@ -292,10 +292,10 @@ ThomsonCounter::ThomsonCounter(const std::string &srf_file_name, const std::stri
 }
 
 ThomsonCounter::ThomsonCounter(const std::string &srf_file_name, const std::string &convolution_file_name, const SignalProcessing &sp, double theta, const darray &Ki, const darray &sigmaKi,
-                                double energy, double sigmaEnergy, double time_point,
+                                double energy, double sigmaEnergy, double time_point, double x_position,
                                 double lambda_reference, int selectionMethod) :
                                 ThomsonCounter(srf_file_name, convolution_file_name, sp.getSignals(), sp.getSignalsSigma(), theta, Ki, 
-                                sigmaKi, energy, sigmaEnergy, time_point,
+                                sigmaKi, energy, sigmaEnergy, time_point, x_position,
                                 sp.getWorkSignals(), lambda_reference, selectionMethod)
 {
 }

@@ -85,6 +85,7 @@ private:
     double sigmaEnergy;
 
     double time_point;
+    double x_positon;
 
     void createChannelsNumberArray();
 
@@ -120,10 +121,11 @@ private:
  
 public:
     ThomsonCounter(const std::string &srf_file_name, const std::string &convolution_file_name, const darray &signal, const darray & signal_error, double theta, const darray &Ki, const darray &sigmaKi,
-                    double energy, double sigmaEnergy, double time_point=0., const barray &channel_work={}, 
+                    double energy, double sigmaEnergy, double time_point=0., double x_position=0.,
+                    const barray &channel_work={}, 
                     double lambda_reference=W_REFERENCE, int selectionMethod=0);
     ThomsonCounter(const std::string &srf_file_name, const std::string &convolution_file_name, const SignalProcessing &sp, double theta, const darray &Ki, const darray &sigmaKi,
-                     double energy, double sigmaEnergy, double time_points=0.,
+                     double energy, double sigmaEnergy, double time_points=0., double x_position=0.,
                      double lambda_reference=W_REFERENCE, int selectionMethod=0);
 
     bool count(const double alpha=0.001, const uint iter_limit=10000, const double epsilon=1e-12);
@@ -179,6 +181,7 @@ public:
     double getEnergy() const { return energy; }
     double getSigmaEnergy() const { return sigmaEnergy; }
     double getTimePoint() const { return time_point; }
+    double getXPositon() const { return x_positon; }
 
 
     const darray &getSRF() const { return SRF; }
