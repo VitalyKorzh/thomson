@@ -78,13 +78,13 @@ double ThomsonCounter::devFij(uint ch1, uint ch2, double Tij) const
     return dev_ratio_count;
 }
 
-double ThomsonCounter::devFij_zero(uint ch1, uint ch2, double T) const
-{
-    uint it = (T-T0)/dT;
-    double devTij_zero = getSCount(it+1, ch2) / getSCount(it+1, ch1) - getSCount(it, ch2) / getSCount(it, ch1);
-    devTij_zero /= dT;
-    return devTij_zero;
-}
+// double ThomsonCounter::devFij_zero(uint ch1, uint ch2, double T) const
+// {
+//     uint it = (T-T0)/dT;
+//     double devTij_zero = getSCount(it+1, ch2) / getSCount(it+1, ch1) - getSCount(it, ch2) / getSCount(it, ch1);
+//     devTij_zero /= dT;
+//     return devTij_zero;
+// }
 
 double ThomsonCounter::countTij(uint ch1, uint ch2)
 {
@@ -371,7 +371,7 @@ bool ThomsonCounter::count(const double alpha, const uint iter_limit, const doub
 
             if (!(channel_work[ch1] && channel_work[ch2])) continue;
 
-            double devTij_zero = devFij_zero(ch1, ch2, Te0);
+            double devTij_zero = devFij(ch1, ch2, Te0);
             double sigmaTij_zero = countSigmaTij(ch1, ch2, devTij_zero);
 
             if (sigmaTij_zero / Te0 < lim_percent) {

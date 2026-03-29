@@ -96,7 +96,7 @@ private:
 
 
     double devFij(uint ch1, uint ch2, double Tij) const;
-    double devFij_zero(uint ch1, uint ch2, double T) const;
+    //double devFij_zero(uint ch1, uint ch2, double T) const;
 
     double countTij(uint ch1, uint ch2);
     double countSigmaRij(uint ch1, uint ch2) const;
