@@ -4,6 +4,8 @@
 #include <sstream>
 #include <string>
 
+#define DEFAULT_T0 100.
+
 bool readSpectrumFromT(std::string filename, double &T0, double &dT, uint &N_T, darray &S_T, uint N_CHANNELS)
 {
     std::ifstream fin;
@@ -112,7 +114,7 @@ bool readSpectrumFromT(std::string filename, double &T0, double &dT, uint &N_T, 
     if (N_T == 0) //если нет данных значит начальная темпераутра 100 эВ для всех
     {
         N_T = 1;
-        T0 = 100.;
+        T0 = DEFAULT_T0;
         dT = 0.;
         S_T.resize(N_CHANNELS, 0.);
         for (uint ch = 0; ch < N_CHANNELS; ch++)
