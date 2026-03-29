@@ -103,10 +103,20 @@ bool readSpectrumFromT(std::string filename, double &T0, double &dT, uint &N_T, 
         // S_T = S_T_TEMP;
         
     }
-    else
+    // else
+    // {
+    //     std::cerr << "не удалось открыть файл: "  << filename << "\n";
+    //     return false;
+    // }
+
+    if (N_T == 0) //если нет данных значит начальная темпераутра 100 эВ для всех
     {
-        std::cerr << "не удалось открыть файл: "  << filename << "\n";
-        return false;
+        N_T = 1;
+        T0 = 100.;
+        dT = 0.;
+        S_T.resize(N_CHANNELS, 0.);
+        for (uint ch = 0; ch < N_CHANNELS; ch++)
+            S_T[ch] = 1.;
     }
 
     fin.close();
