@@ -5,6 +5,7 @@
 #include <string>
 
 #define DEFAULT_T0 100.
+#define DEFAULT_DT 5.
 
 bool readSpectrumFromT(std::string filename, double &T0, double &dT, uint &N_T, darray &S_T, uint N_CHANNELS)
 {
@@ -116,7 +117,7 @@ bool readSpectrumFromT(std::string filename, double &T0, double &dT, uint &N_T, 
         N_T = 1;
         T0 = DEFAULT_T0;
         std::cerr << "начальная температура: " << T0 << " эВ\n";
-        dT = 0.;
+        dT = DEFAULT_DT;
         S_T.resize(N_CHANNELS, 0.);
         for (uint ch = 0; ch < N_CHANNELS; ch++)
             S_T[ch] = 1.;
