@@ -118,9 +118,7 @@ bool readSpectrumFromT(std::string filename, double &T0, double &dT, uint &N_T, 
         T0 = DEFAULT_T0;
         std::cerr << "начальная температура: " << T0 << " эВ\n";
         dT = DEFAULT_DT;
-        S_T.resize(N_CHANNELS, 0.);
-        for (uint ch = 0; ch < N_CHANNELS; ch++)
-            S_T[ch] = 1.;
+        S_T.resize(N_CHANNELS, 1.);
     }
 
     fin.close();

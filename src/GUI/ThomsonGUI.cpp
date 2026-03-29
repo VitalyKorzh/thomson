@@ -267,7 +267,7 @@ bool ThomsonGUI::countThomson(const std::string &archive_name, const std::string
         for (uint it = 0; it < N_TIME_LIST; it++)
         {
             double energy = getSignalProcessing(it, NUMBER_ENERGY_SPECTROMETER, shot_index)->getSignals()[NUMBER_ENERGY_CHANNEL];
-            ThomsonCounter * counter = new ThomsonCounter(srf_file_name, convolution_file_name, *getSignalProcessing(it, sp, shot_index), calibrations[sp*N_SPECTROMETER_CALIBRATIONS+ID_THETA], Ki,
+            ThomsonCounter * counter = new ThomsonCounter(N_CHANNELS, srf_file_name, convolution_file_name, *getSignalProcessing(it, sp, shot_index), calibrations[sp*N_SPECTROMETER_CALIBRATIONS+ID_THETA], Ki,
             darray(N_CHANNELS, 0), energy, 0, time_points[it], x_positon, LAMBDA_REFERENCE, selectionMethod);
             if (!counter->isWork()) {
                 thomsonSuccess = false;

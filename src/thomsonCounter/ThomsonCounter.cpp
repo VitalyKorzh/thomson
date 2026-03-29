@@ -230,12 +230,13 @@ int ThomsonCounter::findRatioNumber(uint ch1, uint ch2) const
     return -1;
 }
 
-ThomsonCounter::ThomsonCounter(const std::string &srf_file_name, const std::string &convolution_file_name,
+ThomsonCounter::ThomsonCounter(uint N_CHANNELS,
+                               const std::string &srf_file_name, const std::string &convolution_file_name,
                                const darray &signal, const darray &signal_error, double theta, const darray &Ki, const darray &sigmaKi,
                                double energy, double sigmaEnergy, double time_point, double x_positon,
                                const barray &channel_work, 
                                double lambda_reference, int selectionMethod) : selectionMethod(selectionMethod),
-                               lim_percent(0.5), work(false), signal(signal), signal_error(signal_error), channel_work(channel_work),
+                               lim_percent(0.5), work(false), N_CHANNELS(N_CHANNELS), signal(signal), signal_error(signal_error), channel_work(channel_work),
                                theta(theta), lambda_reference(lambda_reference), Ki(Ki), sigmaKi(sigmaKi),
                                TResult(0.), t_error(0.), neResult(0.), ne_error(0.),
                                rmse(0.), rmsePlus(0.), rmseMinus(0.),
@@ -243,19 +244,24 @@ ThomsonCounter::ThomsonCounter(const std::string &srf_file_name, const std::stri
                                time_point(time_point), x_positon(x_positon)
 
 {
-    work = readSRF(srf_file_name, SRF, lMin, lMax, dl, N_LAMBDA, N_CHANNELS) && readSpectrumFromT(convolution_file_name, T0, dT, N_TEMPERATURE, SCount, N_CHANNELS);
+    readSRF(srf_file_name, SRF, lMin, lMax, dl, N_LAMBDA, N_CHANNELS);
+    readSpectrumFromT(convolution_file_name, T0, dT, N_TEMPERATURE, SCount, N_CHANNELS);
+    work = true;
 
-    if (!work)
-        return;
+    // if (!work)
+    //     return;
 
     // if (N_CHANNELS != SCount.size()/ N_TEMPERATURE)
     //     work = false;
 
-    if (signal.size() != N_CHANNELS)
-        work = false;
+    // if (signal.size() != N_CHANNELS)
+    //     work = false;
 
+    this->signal.resize(N_CHANNELS, 0.);
     this->signal_error.resize(N_CHANNELS, std::numeric_limits<double>::max());
     this->channel_work.resize(N_CHANNELS, true);
+    this->Ki.resize(N_CHANNELS, 0.);
+    this->sigmaKi.resize(N_CHANNELS, 0.);
 
 
     N_CHANNELS_WORK = 0;
@@ -284,16 +290,16 @@ ThomsonCounter::ThomsonCounter(const std::string &srf_file_name, const std::stri
     signalResultMinus.resize(N_CHANNELS, 0);
     signalResultPlus.resize(N_CHANNELS, 0);
 
-    if (work) {
-        createChannelsNumberArray();
-        Te0 = findTZeroApproximation();
-    }
+    // if (work) {
+    createChannelsNumberArray();
+    Te0 = findTZeroApproximation();
+    //}
 }
 
-ThomsonCounter::ThomsonCounter(const std::string &srf_file_name, const std::string &convolution_file_name, const SignalProcessing &sp, double theta, const darray &Ki, const darray &sigmaKi,
+ThomsonCounter::ThomsonCounter(uint N_CHANNELS, const std::string &srf_file_name, const std::string &convolution_file_name, const SignalProcessing &sp, double theta, const darray &Ki, const darray &sigmaKi,
                                 double energy, double sigmaEnergy, double time_point, double x_position,
                                 double lambda_reference, int selectionMethod) :
-                                ThomsonCounter(srf_file_name, convolution_file_name, sp.getSignals(), sp.getSignalsSigma(), theta, Ki, 
+                                ThomsonCounter(N_CHANNELS, srf_file_name, convolution_file_name, sp.getSignals(), sp.getSignalsSigma(), theta, Ki, 
                                 sigmaKi, energy, sigmaEnergy, time_point, x_position,
                                 sp.getWorkSignals(), lambda_reference, selectionMethod)
 {

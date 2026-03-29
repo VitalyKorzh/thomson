@@ -8,6 +8,6 @@ typedef std::vector<double> darray;
 typedef unsigned uint;
 
 bool readSRF(std::string filename, darray &SRF, double &lMin, double &lMax, double &dl,
-     uint &N_LAMBDA, uint &N_CHANNELS, uint UN_USE_CHANNELS=2);
+     uint &N_LAMBDA, uint N_CHANNELS);
 
 #endif

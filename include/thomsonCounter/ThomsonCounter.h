@@ -119,13 +119,16 @@ private:
     //double countXi2(const darray &signal_result);
     
     public:
-    ThomsonCounter(const std::string &srf_file_name, const std::string &convolution_file_name, const darray &signal, const darray & signal_error, double theta, const darray &Ki, const darray &sigmaKi,
+    ThomsonCounter(uint N_CHANNELS,
+                    const std::string &srf_file_name, const std::string &convolution_file_name, const darray &signal, 
+                    const darray & signal_error, double theta, const darray &Ki, const darray &sigmaKi,
                     double energy, double sigmaEnergy, double time_point, double x_position,
                     const barray &channel_work, 
                     double lambda_reference, int selectionMethod=0);
-                    ThomsonCounter(const std::string &srf_file_name, const std::string &convolution_file_name, const SignalProcessing &sp, double theta, const darray &Ki, const darray &sigmaKi,
-                     double energy, double sigmaEnergy, double time_points, double x_position,
-                     double lambda_reference, int selectionMethod=0);
+    ThomsonCounter(uint N_CHANNELS,
+                    const std::string &srf_file_name, const std::string &convolution_file_name, const SignalProcessing &sp, double theta, const darray &Ki, const darray &sigmaKi,
+                    double energy, double sigmaEnergy, double time_points, double x_position,
+                    double lambda_reference, int selectionMethod=0);
                      
     bool count(const double alpha=0.001, const uint iter_limit=10000, const double epsilon=1e-12);
     bool countConcentration(double Te=-1.);
