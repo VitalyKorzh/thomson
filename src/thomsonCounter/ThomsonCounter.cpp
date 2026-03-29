@@ -244,7 +244,7 @@ ThomsonCounter::ThomsonCounter(const std::string &srf_file_name, const std::stri
 
 {
 
-    work = readSRF(srf_file_name, SRF, lMin, lMax, dl, N_LAMBDA, N_CHANNELS) && readSpectrumFromT(convolution_file_name, T0, dT, N_TEMPERATURE, SCount);
+    work = readSRF(srf_file_name, SRF, lMin, lMax, dl, N_LAMBDA, N_CHANNELS) && readSpectrumFromT(convolution_file_name, T0, dT, N_TEMPERATURE, SCount, N_CHANNELS);
 
     if (!work)
         return;

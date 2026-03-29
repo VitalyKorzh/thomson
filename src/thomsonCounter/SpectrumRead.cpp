@@ -4,64 +4,103 @@
 #include <sstream>
 #include <string>
 
-bool readSpectrumFromT(std::string filename, double &T0, double &dT, uint &N_T, darray &S_T, uint UN_USE_CHANNELS)
+bool readSpectrumFromT(std::string filename, double &T0, double &dT, uint &N_T, darray &S_T, uint N_CHANNELS)
 {
-    S_T.clear();
     std::ifstream fin;
     fin.open(filename);
+
+    S_T.clear();
+    N_T = 0;
+    T0 = 0.;
+    dT = 0.;
 
     if (fin.is_open())
     {
         std::string line;
         std::getline(fin, line);
 
-        uint channels = 0;
-        std::istringstream iss(line);
-        std::string word;
-        while (iss >> word)
-            channels++;
-
-        N_T = 0;
-
-        while (!fin.fail())
+        while (std::getline(fin, line))
         {
+            std::istringstream iss(line);
             double T;
-            fin >> T;
 
-            if (fin.fail())
+            iss >> T;
+
+            if (iss.fail())
                 break;
 
-            for (uint i = 0; i < channels; i++)
+            for (uint i = 0; i < N_CHANNELS; i++)
             {
                 double value;
-                fin >> value;
+                iss >> value;
+                if (iss.fail())
+                    value = 0;
+
                 S_T.push_back(value);
             }
 
-            for (uint i = 0; i < UN_USE_CHANNELS; i++)
-                S_T.push_back(0);
-
             if (N_T == 0)
-            {
                 T0 = T;
-            }
             else if (N_T == 1)
-            {
                 dT = T - T0;
-            }
-
-            N_T++;            
+            N_T++;
         }
-
-
+        
         darray S_T_TEMP(S_T.size());
-
-        for (uint ch = 0; ch < channels+UN_USE_CHANNELS; ch++)
+        for (uint ch = 0; ch < N_CHANNELS; ch++)
         {
             for (uint it = 0; it < N_T; it++)
-                S_T_TEMP[ch*N_T+it] = S_T[ch+(channels+UN_USE_CHANNELS)*it];
+                S_T_TEMP[ch*N_T+it] = S_T[ch + N_CHANNELS*it];
         }
         S_T = S_T_TEMP;
+
+        //uint channels = 0;
+        // std::istringstream iss(line);
+        // std::string word;
+        // while (iss >> word)
+        //     channels++;
+
+        // N_T = 0;
+
+        // while (!fin.fail())
+        // {
+        //     double T;
+        //     fin >> T;
+
+        //     if (fin.fail())
+        //         break;
+
+        //     for (uint i = 0; i < channels; i++)
+        //     {
+        //         double value;
+        //         fin >> value;
+        //         S_T.push_back(value);
+        //     }
+
+        //     // for (uint i = 0; i < UN_USE_CHANNELS; i++)
+        //     //     S_T.push_back(0);
+
+        //     if (N_T == 0)
+        //     {
+        //         T0 = T;
+        //     }
+        //     else if (N_T == 1)
+        //     {
+        //         dT = T - T0;
+        //     }
+
+        //     N_T++;            
+        // }
+
+
+        // darray S_T_TEMP(S_T.size());
+
+        // for (uint ch = 0; ch < channels+UN_USE_CHANNELS; ch++)
+        // {
+        //     for (uint it = 0; it < N_T; it++)
+        //         S_T_TEMP[ch*N_T+it] = S_T[ch+(channels+UN_USE_CHANNELS)*it];
+        // }
+        // S_T = S_T_TEMP;
         
     }
     else
