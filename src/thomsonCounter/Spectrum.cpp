@@ -1,5 +1,7 @@
 #include "../../include/thomsonCounter/Spectrum.h"
 
+#define MEC2 511e3
+
 double SRelative(double A0, double l, double li, double a, double theta) 
 {
     double b = 1. / a;

@@ -21,7 +21,12 @@
 #include "thomsonCounter/SignalProcessing.h"
 #include "thomsonCounter/ThomsonCounter.h"
 
-#define N_TIME_LIST 11
+enum class CountType {
+    OneShot,
+    SetOfShots,
+    None
+};
+
 
 class ThomsonGUI : public TGMainFrame
 {
@@ -29,15 +34,30 @@ class ThomsonGUI : public TGMainFrame
 
 private:
 
+    const char * const KUST_NAME;
+    const char * const CALIBRATION_NAME;
+    const double LAMBDA_REFERENCE;
+    const uint N_TIME_SIZE;
+    const uint UNUSEFULL;
+    const uint N_TIME_LIST;
+    const uint N_SPECTROMETERS;
+    const uint N_CHANNELS;
+    const uint NUMBER_ENERGY_SPECTROMETER;
+    const uint NUMBER_ENERGY_CHANNEL;
+    const uint N_SPECTROMETER_CALIBRATIONS;
+    const uint N_WORK_CHANNELS;
+
+
     const uiarray color_map = {8,1,2,3,4,5,6,7, 209, 46, 11};
     const uint width = 700;
     const uint height = 800; // обшие настройки графиков
+    const uint Nx = 3;
+    const uint Ny = 2;
 
     TApplication *app;
 
     TGTextEntry *mainFileTextEntry;
     TGNumberEntry *timeListNumber;
-    //TGNumberEntry *spectrometerNumber;
     TGCheckButton *writeResultTable;
 
     TGNumberEntry *shotNumber;
@@ -48,8 +68,6 @@ private:
                 *drawIntegralInChannels,
                 *drawSignalsAndIntegralsInChannels,
                 *drawEnergySignals,
-                //*drawTemperatureRDependence,
-                //*drawConcentrationRDependence,
                 *drawTemperatureRDependenceAll,
                 *drawConcentrationRDependenceAll,
                 *drawCompareSignalAndResult,
@@ -63,7 +81,6 @@ private:
     TGCheckButton *infoSignal,
                     *infoWorkChannels,
                     *infoUseRatio,
-                    //*infoUseChannelToNe,
                     *infoTe0,
                     *infoTij,
                     *infoTe,
@@ -113,33 +130,22 @@ private:
     TGNumberEntryField *maxSignalEntry;
 
     TGNumberEntry *spectrometerNumberSetofShots;
-    //TGNumberEntry *timePageNumberSetofShots;
     TGNumberEntry *channelNumberSetofShots;
     std::vector <TGCheckButton*> checkButtonDrawTimeSetOfShots;
-    //TGNumberEntry *numberTimeListsSetofShots;
 
     TGCheckButton *cheakButtonCountThomsonSeveralShots;
 
     uint N_SHOTS;
     uiarray shotArray;
 
-    int countType;
-    std::string archive_name;
+    CountType countType;
 
     std::vector<barray> work_mask;
-    //darray calibrations;
 
     std::vector <SignalProcessing*> spArray;
     std::vector <ThomsonCounter *> counterArray;
 
-    //darray energy;
-    //darray sigma_energy;
-
-    //darray time_points;
     uint shotDiagnostic;
-
-
-    uint nTimeListSetOfShots;
 
     std::vector <TGNumberEntryField*> channel_signal;
     std::vector <TGNumberEntryField*> channel_result;
@@ -150,10 +156,7 @@ private:
 
     TGNumberEntry *calibration_spectrometer;
 
-    //std::string error_file_name;
     std::vector <std::pair<double, double>> sigmaCoeff;
-    //darray A;
-    //darray sigma0;
 
 
     TString spectrometerName(uint sp, double rmse=-1.) {
@@ -188,12 +191,9 @@ private:
 
     void meanThomsonData(uint N_SHOTS, darray & Te, darray & TeError, darray & ne, darray &neError, darray &xPositon, darray &time_points) const;
 
-    //darray getSigma(std::vector<std::pair<double, double>> &sigmaCoeff, uint sp, uint it) const;
-
     bool shotNumberFromSetOfShots(uint &shot_number_from_set_of_shots, uint &shotDiagnostic, int shot);
 
     bool getline(std::ifstream &fin, std::string &line, char comment='#') const;
-
 
     void readError(const char *file_name, std::vector<std::pair<double, double>> &sigmaCoeff);
 
@@ -202,6 +202,7 @@ private:
     void readRamanCrossSection(const char *raman_file_name);
 
     void setDrawEnable(int signal, int thomson, int set_of_shots, int set_of_shots_thomson);
+    void changeStatusText(TGTextEntry *entry, const char *text);
 
     barray createWorkMask(const std::string &work_mask_string) const;
 
@@ -211,10 +212,10 @@ private:
     darray readCalibration(const char *archive_name, const char *calibration_name, int shot) const;
     bool isCalibrationNew(TFile *f, const char *calibration_name) const;
     bool writeCalibration(const char *archive_name, const char *calibration_name, darray &calibration) const;
-    void processingSignalsData(const char *archive_name, int shot, const std::vector<parray> &parametersArray, bool clearArray=true, uint nTimeLists=N_TIME_LIST);
-    bool countThomson(const std::string &srf_file_folder, const std::string &convolution_file_folder, int shot, bool clearArray=true, int selectionMethod=0, uint shot_index=0, bool count=true);
-    SignalProcessing * getSignalProcessing(uint it, uint sp, uint nShot=0, uint nTimeLists=N_TIME_LIST) const;
-    ThomsonCounter * getThomsonCounter(uint it, uint sp, uint nShot=0, uint nTimeListts=N_TIME_LIST) const;
+    void processingSignalsData(const char *archive_name, int shot, const std::vector<parray> &parametersArray, bool clearArray=true);
+    bool countThomson(const std::string &archive_name, const std::string &srf_file_folder, const std::string &convolution_file_folder, int shot, bool clearArray=true, int selectionMethod=0, uint shot_index=0, bool count=true);
+    SignalProcessing * getSignalProcessing(uint it, uint sp, uint nShot=0) const;
+    ThomsonCounter * getThomsonCounter(uint it, uint sp, uint nShot=0) const;
 
     void clearSpArray();
     void clearCounterArray();
@@ -223,37 +224,19 @@ private:
 
     static TString getFileFormat(TString fileName);
 
-
-    //double gaussian_noise(double sigma) const;
-    //darray createSignal(const darray &SRF, double lMin, double lMax, double dl, uint N_LAMBDA, double Te_true, double theta, double Aampl=10., const darray &sigma_noise={}) const;
-    //darray createSignal(const std::string &srf_name, const darray &sigma_channel, double Te, double ne, double theta) const;
-
-    //void addToArrayTFormat(const std::string &srf_file, const std::string &convolution_file,  const darray &signal, const darray &signal_error, double theta);
-
-    //void readROOTFormat(const std::string &fileName, const std::string &srf_file_folder, const std::string &convolution_file_folder, const std::string &processing_parameters, int type);
-    //void readT1Format(const std::string &fileName, const std::string &srf_file_folder, const std::string &convolution_file_folder);
-    //void readT2Format(const std::string &fileName, const std::string &srf_file_folder, const std::string &convolution_file_folder);
-
     bool checkButton(TGCheckButton *ch, bool lookEnable=true) const { return ch->IsDown() && (!lookEnable || ch->IsEnabled()); }
-    //void readParametersToSignalProcessing(const char *fileName, SignalProcessingParameters &parameters, uint sp, uint ch, uint it, const darray &t);
 
     std::vector <parray> readParametersToSignalProcessing(const std::string &file_name) const;
 
     void writeResultTableToFile(const char *file_name) const;
 
-    //std::string readArchiveName(const char *file_name) const;
+    void diactiveDiagnosticFrame(const char* text="press count");
 
-    void diactiveDiagnosticFrame(const char* text="press count", int signal=0);
+    uiarray createArrayShots(const std::string &archive_name);
 
-    //void countNWithCalibration(darray &ne, darray &neError, uint it, uint shot_from_several_shots=0) const;
-
-    uiarray createArrayShots();
-
-    darray createTimePointsArray(int shot) const;
-
+    darray createTimePointsArray(const std::string &archive_name, int shot) const;
 
     void calibrateRaman(double P, double T, double theta, const darray &signalRaman_to_ERaman, const darray &lambda, const darray &SRF, darray &Ki) const;
-
 
     bool readFileInput( std::ifstream &fin,
                         std::string &srf_file_folder, std::string &convolution_file_folder,
@@ -264,11 +247,16 @@ private:
                         int &type
     ) const;
 
-
     uint getNumberActiveCheck(const std::vector <TGCheckButton *> &buttonArray) const;
 
 public:
-    ThomsonGUI(const TGWindow *p, UInt_t width, UInt_t height, TApplication *app);
+    ThomsonGUI(const TGWindow *p, UInt_t width, UInt_t height, TApplication *app,
+                const char *KUST_NAME="Thomson", const char *CALIBRATION_NAME="thomson",
+                double LAMBDA_REFERENCE=1064., uint N_TIME_SIZE=1000., uint UNUSEFULL=48,
+                uint N_TIME_LIST=11, uint N_SPECTROMETERS=6, uint N_CHANNELS=8,
+                uint NUMBER_ENERGY_SPECTROMETER=2, uint NUMBER_ENERGY_CHANNEL=7,
+                uint N_SPECTROMETER_CALIBRATIONS=3, uint N_WORK_CHANNELS=6
+    );
 
     void ReadMainFile();
     void ReadCalibration();

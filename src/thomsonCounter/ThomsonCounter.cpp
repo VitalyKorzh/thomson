@@ -310,13 +310,13 @@ bool ThomsonCounter::isChannelUseToCount(uint ch1, uint ch2, const barray &is_ch
     return false;
 }
 
-double ThomsonCounter::countRMSE(const darray &signalResult) // корень sum (ai-ai_synt)^2*1/sigma_ai^2
+double ThomsonCounter::countRMSE(const darray &signalResult, const darray &signal, const darray &signal_error, bool all) const // корень sum (ai-ai_synt)^2*1/sigma_ai^2
 {
     double Wi = 0;
     double rmse = 0;
     for (uint i = 0; i < N_CHANNELS; i++)
     {
-        if (channel_work[i])
+        if (channel_work[i] || all)
         {
             double w = 1./ (signal_error[i]*signal_error[i]);
             rmse += (signal[i] - signalResult[i])*(signal[i] - signalResult[i]) * w;
@@ -600,22 +600,22 @@ bool ThomsonCounter::countSignalResult()
     //     }
     // }
 
-    rmseMinus = countRMSE(signalResultMinus);
-    rmsePlus = countRMSE(signalResultPlus);
-    rmse = countRMSE(signalResult);
+    rmseMinus = countRMSE(signalResultMinus, signal, signal_error);
+    rmsePlus = countRMSE(signalResultPlus, signal, signal_error);
+    rmse = countRMSE(signalResult, signal, signal_error);
 
 
     return true;
 }
 
-darray ThomsonCounter::countSyntheticSignal(double Te, double ne) const
+darray ThomsonCounter::countSyntheticSignal(double Te, double ne, bool all) const
 {
     darray S = countSArray(N_LAMBDA, lMin, dl, countA(Te), ne*energy, theta, lambda_reference);
     darray synthcetic_signal(N_CHANNELS, 0.);
 
     for (uint ch = 0; ch < N_CHANNELS; ch++)
     {
-        if (channel_work[ch])
+        if (channel_work[ch] || all)
         {
             synthcetic_signal[ch] = convolution(getSRFch(ch), S, lMin, lMax)/Ki[ch];
         }

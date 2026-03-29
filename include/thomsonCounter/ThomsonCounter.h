@@ -116,26 +116,26 @@ private:
 
     bool isChannelUseToCount(uint ch1, uint ch2, const barray &is_channel_use) const;
 
-    double countRMSE(const darray &signal_result);
     //double countXi2(const darray &signal_result);
- 
-public:
+    
+    public:
     ThomsonCounter(const std::string &srf_file_name, const std::string &convolution_file_name, const darray &signal, const darray & signal_error, double theta, const darray &Ki, const darray &sigmaKi,
-                    double energy, double sigmaEnergy, double time_point=0., double x_position=0.,
-                    const barray &channel_work={}, 
-                    double lambda_reference=W_REFERENCE, int selectionMethod=0);
-    ThomsonCounter(const std::string &srf_file_name, const std::string &convolution_file_name, const SignalProcessing &sp, double theta, const darray &Ki, const darray &sigmaKi,
-                     double energy, double sigmaEnergy, double time_points=0., double x_position=0.,
-                     double lambda_reference=W_REFERENCE, int selectionMethod=0);
-
+                    double energy, double sigmaEnergy, double time_point, double x_position,
+                    const barray &channel_work, 
+                    double lambda_reference, int selectionMethod=0);
+                    ThomsonCounter(const std::string &srf_file_name, const std::string &convolution_file_name, const SignalProcessing &sp, double theta, const darray &Ki, const darray &sigmaKi,
+                     double energy, double sigmaEnergy, double time_points, double x_position,
+                     double lambda_reference, int selectionMethod=0);
+                     
     bool count(const double alpha=0.001, const uint iter_limit=10000, const double epsilon=1e-12);
     bool countConcentration(double Te=-1.);
     //bool countConcentration();
-
+    
     bool countSignalResult();
+    
+    darray countSyntheticSignal(double Te, double ne, bool all=false) const; // считаем синтетический сигнал Te эВ ne 10^13 см^-3
+    double countRMSE(const darray &signal_result, const darray &singnal, const darray &signal_error, bool all=false) const;
 
-
-    darray countSyntheticSignal(double Te, double ne) const; // считаем синтетический сигнал Te эВ ne 10^13 см^-3
 
     bool isWork() const { return work; }
 

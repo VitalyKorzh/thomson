@@ -24,33 +24,12 @@
 
 ClassImp(ThomsonGUI)
 
-//#define ERROR_COEFF 0.22 // ошибка в канале ERROR_COEFF*sqrt(signal)
-
-#define N_SPECTROMETERS 6
-#define N_CHANNELS 8
-#define N_WORK_CHANNELS 6 //работают каналы 1 2 3 4 5 6 (7, 8 не работают)
-//#define N_TIME_LIST 11
-#define N_TIME_SIZE 1000
-#define UNUSEFULL 48 // SIZE_ARCHIVE = N_TIME_LIST*(2*N_TIME_SIZE+UNUSEFULL) 
-
-#define N_SPECTROMETER_CALIBRATIONS 3 //число калибровок для спектрометра
-#define LAMBDA_REFERENCE 1064. //длина волны лазера нм
-
-#define KUST_NAME "Thomson"
-#define CALIBRATION_NAME "thomson"
 #define CLASS_NAME "ThomsonGUI"
-
-#define NUMBER_ENERGY_SPECTROMETER 2
-#define NUMBER_ENERGY_CHANNEL 7
 
 // калибровка записана X THETA COEFF
 #define ID_X 0 
 #define ID_THETA 1
 #define ID_N_COEFF 2
-
-#define isROOT 0
-//#define isT1 1
-#define isSetofShots 2
 
 #define STATUS_ENTRY_TEXT "press count"
 
@@ -69,8 +48,6 @@ void ThomsonGUI::readDataFromArchive(const char *archive_name, const char *kust,
     {
         if (timeList <= 0)
             timeList = signal->GetSize() / (N_POINT);
-
-        //std::cout << "timeLists=" << timeList << " timePoint: " << timePoint << "\n";
 
         if (timePoint < 0)
         {
@@ -217,16 +194,16 @@ bool ThomsonGUI::writeCalibration(const char *archive_name, const char *calibrat
     return true;
 }
 
-void ThomsonGUI::processingSignalsData(const char *archive_name, int shot, const std::vector<parray> &parametersArray, bool clearArray, uint nTimeLists)
+void ThomsonGUI::processingSignalsData(const char *archive_name, int shot, const std::vector<parray> &parametersArray, bool clearArray)
 {
     if (clearArray)
         this->clearSpArray();
 
-    spArray.reserve(spArray.size()+N_SPECTROMETERS*nTimeLists);
+    spArray.reserve(spArray.size()+N_SPECTROMETERS*N_TIME_LIST);
 
     for (uint sp = 0; sp < N_SPECTROMETERS; sp++)
     {
-        for (uint it = 0; it < nTimeLists; it++)
+        for (uint it = 0; it < N_TIME_LIST; it++)
         {
             darray t;
             darray U;
@@ -251,17 +228,9 @@ void ThomsonGUI::processingSignalsData(const char *archive_name, int shot, const
             spArray.push_back(new SignalProcessing(t, U, N_CHANNELS, parametersArray[sp], sigmaCoeff, work_mask[sp]));
         }
     }
-
-    // if (clearArray)
-    // {
-    //     for (uint i = 0; i < N_TIME_LIST; i++) {
-    //         energy[i] = getSignalProcessing(i, NUMBER_ENERGY_SPECTROMETER)->getSignals()[NUMBER_ENERGY_CHANNEL];
-    //         sigma_energy[i] = 0.;
-    //     }
-    // }
 }
 
-bool ThomsonGUI::countThomson(const std::string &srf_file_folder, const std::string &convolution_file_folder, int shot, bool clearArray, int selectionMethod, uint shot_index, bool count)
+bool ThomsonGUI::countThomson(const std::string &archive_name, const std::string &srf_file_folder, const std::string &convolution_file_folder, int shot, bool clearArray, int selectionMethod, uint shot_index, bool count)
 {
     bool thomsonSuccess = true;
     if (clearArray) clearCounterArray();
@@ -286,7 +255,7 @@ bool ThomsonGUI::countThomson(const std::string &srf_file_folder, const std::str
 
     std::vector <ThomsonCounter*> tempCounter(N_TIME_LIST*N_SPECTROMETERS, nullptr);
 
-    darray time_points = createTimePointsArray(shot);
+    darray time_points = createTimePointsArray(archive_name, shot);
 
     for (uint sp = 0; sp < N_SPECTROMETERS; sp++)
     {
@@ -297,7 +266,6 @@ bool ThomsonGUI::countThomson(const std::string &srf_file_folder, const std::str
         double x_positon = -calibrations[sp*N_SPECTROMETER_CALIBRATIONS+ID_X]/10.;
         for (uint it = 0; it < N_TIME_LIST; it++)
         {
-            //darray sigma = getSigma(sigmaCoeff, sp, it);
             double energy = getSignalProcessing(it, NUMBER_ENERGY_SPECTROMETER, shot_index)->getSignals()[NUMBER_ENERGY_CHANNEL];
             ThomsonCounter * counter = new ThomsonCounter(srf_file_name, convolution_file_name, *getSignalProcessing(it, sp, shot_index), calibrations[sp*N_SPECTROMETER_CALIBRATIONS+ID_THETA], Ki,
             darray(N_CHANNELS, 0), energy, 0, time_points[it], x_positon, LAMBDA_REFERENCE, selectionMethod);
@@ -329,20 +297,20 @@ bool ThomsonGUI::countThomson(const std::string &srf_file_folder, const std::str
     return thomsonSuccess;
 }
 
-SignalProcessing *ThomsonGUI::getSignalProcessing(uint it, uint sp, uint nShot, uint nTimeLists) const
-{
-    if (it >= nTimeLists || sp >= N_SPECTROMETERS || nShot >= N_SHOTS)
-        return nullptr;
-    else
-        return spArray[it+sp*nTimeLists + nShot*nTimeLists*N_SPECTROMETERS];
-}
-
-ThomsonCounter *ThomsonGUI::getThomsonCounter(uint it, uint sp, uint nShot, uint nTimeLists) const
+SignalProcessing *ThomsonGUI::getSignalProcessing(uint it, uint sp, uint nShot) const
 {
     if (it >= N_TIME_LIST || sp >= N_SPECTROMETERS || nShot >= N_SHOTS)
         return nullptr;
     else
-        return counterArray[it+sp*nTimeLists+nShot*nTimeLists*N_SPECTROMETERS];
+        return spArray[it+sp*N_TIME_LIST + nShot*N_TIME_LIST*N_SPECTROMETERS];
+}
+
+ThomsonCounter *ThomsonGUI::getThomsonCounter(uint it, uint sp, uint nShot) const
+{
+    if (it >= N_TIME_LIST || sp >= N_SPECTROMETERS || nShot >= N_SHOTS)
+        return nullptr;
+    else
+        return counterArray[it+sp*N_TIME_LIST+nShot*N_TIME_LIST*N_SPECTROMETERS];
 }
 
 void ThomsonGUI::clearSpArray()
@@ -362,18 +330,6 @@ void ThomsonGUI::clearCounterArray()
     counterArray.clear();
     counterArray.shrink_to_fit();
 }
-
-/*darray ThomsonGUI::getSigma(std::vector<std::pair<double, double>> &sigmaCoeff, uint sp, uint it) const
-{
-    darray sigma(N_CHANNELS, 0.);
-    for (uint i = 0; i < N_CHANNELS; i++) { // вычисляем погрешность
-        double A0_i = sigmaCoeff[sp*N_CHANNELS+i].first;
-        double sigma0_i = sigmaCoeff[sp*N_CHANNELS+i].second;
-        sigma[i] = sqrt(A0_i*A0_i*getSignalProcessing(it, sp)->getSignals()[i] + sigma0_i*sigma0_i);
-    }
-
-    return sigma;
-}*/
 
 void ThomsonGUI::meanThomsonData(uint N_SHOTS, darray &Te, darray &TeError, darray &ne, darray &neError, darray &xPositon, darray &time_points) const
 {
@@ -534,8 +490,6 @@ void ThomsonGUI::setDrawEnable(int signal, int thomson, int set_of_shots_statist
     {
         drawSRF->SetEnabled(thomson);
         drawConvolution->SetEnabled(thomson);
-        //drawTemperatureRDependence->SetEnabled(thomson);
-        //drawConcentrationRDependence->SetEnabled(thomson);
         drawTemperatureRDependenceAll->SetEnabled(thomson);
         drawConcentrationRDependenceAll->SetEnabled(thomson);
         drawCompareSignalAndResult->SetEnabled(thomson);
@@ -544,7 +498,6 @@ void ThomsonGUI::setDrawEnable(int signal, int thomson, int set_of_shots_statist
         
 
         infoUseRatio->SetEnabled(thomson);
-        //infoUseChannelToNe->SetEnabled(thomson);
         infoTe0->SetEnabled(thomson);
         infoTij->SetEnabled(thomson);
         infoTe->SetEnabled(thomson);
@@ -579,11 +532,18 @@ void ThomsonGUI::setDrawEnable(int signal, int thomson, int set_of_shots_statist
 
 }
 
+void ThomsonGUI::changeStatusText(TGTextEntry *entry, const char *text)
+{
+    entry->SetText(text);
+    gClient->ForceRedraw();
+    gSystem->ProcessEvents();
+}
+
 barray ThomsonGUI::createWorkMask(const std::string &work_mask_string) const
 {
     barray work_mask(N_CHANNELS, false);
 
-    for (int i = 0; i < std::min((int) work_mask_string.size(), N_WORK_CHANNELS); i++)
+    for (uint i = 0; i < std::min((uint) work_mask_string.size(), N_WORK_CHANNELS); i++)
         work_mask[i] = work_mask_string[i] == '+' ? true : false;
 
     return work_mask;
@@ -637,7 +597,7 @@ std::vector<parray> ThomsonGUI::readParametersToSignalProcessing(const std::stri
 
 void ThomsonGUI::writeResultTableToFile(const char *file_name) const
 {
-    if (countType != isROOT)
+    if (countType == CountType::None)
         return;
 
     std::ofstream fout;
@@ -654,12 +614,8 @@ void ThomsonGUI::writeResultTableToFile(const char *file_name) const
         fout << "mm\teV\teV\t10^13 cm^-3\t10^13 cm^-3\n";
         fout << "Radius\tTe\tTe error\tne\t ne error\n";
 
-        // darray ne(N_SPECTROMETERS);
-        // darray neError(N_SPECTROMETERS);
-
         for (uint it = 0; it < N_TIME_LIST; it++)
         {
-            //countNWithCalibration(ne, neError, it);
             for (uint sp = 0; sp < N_SPECTROMETERS; sp++)
             {
                 ThomsonCounter *counter = getThomsonCounter(it, sp);
@@ -673,39 +629,24 @@ void ThomsonGUI::writeResultTableToFile(const char *file_name) const
     fout.close();
 }
 
-void ThomsonGUI::diactiveDiagnosticFrame(const char *text, int signal)
+void ThomsonGUI::diactiveDiagnosticFrame(const char *text)
 {
-    statusEntry->SetText(text);
-    statusEntrySetOfShots->SetText(STATUS_ENTRY_TEXT);
-    gClient->ForceRedraw();
-    gSystem->ProcessEvents();
+    changeStatusText(statusEntry, text);
+    changeStatusText(statusEntrySetOfShots, STATUS_ENTRY_TEXT);
+    // statusEntry->SetText(text);
+    // statusEntrySetOfShots->SetText(STATUS_ENTRY_TEXT);
+    // gClient->ForceRedraw();
+    // gSystem->ProcessEvents();
     N_SHOTS = 1;
-    countType = -1;
-    setDrawEnable(signal, 0, 0, 0);
+    countType = CountType::None;
+    setDrawEnable(0, 0, 0, 0);
     shotDiagnostic = 0;
     shotArray.clear();
     clearCounterArray();
     clearSpArray();
 }
 
-// void ThomsonGUI::countNWithCalibration(darray &ne, darray &neError, uint it, uint shot_from_several_shots) const
-// {
-//     for (uint i = 0; i < N_SPECTROMETERS; i++) {
-//         double energy = getSignalProcessing(it, NUMBER_ENERGY_SPECTROMETER, shot_from_several_shots)->getSignals()[NUMBER_ENERGY_CHANNEL];
-//         double A = 1./energy;
-//         ne[i] = getThomsonCounter(it, i, shot_from_several_shots)->getN();
-
-//         //double AError2 = sigma_energy[it]*sigma_energy[it] / (energy*energy);
-//         double AError2 = 0;
-
-//         neError[i] = getThomsonCounter(it, i, shot_from_several_shots)->getNError();
-//         neError[i] = A*ne[i]*sqrt(AError2 + 
-//                             neError[i]*neError[i] / (ne[i]*ne[i]));
-//         ne[i] *= A;
-//     }
-// }
-
-uiarray ThomsonGUI::createArrayShots()
+uiarray ThomsonGUI::createArrayShots(const std::string &archive_name)
 {
     uiarray shotArray;
     OpenArchive(archive_name.c_str());
@@ -756,7 +697,7 @@ uiarray ThomsonGUI::createArrayShots()
     return shotArray;
 }
 
-darray ThomsonGUI::createTimePointsArray(int shot) const
+darray ThomsonGUI::createTimePointsArray(const std::string &archive_name, int shot) const
 {
     darray time_points(N_TIME_LIST, 0.);
     TFile *file = OpenArchive(archive_name.c_str());
@@ -872,7 +813,6 @@ bool ThomsonGUI::readFileInput( std::ifstream &fin,
     getline(fin, archive_file_name);
     getline(fin, error_file_name);
 
-    //std::string work_mask_string[N_SPECTROMETERS];
     if (work_mask_string != nullptr)
         for (uint i = 0; i < N_SPECTROMETERS; i++)
             getline(fin, work_mask_string[i]);
@@ -897,8 +837,20 @@ uint ThomsonGUI::getNumberActiveCheck(const std::vector<TGCheckButton *> &button
     return count;
 }
 
-ThomsonGUI::ThomsonGUI(const TGWindow *p, UInt_t width, UInt_t height, TApplication *app) : TGMainFrame(p, width, height),
-                                                                                            app(app), N_SHOTS(1),countType(-1), work_mask(N_SPECTROMETERS, barray(N_CHANNELS))
+ThomsonGUI::ThomsonGUI(const TGWindow *p, UInt_t width, UInt_t height, TApplication *app,
+                const char *KUST_NAME, const char *CALIBRATION_NAME,
+                double LAMBDA_REFERENCE, uint N_TIME_SIZE, uint UNUSEFULL,
+                uint N_TIME_LIST, uint N_SPECTROMETERS, uint N_CHANNELS,
+                uint NUMBER_ENERGY_SPECTROMETER, uint NUMBER_ENERGY_CHANNEL,
+                uint N_SPECTROMETER_CALIBRATIONS, uint N_WORK_CHANNELS
+) : TGMainFrame(p, width, height),
+    KUST_NAME(KUST_NAME), CALIBRATION_NAME(CALIBRATION_NAME), LAMBDA_REFERENCE(LAMBDA_REFERENCE),
+    N_TIME_SIZE(N_TIME_SIZE), UNUSEFULL(UNUSEFULL), N_TIME_LIST(N_TIME_LIST),
+    N_SPECTROMETERS(N_SPECTROMETERS), N_CHANNELS(N_CHANNELS),
+    NUMBER_ENERGY_SPECTROMETER(NUMBER_ENERGY_SPECTROMETER), NUMBER_ENERGY_CHANNEL(NUMBER_ENERGY_CHANNEL),
+    N_SPECTROMETER_CALIBRATIONS(N_SPECTROMETER_CALIBRATIONS), N_WORK_CHANNELS(N_WORK_CHANNELS),
+    app(app), N_SHOTS(1),countType(CountType::None), 
+    work_mask(N_SPECTROMETERS, barray(N_CHANNELS))
 {
     SetCleanup(kDeepCleanup);
 
@@ -1049,8 +1001,6 @@ ThomsonGUI::ThomsonGUI(const TGWindow *p, UInt_t width, UInt_t height, TApplicat
             hframeTimeButton->AddFrame(checkButtonDrawTime.back(), new TGLayoutHints(kLHintsLeft, 1,1,7,7));
         }
         checkButtonDrawTime.front()->SetState(kButtonUp);
-        //checkButtonDrawTime.front()->SetEnabled(false);
-
 
         drawEnergySignals = new TGCheckButton(vframeTimeDraw, "draw Laser energy signal");
         drawTemperatureRDependenceAll = new TGCheckButton(vframeTimeDraw, "draw Te(r)");
@@ -1080,8 +1030,6 @@ ThomsonGUI::ThomsonGUI(const TGWindow *p, UInt_t width, UInt_t height, TApplicat
 
         vframeRadiusDraw->AddFrame(drawTeFromTime, new TGLayoutHints(kLHintsLeft, 1, 1, 2, 2));
         vframeRadiusDraw->AddFrame(drawNeFromTime, new TGLayoutHints(kLHintsLeft, 1, 1, 2, 2));
-        
-        //setDrawEnable(0,0,0);
 
         TGHorizontalFrame *hframe_button = new TGHorizontalFrame(fTTu, width, 80);
         fTTu->AddFrame(hframe_button, new TGLayoutHints(kLHintsExpandX| kLHintsBottom, 5, 5, 5,  10));
@@ -1195,13 +1143,6 @@ ThomsonGUI::ThomsonGUI(const TGWindow *p, UInt_t width, UInt_t height, TApplicat
         statusEntrySetOfShots->SetTextColor(0x666666);
         statusEntrySetOfShots->SetToolTipText("status");
         hframeBottom->AddFrame(statusEntrySetOfShots, new TGLayoutHints(kLHintsLeft, 5,5,5,5));
-
-
-        //numberTimeListsSetofShots = new TGNumberEntry(hframeBottom, N_TIME_LIST, 4, -1, TGNumberFormat::kNESInteger,
-        //                                    TGNumberFormat::kNEAPositive, TGNumberEntry::kNELLimitMinMax, 1, 100);
-
-        //hframeBottom->AddFrame(numberTimeListsSetofShots, new TGLayoutHints(kLHintsLeft, 5,5,5,5));
-
 
         TGHorizontalFrame *hframeParametersHist = new TGHorizontalFrame(fTTu, width, 40);
         fTTu->AddFrame(hframeParametersHist, new TGLayoutHints(kLHintsBottom|kLHintsLeft,5,5,5,5));
@@ -1375,6 +1316,7 @@ void ThomsonGUI::ReadMainFile()
     {
         diactiveDiagnosticFrame("count start");
         shotArray.clear();
+        std::string archive_name;
         std::string srf_file_folder;
         std::string convolution_file_folder;
         std::string raman_file_name;
@@ -1394,7 +1336,7 @@ void ThomsonGUI::ReadMainFile()
             shotDiagnostic = getShot(shot);
             CloseArchive();
 
-            createTimePointsArray(shotDiagnostic);
+            createTimePointsArray(archive_name, shotDiagnostic);
             readError(error_file_name.c_str(), sigmaCoeff);
             readRamanCrossSection(raman_file_name.c_str());
             std::vector <parray> parametersArray = readParametersToSignalProcessing(processing_paramters);
@@ -1407,29 +1349,9 @@ void ThomsonGUI::ReadMainFile()
             }
 
             processingSignalsData(archive_name.c_str(), shotDiagnostic, parametersArray, true);
-            thomsonSuccess = countThomson(srf_file_folder, convolution_file_folder, shotDiagnostic, true, type);
+            thomsonSuccess = countThomson(archive_name, srf_file_folder, convolution_file_folder, shotDiagnostic, true, type);
 
         }
-
-        // readError(error_file_name.c_str(), A, sigma0);
-        // readRamanCrossSection(raman_file_name.c_str());
-
-        // if (!fin.fail())
-        // {
-        //     for (uint i = 0; i < N_TIME_LIST; i++)
-        //         time_points[i] = 0;
-        //     TString file_format = getFileFormat(archive_name);
-
-
-        //     for (uint i = 0; i < N_SPECTROMETERS; i++)
-        //     {
-        //         barray mask = createWorkMask(work_mask_string[i]);
-        //         for (uint j = 0; j < N_CHANNELS; j++)
-        //             work_mask[i][j] = mask[j];
-        //     }
-
-        //     readROOTFormat(archive_name, srf_file_folder, convolution_file_folder, processing_paramters, type);
-        // }
     }
     else {
         std::cerr << "не удалось открыть файл: " << fileName << "!\n"; 
@@ -1439,16 +1361,13 @@ void ThomsonGUI::ReadMainFile()
 
     if (thomsonSuccess)
     {
-        countType = isROOT;
+        countType = CountType::OneShot;
         setDrawEnable(1, 1, 0, 0);
         shotNumber->GetNumberEntry()->SetToolTipText(TString::Format("%u", shotDiagnostic));
         if (writeResultTable->IsDown())
             writeResultTableToFile("last_result_table.dat");
 
         statusEntry->SetText(TString::Format("ready, shot: %u", shotDiagnostic));
-        //std::cout << "данные прочитаны!\n";
-        //mainFileTextEntry->SetToolTipText(fileName + " read");
-        //std::cout << "вычисления n,T подготовлены\n\n";
     }
     else
     {
@@ -1551,191 +1470,13 @@ TString ThomsonGUI::getFileFormat(TString fileName)
     return fileName(lastDot + 1, fileName.Length() - lastDot - 1);;
 }
 
-/*double ThomsonGUI::gaussian_noise(double sigma) const
-{
-    std::random_device rd;
-    std::mt19937 gen(rd());
-    std::normal_distribution<double> dist(0.0, sigma);
-    return dist(gen);
-}
-
-darray ThomsonGUI::createSignal(const darray &SRF, double lMin, double lMax, double dl, uint N_LAMBDA, double Te_true, double theta, double Aampl, const darray &sigma_noise) const
-{
-    darray signal(N_CHANNELS);
-
-    double a_true = countA(Te_true);
-    darray SArray(N_LAMBDA);
-    for (uint i = 0; i < N_LAMBDA; i++) {
-        SArray[i] = SRelative(Aampl, lMin + i*dl, LAMBDA_REFERENCE, a_true, theta);
-    }
-
-    for (uint i = 0; i < N_CHANNELS; i++) {
-        double result = convolution(SRF.data()+i*N_LAMBDA, SArray, lMin, lMax);
-        signal[i] = result;
-
-        if (i < sigma_noise.size() && sigma_noise[i] > 0) 
-        {
-            signal[i] += gaussian_noise(sigma_noise[i]);
-        }
-    }
-
-    return signal;
-}
-
-darray ThomsonGUI::createSignal(const std::string &srf_name, const darray &sigma_channel, double Te, double ne, double theta) const
-{
-    darray SRF;
-    double lMin, lMax, dl;
-    uint N_LAMBDA;
-    uint nChannels;
-    readSRF(srf_name, SRF, lMin, lMax, dl, N_LAMBDA, nChannels);
-    
-    darray signal_with_noise = createSignal(SRF, lMin, lMax, dl, N_LAMBDA, Te, theta, ne, sigma_channel);
-
-    return signal_with_noise;
-}
-
-void ThomsonGUI::addToArrayTFormat(const std::string &srf_file, const std::string &convolution_file, const darray &signal, const darray &signal_error, double theta)
-{
-    clearSpArray();
-    clearCounterArray();
-    SignalProcessing *sp = new SignalProcessing(signal, work_mask[0]);
-    ThomsonCounter *counter = new ThomsonCounter(srf_file, convolution_file, *sp, signal_error, theta, darray(N_CHANNELS, 1.), darray(N_CHANNELS, 0), LAMBDA_REFERENCE);
-    if (counter->isWork())
-    {
-        counter->count();
-        counter->countConcentration();
-        counter->countSignalResult();
-
-        spArray.push_back(sp);
-        counterArray.push_back(counter);
-    }
-    else
-        fileType = -1;
-}
-
-void ThomsonGUI::readROOTFormat(const std::string &fileName, const std::string &srf_file_folder, const std::string &convolution_file_folder, const std::string &processing_parameters, int selectionMethod)
-{
-    int shot = shotNumber->GetNumber();
-
-    std::vector <parray> parametersArray = readParametersToSignalProcessing(processing_parameters);
-
-    processingSignalsData(archive_name.c_str(), shot, parametersArray, true);
-    if (!countThomson(srf_file_folder, convolution_file_folder, shot, true, selectionMethod)) {
-        std::cerr << "ошибка чтения файла!\n";
-        fileType = -1;
-    }
-
-    if (fileType == isROOT)
-    {
-        OpenArchive(archive_name.c_str());
-        std::cout << "shot: " << getShot(shot) << "\n";
-        shotDiagnostic = shot;
-        CloseArchive();
-        createTimePointsArray(shot);
-    }
-
-}
-
-void ThomsonGUI::readT1Format(const std::string &fileName, const std::string &srf_file_folder, const std::string &convolution_file_folder)
-{
-    std::ifstream fin;
-    fin.open(archive_name);
-
-    if (fin.is_open())
-    {
-        double theta;
-        darray signal(N_CHANNELS, 0.);
-        darray signal_error(N_CHANNELS, 0.);
-
-        fin >> theta;
-        theta *= M_PI/180.;
-        for (uint i = 0; i < N_WORK_CHANNELS; i++)
-            fin >> signal[i] >> signal_error[i];
-
-        std::string srf_file;
-        std::string convolution_file;
-
-        fin >> srf_file >> convolution_file;
-
-        srf_file = srf_file_folder + srf_file;
-        convolution_file = convolution_file_folder + convolution_file;
-
-        if (!fin.fail())
-            addToArrayTFormat(srf_file, convolution_file, signal, signal_error, theta);
-        else
-        {
-            std::cerr << "ошибка чтения файла: " << archive_name << "\n";
-            fileType = -1;
-        }
-    }
-    else {
-        std::cerr << "не удалось открыть файл: " << archive_name << "\n";
-        fileType = -1;
-    }
-
-    fin.close();
-}
-
-void ThomsonGUI::readT2Format(const std::string &fileName, const std::string &srf_file_folder, const std::string &convolution_file_folder)
-{
-    std::ifstream fin;
-    fin.open(archive_name);
-
-    if (fin.is_open())
-    {
-        double theta, ne, Te;
-        darray signal_error(N_CHANNELS, 0.);
-
-        fin >> theta >> ne >> Te;
-        theta *= M_PI/180;
-        for (uint i = 0; i < N_WORK_CHANNELS; i++)
-            fin >> signal_error[i];
-
-        std::string srf_file;
-        std::string convolution_file;
-
-        fin >> srf_file >> convolution_file;
-
-        srf_file = srf_file_folder + srf_file;
-        convolution_file = convolution_file_folder + convolution_file;
-
-        if (!fin.fail())
-        {
-            darray signal = createSignal(srf_file, signal_error, Te, ne, theta);
-            addToArrayTFormat(srf_file, convolution_file, signal, signal_error, theta);
-        }
-        else
-        {
-            std::cerr << "ошибка чтения файла: " << archive_name << "\n";
-            fileType = -1;
-        }
-    }
-    else {
-        std::cerr << "не удалось открыть файл: " << archive_name << "\n";
-        fileType = -1;
-    }
-
-    fin.close();
-}*/
 
 void ThomsonGUI::DrawGraphs()
 {
-    if (countType < 0)
+    if (countType == CountType::None)
         return;
 
-    //uint nSpectrometer=0;
-    //uint nTimePage=0;
-    // if (countType == isROOT)
-    // {
-        //nSpectrometer = spectrometerNumber->GetNumber();
     uint nTimePage = timeListNumber->GetNumber();
-    //}
-
-    //const barray &work_mask = this->work_mask[nSpectrometer];
-
-    const uint Nx = 3;
-    const uint Ny = N_SPECTROMETERS / Nx;
 
     uint nActiveSpectrometers = 0;
     for (uint i = 0; i < N_SPECTROMETERS; i++)
@@ -1760,7 +1501,7 @@ void ThomsonGUI::DrawGraphs()
 
     uint shot_from_several_shots = 0; //рисовать какой выстрел из set of shots
 
-    if (countType == isSetofShots)
+    if (countType == CountType::SetOfShots)
     {
         bool find = shotNumberFromSetOfShots(shot_from_several_shots, shotDiagnostic, shotNumber->GetNumber());
         if (!find)
@@ -1770,35 +1511,8 @@ void ThomsonGUI::DrawGraphs()
         }
     }
 
-    // if (countType == isSetofShots)
-    // {
-    //     int shot = shotNumber->GetNumber();
-    //     if (shot <= 0)
-    //         shot += shotArray.back();
-    //     bool findShot = false;
-    //     for (uint i = 0; i < shotArray.size(); i++)
-    //     {
-    //         if (shotArray[i] == (uint)shot)
-    //         {
-    //             findShot = true;
-    //             break;
-    //         }
-    //         shot_from_several_shots++;
-    //     }
-
-    //     if (!findShot || shotArray.empty())
-    //     {
-    //         std::cerr << "Выстрел не найден в списке set of shots!\n";
-    //         return;
-    //     }
-
-    //     shotDiagnostic = shot;
-    //     //shot_from_several_shots = shotDiagnostic;
-    // } // почему tp не меняется в названии! в данном режиме
-
-
-    bool thomsonDraw = countType == isROOT || (countType == isSetofShots && cheakButtonCountThomsonSeveralShots->IsDown());
-    bool signalDraw = thomsonDraw || countType == isSetofShots;
+    bool thomsonDraw = countType == CountType::OneShot || (countType == CountType::SetOfShots && cheakButtonCountThomsonSeveralShots->IsDown());
+    bool signalDraw = thomsonDraw || countType == CountType::SetOfShots;
 
     darray time_points(N_TIME_LIST, 0.);
     darray xPosition(N_SPECTROMETERS, 0.);
@@ -2010,7 +1724,6 @@ void ThomsonGUI::DrawGraphs()
                     neError[sp] = getThomsonCounter(it, sp, shot_from_several_shots)->getNError();
                 }
 
-                //countNWithCalibration(ne, neError, it, shot_from_several_shots);
                 ThomsonDraw::draw_result_from_r(c, mg, xPosition, ne, neError, 21, 1.5, color_map[it], 1, 7, color_map[it], timeLabel(it, time_points), false);
             }
 
@@ -2069,8 +1782,6 @@ void ThomsonGUI::DrawGraphs()
 
             darray ne(N_TIME_LIST-1);
             darray neError(N_TIME_LIST-1);
-            //darray neTemp(N_SPECTROMETERS);
-            //darray neTempError(N_SPECTROMETERS);
             darray t(N_TIME_LIST-1);
 
             for (uint i = 0; i < N_SPECTROMETERS; i++)
@@ -2080,7 +1791,6 @@ void ThomsonGUI::DrawGraphs()
 
                 for (uint it = 1; it < N_TIME_LIST; it++)
                 {
-                    //countNWithCalibration(neTemp, neTempError, it, shot_from_several_shots);
                     t[it-1] = time_points[it];
                     ne[it-1]= getThomsonCounter(it, i, shot_from_several_shots)->getN();
                     neError[it-1] = getThomsonCounter(it, i, shot_from_several_shots)->getNError();
@@ -2105,48 +1815,29 @@ void ThomsonGUI::DrawGraphs()
 void ThomsonGUI::PrintInfo()
 {
 
-    if (countType < 0)
+    if (countType == CountType::None)
         return;
 
-    //uint nSpectrometer=0, nTimePage=0;
-    //if (countType == isROOT)
-    //{
     uint nSpectrometer = spectrometerNumberInfo->GetNumber();
     uint nTimePage = timeListNumberInfo->GetNumber();
-    //}
 
-    //bool isInfo = false;
     std::string info = "";
     std::ostringstream oss;
-    /*for (uint i = 0; i < checkButtonInfo.size(); i++) {
-        if (checkButtonInfo[i]->IsDown())
-        {
-            isInfo = true;
-            break;
-        }
-    }*/
-
-    //if (isInfo)
-    //    std::cout << "==================================================================================\n";
 
     uint shot_from_several_shots = 0; //рисовать какой выстрел из set of shots
 
-    if (countType == isSetofShots)
+    if (countType == CountType::SetOfShots)
     {
         bool find = shotNumberFromSetOfShots(shot_from_several_shots, shotDiagnostic, shotNumber->GetNumber());
         if (!find)
-        {
-            //std::cerr << "Выстрел не найден в списке set of shots!\n";
             return;
-        }
     }
 
-    bool thomsonDraw = countType == isROOT || (countType == isSetofShots && cheakButtonCountThomsonSeveralShots->IsDown());
-    bool signalDraw = thomsonDraw || countType == isSetofShots;
+    bool thomsonDraw = countType == CountType::OneShot || (countType == CountType::SetOfShots && cheakButtonCountThomsonSeveralShots->IsDown());
+    bool signalDraw = thomsonDraw || countType == CountType::SetOfShots;
 
     if (checkButton(infoSignal) && signalDraw)
     {
-        //ThomsonCounter *counter = getThomsonCounter(nTimePage, nSpectrometer);
         SignalProcessing *sp = getSignalProcessing(nTimePage, nSpectrometer, shot_from_several_shots);
         oss << "signals:\n";
         for (uint i = 0; i < N_WORK_CHANNELS; i++)
@@ -2154,7 +1845,6 @@ void ThomsonGUI::PrintInfo()
     }
     if (checkButton(infoWorkChannels) && signalDraw )
     {
-        //ThomsonCounter *counter = getThomsonCounter(nTimePage, nSpectrometer);
         SignalProcessing *sp = getSignalProcessing(nTimePage, nSpectrometer, shot_from_several_shots);
         oss << "work channels: ";
 
@@ -2181,10 +1871,6 @@ void ThomsonGUI::PrintInfo()
             oss << "\t" << "(" << ch1 << ", " << ch2 << ")\n"; 
         }
     }
-    /*if (checkButton(infoUseChannelToNe))
-    {
-        std::cout << "channel to count ne: " << counter->getChannelNeCount() << "\n";
-    }*/
     if (checkButton(infoTe0) && thomsonDraw)
     {
         ThomsonCounter *counter = getThomsonCounter(nTimePage, nSpectrometer);
@@ -2223,7 +1909,6 @@ void ThomsonGUI::PrintInfo()
     if (checkButton(infoLaserEntry) && thomsonDraw)
     {
         oss << "LASER energy:\n";
-        //darray energy(N_TIME_LIST, 0.);
         for (uint it = 0; it < N_TIME_LIST; it++) {
             oss << "\t" <<
             getSignalProcessing(it, NUMBER_ENERGY_SPECTROMETER, shot_from_several_shots)->getSignals()[NUMBER_ENERGY_CHANNEL]
@@ -2330,8 +2015,7 @@ void ThomsonGUI::Remove()
 void ThomsonGUI::RemoveAll()
 {
     while (nrow > 1)
-        Remove();
-    
+        Remove();   
 }
 
 void ThomsonGUI::CountSeveralShot()
@@ -2343,15 +2027,10 @@ void ThomsonGUI::CountSeveralShot()
 
     if (fin.is_open())
     {
-        diactiveDiagnosticFrame(STATUS_ENTRY_TEXT, 1);
-        setDrawEnable(-1, -1, 0, 0);
-        // statusEntry->SetText(STATUS_ENTRY_TEXT);
-        // N_SHOTS = 1;
-        // fileType = -1;
-        // clearSpArray();
-        // clearCounterArray();
-        // setDrawEnable(0, 0);
+        diactiveDiagnosticFrame(STATUS_ENTRY_TEXT);
+        setDrawEnable(1, 0, 0, 0);
 
+        std::string archive_name;
         std::string srf_file_folder;
         std::string convolution_file_folder;
         std::string raman_file;
@@ -2361,19 +2040,9 @@ void ThomsonGUI::CountSeveralShot()
         int type;
 
         readFileInput(fin, srf_file_folder, convolution_file_folder, raman_file, archive_name, error_file_name, work_mask_string, processing_parameters, type);
-        //std::getline(fin, srf_file_folder);
-        //std::getline(fin, convolution_file_folder);
-        //std::getline(fin, raman_file);
-        //std::getline(fin, archive_name);
-        //std::getline(fin, error_file_name);
 
         readError(error_file_name.c_str(), sigmaCoeff);
         readRamanCrossSection(raman_file.c_str());
-
-        
-        // for (uint i = 0; i < N_SPECTROMETERS; i++)
-        //    std::getline(fin, work_mask_string[i]);
-
 
         if (!fin.fail())
         {
@@ -2386,50 +2055,34 @@ void ThomsonGUI::CountSeveralShot()
             }
 
             shotArray.clear();
-            shotArray = createArrayShots();
+            shotArray = createArrayShots(archive_name);
             N_SHOTS = shotArray.size();
-            //for (auto it : shotArray)
-            //    std::cout << it << "\n";
-            //std::cout << "\n";
 
-
-            //std::string parameters_file_name;
-            //fin >> parameters_file_name;
             std::vector <parray> parametersArray = readParametersToSignalProcessing(processing_parameters);
 
             if (!fin.fail() && shotArray.size() != 0)
             {
-                countType = isSetofShots;
-                //nTimeListSetOfShots = numberTimeListsSetofShots->GetNumber();
-                nTimeListSetOfShots = N_TIME_LIST;
-                /*if (nTimeListSetOfShots != N_TIME_LIST)
-                {
-                    checkButtonDrawTimeSetOfShots.front()->SetState(kButtonUp);
-                    checkButtonDrawTimeSetOfShots.front()->SetEnabled(false);
-                }
-                else {
-                    checkButtonDrawTimeSetOfShots.front()->SetEnabled(true);
-                    checkButtonDrawTimeSetOfShots.front()->SetState(checkButtonDrawTimeSetOfShots.front()->IsDown() ? kButtonDown : kButtonUp);
-                }*/
+                countType = CountType::SetOfShots;
+
                 clearSpArray();
                 clearCounterArray();
-                spArray.reserve(N_SPECTROMETERS*nTimeListSetOfShots*N_SHOTS);
-                counterArray.reserve(N_SPECTROMETERS*nTimeListSetOfShots*N_SHOTS);
+                spArray.reserve(N_SPECTROMETERS*N_TIME_LIST*N_SHOTS);
+                counterArray.reserve(N_SPECTROMETERS*N_TIME_LIST*N_SHOTS);
                 uint index = 0;
                 for (uint shot : shotArray)
                 {
-                    statusEntrySetOfShots->SetText(TString::Format("count start, shot %u", shot));
-                    gClient->ForceRedraw();
-                    gSystem->ProcessEvents();
-                    processingSignalsData(archive_name.c_str(), shot, parametersArray, false, nTimeListSetOfShots);
-                    countThomson(srf_file_folder, convolution_file_folder, shot, false, type, index, cheakButtonCountThomsonSeveralShots->IsDown());
+                    changeStatusText(statusEntrySetOfShots, TString::Format("count start, shot %u", shot));
+                    // statusEntrySetOfShots->SetText(TString::Format("count start, shot %u", shot));
+                    // gClient->ForceRedraw();
+                    // gSystem->ProcessEvents();
+                    processingSignalsData(archive_name.c_str(), shot, parametersArray, false);
+                    countThomson(archive_name, srf_file_folder, convolution_file_folder, shot, false, type, index, cheakButtonCountThomsonSeveralShots->IsDown());
                     index++;
                 }
             }
 
             statusEntrySetOfShots->SetText("ready");
             std::cout << "обработка сигналов завершена!\n\n";
-
         }
 
     }
@@ -2443,12 +2096,10 @@ void ThomsonGUI::CountSeveralShot()
 
 void ThomsonGUI::DrawSetOfShots()
 {
-    if (countType != isSetofShots)
+    if (countType != CountType::SetOfShots)
         return;
 
     uint nSpectrometer = spectrometerNumberSetofShots->GetNumber();
-    uint nTimeLists = nTimeListSetOfShots;
-    //uint nTimePage = timePageNumberSetofShots->GetNumber();
     uint nChannel = channelNumberSetofShots->GetNumber();
     double Emin = minEnergy->GetNumber();
     double Emax = maxEnergy->GetNumber();
@@ -2523,7 +2174,6 @@ void ThomsonGUI::DrawSetOfShots()
                     neError[sp] = neErrorFull[sp + N_SPECTROMETERS*it];
                 }
 
-                //countNWithCalibration(ne, neError, it, shot_from_several_shots);
                 ThomsonDraw::draw_result_from_r(c, mg, xPosition, ne, neError, 21, 1.5, color_map[it], 1, 7, color_map[it], timeLabel(it, time_points), false);
             }
 
@@ -2537,29 +2187,52 @@ void ThomsonGUI::DrawSetOfShots()
         }
         if (checkButton(drawCompareSignalWithSynthectic) && active == 1)
         {
+            uint NxUpdate = Nx;
+            uint NyUpdate = Ny;
+            uint nTimePage = 0;
+            for (uint it = 0; it < N_TIME_LIST; it++)
+                if (checkButtonDrawTimeSetOfShots[it]->IsDown())
+                    nTimePage = it;
 
+            TString canvas_name = "synthetic_signal_set_of_shots";
+            TCanvas *c = ThomsonDraw::createCanvas(canvas_name, canvasTitle(canvas_name, 0, nTimePage), width, height, NxUpdate, NyUpdate);
+            uint index = 1;
+            darray signal(N_CHANNELS, 0.);
+            darray signal_error(N_CHANNELS, 0.);
+            for (uint i = 0; i < N_SPECTROMETERS; i++)
+            {
+                // if (!checkButtonDrawSpectrometers[i]->IsDown())
+                //     continue;
+                c->cd(index);
+                index++;
+                ThomsonCounter *counter = getThomsonCounter(nTimePage, i);
+                darray syntchetic = counter->countSyntheticSignal(TeFull[i+nTimePage*N_SPECTROMETERS], neFull[i+nTimePage*N_SPECTROMETERS], true);
+                THStack *hs = ThomsonDraw::createHStack(groupName(canvas_name, i, "hs_"), spectrometerName(i, counter->countRMSE(syntchetic, signal, signal_error, true))); //нужно посчитать правильное rmse
+                ThomsonDraw::draw_compare_signals(c, hs, N_WORK_CHANNELS, signal, signal_error, syntchetic, work_mask[i], true); //нужно поставить правильный сигнал
+            }
+            c->Modified();
+            c->Update();
         }
     }
-
 
     if (active != 0)
     {
         if (checkButton(drawSignalStatisticSetofShots))
         {
             darray signal;
-            signal.reserve(nTimeLists*N_SHOTS);
+            signal.reserve(N_TIME_LIST*N_SHOTS);
 
             for (uint in = 0; in < N_SHOTS; in++)
             {
-                uint index = nTimeLists == N_TIME_LIST ? 0 : 1;
-                for (uint it = 0; it < nTimeLists; it++)
+                uint index = 0;
+                for (uint it = 0; it < N_TIME_LIST; it++)
                 {
-                    double E = getSignalProcessing(it, NUMBER_ENERGY_SPECTROMETER, in, nTimeLists)->getSignals()[NUMBER_ENERGY_CHANNEL];
+                    double E = getSignalProcessing(it, NUMBER_ENERGY_SPECTROMETER, in)->getSignals()[NUMBER_ENERGY_CHANNEL];
                     if (checkButtonDrawTimeSetOfShots[index]->IsDown() && (Emax <= Emin || (E >= Emin && E <= Emax)))
-                        signal.push_back(getSignalProcessing(it, nSpectrometer, in, nTimeLists)->getSignals()[nChannel]);
+                        signal.push_back(getSignalProcessing(it, nSpectrometer, in)->getSignals()[nChannel]);
                     index++;
                     if (index == N_TIME_LIST)
-                        index = nTimeLists == N_TIME_LIST ? 0 : 1;
+                        index = 0;
                 }
             }
 
@@ -2589,18 +2262,18 @@ void ThomsonGUI::DrawSetOfShots()
         if (checkButton(drawSignalToEnergyStatisticSetofShots))
         {
             darray signal;
-            signal.reserve(nTimeLists*N_SHOTS);
+            signal.reserve(N_TIME_LIST*N_SHOTS);
             for (uint in = 0; in < N_SHOTS; in++)
             {
-                uint index = nTimeLists == N_TIME_LIST ? 0 : 1;
-                for (uint it = 0; it < nTimeLists; it++)
+                uint index = 0;
+                for (uint it = 0; it < N_TIME_LIST; it++)
                 {
-                    double E = getSignalProcessing(it, NUMBER_ENERGY_SPECTROMETER, in, nTimeLists)->getSignals()[NUMBER_ENERGY_CHANNEL];
+                    double E = getSignalProcessing(it, NUMBER_ENERGY_SPECTROMETER, in)->getSignals()[NUMBER_ENERGY_CHANNEL];
                     if (checkButtonDrawTimeSetOfShots[index]->IsDown() && (Emax <= Emin || (E >= Emin && E <= Emax)))
-                        signal.push_back(getSignalProcessing(it, nSpectrometer, in, nTimeLists)->getSignals()[nChannel] / E);
+                        signal.push_back(getSignalProcessing(it, nSpectrometer, in)->getSignals()[nChannel] / E);
                     index++;
                     if (index == N_TIME_LIST)
-                        index = nTimeLists == N_TIME_LIST ? 0 : 1;
+                        index = 0;
                 }
             }
 
@@ -2629,17 +2302,17 @@ void ThomsonGUI::DrawSetOfShots()
         if (checkButton(drawEnergyStatisticSetofShots))
         {
             darray signal;
-            signal.reserve(nTimeLists*N_SHOTS);
+            signal.reserve(N_TIME_LIST*N_SHOTS);
             for (uint in = 0; in < N_SHOTS; in++)
             {
-                uint index = nTimeLists == N_TIME_LIST ? 0 : 1;
-                for (uint it = 0; it < nTimeLists; it++)
+                uint index = 0;
+                for (uint it = 0; it < N_TIME_LIST; it++)
                 {
                     if (checkButtonDrawTimeSetOfShots[index]->IsDown())
-                        signal.push_back(getSignalProcessing(it, NUMBER_ENERGY_SPECTROMETER, in, nTimeLists)->getSignals()[NUMBER_ENERGY_CHANNEL]);
+                        signal.push_back(getSignalProcessing(it, NUMBER_ENERGY_SPECTROMETER, in)->getSignals()[NUMBER_ENERGY_CHANNEL]);
                     index++;
                     if (index == N_TIME_LIST)
-                        index = nTimeLists == N_TIME_LIST ? 0 : 1;
+                        index = 0;
                 }
             }
 
