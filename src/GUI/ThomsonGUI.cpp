@@ -2185,7 +2185,7 @@ void ThomsonGUI::DrawSetOfShots()
             c->Modified();
             c->Update();
         }
-        if (checkButton(drawCompareSignalWithSynthectic) && active == 1)
+        if (checkButton(drawCompareSignalWithSynthectic))
         {
             uint NxUpdate = Nx;
             uint NyUpdate = Ny;

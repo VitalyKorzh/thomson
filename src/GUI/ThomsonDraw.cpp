@@ -408,8 +408,8 @@ void ThomsonDraw::draw_compare_signals(TCanvas *c, THStack *hs, uint NChannel, c
         {
             signalN[i] = signal[i];
             signalNE[i] = signal_error[i];
+            signalNCount[i] = countSignal[i];
         }
-        signalNCount[i] = countSignal[i];
     }
 
     hs->Add(createHist(NChannel, 0., NChannel, signalN.data(), 1, 1, 2, "", signalNE.data()));
