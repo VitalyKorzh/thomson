@@ -47,6 +47,7 @@ bool readSRF(std::string filename, darray &SRF, double &lMin, double &lMax, doub
             else if (N_LAMBDA == 1)
                 dl = l - lMin;
             N_LAMBDA++;
+            lMax = l;
         }
         
         darray SRF_TEMP(SRF.size());

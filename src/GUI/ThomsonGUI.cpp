@@ -232,7 +232,7 @@ void ThomsonGUI::processingSignalsData(const char *archive_name, int shot, const
 
 bool ThomsonGUI::countThomson(const std::string &archive_name, const std::string &srf_file_folder, const std::string &convolution_file_folder, int shot, bool clearArray, int selectionMethod, uint shot_index, bool count)
 {
-    bool thomsonSuccess = true;
+    //bool thomsonSuccess = true;
     if (clearArray) clearCounterArray();
     counterArray.reserve(counterArray.size()+N_SPECTROMETERS*N_TIME_LIST);
 
@@ -269,10 +269,10 @@ bool ThomsonGUI::countThomson(const std::string &archive_name, const std::string
             double energy = getSignalProcessing(it, NUMBER_ENERGY_SPECTROMETER, shot_index)->getSignals()[NUMBER_ENERGY_CHANNEL];
             ThomsonCounter * counter = new ThomsonCounter(N_CHANNELS, srf_file_name, convolution_file_name, *getSignalProcessing(it, sp, shot_index), calibrations[sp*N_SPECTROMETER_CALIBRATIONS+ID_THETA], Ki,
             darray(N_CHANNELS, 0), energy, 0, time_points[it], x_positon, LAMBDA_REFERENCE, selectionMethod);
-            if (!counter->isWork()) {
-                thomsonSuccess = false;
-                break;
-            }
+            // if (!counter->isWork()) {
+            //     thomsonSuccess = false;
+            //     break;
+            // }
 
             if (count)
             {
@@ -284,8 +284,8 @@ bool ThomsonGUI::countThomson(const std::string &archive_name, const std::string
             tempCounter[sp*N_TIME_LIST+it] = counter;
         }
 
-        if (!thomsonSuccess)
-            break;
+        // if (!thomsonSuccess)
+        //     break;
     }
 
     for (ThomsonCounter *counter : tempCounter)
@@ -294,7 +294,7 @@ bool ThomsonGUI::countThomson(const std::string &archive_name, const std::string
             counterArray.push_back(counter);
     }
 
-    return thomsonSuccess;
+    return true;
 }
 
 SignalProcessing *ThomsonGUI::getSignalProcessing(uint it, uint sp, uint nShot) const
@@ -2369,8 +2369,7 @@ void ThomsonGUI::Calibrate()
         double lMax;
         double dl;
         uint NLambda;
-        uint NChannels;
-        readSRF(srf_file, srf, lMin, lMax, dl, NLambda, NChannels);
+        readSRF(srf_file, srf, lMin, lMax, dl, NLambda, N_CHANNELS);
         lambda.resize(NLambda);
         for (uint j = 0; j < NLambda; j++)
             lambda[j] = lMin + dl*j;
