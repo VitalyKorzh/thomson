@@ -114,10 +114,10 @@ void ThomsonDraw::srf_draw(TCanvas *c, TMultiGraph *mg, const darray &SRF, uint 
     {
         if (Te[i] > 0)
         {
-            darray S = countSArray(N_LAMBDA, lMin, dl, countA(Te[i]), 1., theta[i], lambda_reference);
+            darray S = countSArray(N_LAMBDA, lMin, dl, countA(Te[i]), SNorma(18., theta[i]), theta[i], lambda_reference);
 
-            for (uint j = 0; j < S.size(); j++)
-                S[j] /= S.back();
+            // for (uint j = 0; j < S.size(); j++)
+            //     S[j] /= S.back();
 
             mg->Add(createGraph(N_LAMBDA, lambda.data(), S.data(), color, 1, 2, TString::Format("Te=%.2f", Te[i])));
         }
