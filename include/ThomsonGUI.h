@@ -17,6 +17,7 @@
 #include <TFile.h>
 #include <TGCanvas.h>
 #include <TGScrollBar.h>
+#include <TTimer.h>
 
 #include "thomsonCounter/SignalProcessing.h"
 #include "thomsonCounter/ThomsonCounter.h"
@@ -159,6 +160,10 @@ private:
     std::vector <std::pair<double, double>> sigmaCoeff;
 
 
+    TGCheckButton *clockMode;
+    TTimer *timer;
+
+
     TString spectrometerName(uint sp, double rmse=-1.) {
         if (rmse < 0)
             return TString::Format("spectrometer %u", sp);
@@ -270,6 +275,8 @@ public:
     void CountSeveralShot();
     void DrawSetOfShots();
     void Calibrate();
+    void ClockClicked();
+    void Update();
 
     void run();
     ~ThomsonGUI();

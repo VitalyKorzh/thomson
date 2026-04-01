@@ -850,7 +850,7 @@ ThomsonGUI::ThomsonGUI(const TGWindow *p, UInt_t width, UInt_t height, TApplicat
     NUMBER_ENERGY_SPECTROMETER(NUMBER_ENERGY_SPECTROMETER), NUMBER_ENERGY_CHANNEL(NUMBER_ENERGY_CHANNEL),
     N_SPECTROMETER_CALIBRATIONS(N_SPECTROMETER_CALIBRATIONS), N_WORK_CHANNELS(N_WORK_CHANNELS),
     app(app), N_SHOTS(1),countType(CountType::None), 
-    work_mask(N_SPECTROMETERS, barray(N_CHANNELS))
+    work_mask(N_SPECTROMETERS, barray(N_CHANNELS)), timer(nullptr)
 {
     SetCleanup(kDeepCleanup);
 
@@ -1034,14 +1034,17 @@ ThomsonGUI::ThomsonGUI(const TGWindow *p, UInt_t width, UInt_t height, TApplicat
         TGHorizontalFrame *hframe_button = new TGHorizontalFrame(fTTu, width, 80);
         fTTu->AddFrame(hframe_button, new TGLayoutHints(kLHintsExpandX| kLHintsBottom, 5, 5, 5,  10));
         TGButton *drawButton = new TGTextButton(hframe_button, "Draw");
+        clockMode = new TGCheckButton(hframe_button, "clock");
         drawButton->Connect("Clicked()", CLASS_NAME, this, "DrawGraphs()");
         drawButton->Connect("Clicked()", CLASS_NAME, this, "PrintInfo()");
+        clockMode->Connect("Clicked)()", CLASS_NAME, this, "ClockClicked()");
+        clockMode->SetToolTipText("update graphs evry 30 s if is new shot");
 
 
         drawButton->SetToolTipText("draw selected graphs");
         
         hframe_button->AddFrame(drawButton, new TGLayoutHints(kLHintsLeft, 5, 5, 5, 5));
-
+        hframe_button->AddFrame(clockMode, new TGLayoutHints(kLHintsRight, 5, 5, 5, 5));
 
         statusEntry = new TGTextEntry(hframe_button, STATUS_ENTRY_TEXT);
         statusEntry->SetWidth(130);
@@ -1302,6 +1305,10 @@ ThomsonGUI::ThomsonGUI(const TGWindow *p, UInt_t width, UInt_t height, TApplicat
     SetWindowName("Thomson");
     Resize();
     SetWMSizeHints(width, height, width, height, width, height);
+
+
+    timer = new TTimer(30000, kFALSE); //30 секунд
+    timer->Connect("Timeout()", CLASS_NAME, this, "Update()");
 }
 
 void ThomsonGUI::ReadMainFile()
@@ -2027,6 +2034,7 @@ void ThomsonGUI::CountSeveralShot()
 
     if (fin.is_open())
     {
+        ClockClicked();
         diactiveDiagnosticFrame(STATUS_ENTRY_TEXT);
         setDrawEnable(1, 0, 0, 0);
 
@@ -2400,6 +2408,78 @@ void ThomsonGUI::Calibrate()
         channel_result[i]->SetNumber(Ki[i]*1e-13);
 }
 
+void ThomsonGUI::ClockClicked()
+{
+    if (!clockMode->IsDown() || (std::string) mainFileTextEntry->GetText() == "" || countType == CountType::SetOfShots) {
+        std::cout << "timer stop\n";
+        clockMode->SetState(kButtonUp);
+        timer->Stop();
+    }
+    else
+    {
+        std::cout << "timer start\n"; 
+        timer->Start();
+    }
+}
+
+void ThomsonGUI::Update()
+{
+    std::cout << "запуск!\n";
+
+    int shot = shotNumber->GetNumber();
+    TString fileName = mainFileTextEntry->GetText();
+
+
+    if (countType == CountType::SetOfShots || fileName == "")
+    {
+        ClockClicked();
+    }
+    else if (shot == 0)
+    {
+        std::ifstream fin;
+        fin.open(fileName);
+        
+        if (fin.is_open())
+        {
+            std::string archive_name;
+            std::string srf_file_folder;
+            std::string convolution_file_folder;
+            std::string raman_file;
+            std::string error_file_name;
+            std::string work_mask_string[N_SPECTROMETERS];
+            std::string processing_parameters;
+            int type;
+            readFileInput(fin, srf_file_folder, convolution_file_folder, raman_file, archive_name, error_file_name, work_mask_string, processing_parameters, type);
+            OpenArchive(archive_name.c_str());
+            shot = getShot(shot);
+            CloseArchive();
+            fin.close();
+        }
+
+        if (shot == 0)
+        {
+            std::cerr << "не удалось прочитать: " << fileName;
+        }
+        else if ((uint) shot == shotDiagnostic)
+        {
+            std::cerr << "Выстрел не изменился обновление не нужно!\n";
+        }
+        else
+        {
+            std::cout << "Расчёт начился!\n";
+            ReadMainFile();
+            DrawGraphs();
+        }
+
+    }
+    else
+    {
+        std::cout << "Указан не 0 обнолвение не используется\n";
+    }
+
+
+}
+
 void ThomsonGUI::run()
 {
     MapSubwindows();
@@ -2418,6 +2498,9 @@ ThomsonGUI::~ThomsonGUI()
     delete[] thetaCalibration;
     delete[] xPositionCalibration;
     delete[] nCalibrationCoeff;
+
+    timer->Stop();
+    delete timer;
 
     app->Terminate();
     delete app;
