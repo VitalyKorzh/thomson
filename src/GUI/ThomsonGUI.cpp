@@ -842,7 +842,8 @@ ThomsonGUI::ThomsonGUI(const TGWindow *p, UInt_t width, UInt_t height, TApplicat
                 double LAMBDA_REFERENCE, uint N_TIME_SIZE, uint UNUSEFULL,
                 uint N_TIME_LIST, uint N_SPECTROMETERS, uint N_CHANNELS,
                 uint NUMBER_ENERGY_SPECTROMETER, uint NUMBER_ENERGY_CHANNEL,
-                uint N_SPECTROMETER_CALIBRATIONS, uint N_WORK_CHANNELS
+                uint N_SPECTROMETER_CALIBRATIONS, uint N_WORK_CHANNELS,
+                Long_t time_ms
 ) : TGMainFrame(p, width, height),
     KUST_NAME(KUST_NAME), CALIBRATION_NAME(CALIBRATION_NAME), LAMBDA_REFERENCE(LAMBDA_REFERENCE),
     N_TIME_SIZE(N_TIME_SIZE), UNUSEFULL(UNUSEFULL), N_TIME_LIST(N_TIME_LIST),
@@ -1038,7 +1039,7 @@ ThomsonGUI::ThomsonGUI(const TGWindow *p, UInt_t width, UInt_t height, TApplicat
         drawButton->Connect("Clicked()", CLASS_NAME, this, "DrawGraphs()");
         drawButton->Connect("Clicked()", CLASS_NAME, this, "PrintInfo()");
         clockMode->Connect("Clicked)()", CLASS_NAME, this, "ClockClicked()");
-        clockMode->SetToolTipText("update graphs evry 30 s if is new shot");
+        clockMode->SetToolTipText(TString::Format("update graphs evry %ld s if is new shot", time_ms/1000));
 
 
         drawButton->SetToolTipText("draw selected graphs");
@@ -1307,7 +1308,7 @@ ThomsonGUI::ThomsonGUI(const TGWindow *p, UInt_t width, UInt_t height, TApplicat
     SetWMSizeHints(width, height, width, height, width, height);
 
 
-    timer = new TTimer(30000, kFALSE); //30 секунд
+    timer = new TTimer(time_ms, kFALSE); //time_ms секунд
     timer->Connect("Timeout()", CLASS_NAME, this, "Update()");
 }
 

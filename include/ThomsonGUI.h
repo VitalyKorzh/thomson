@@ -260,7 +260,8 @@ public:
                 double LAMBDA_REFERENCE=1064., uint N_TIME_SIZE=1000., uint UNUSEFULL=48,
                 uint N_TIME_LIST=11, uint N_SPECTROMETERS=6, uint N_CHANNELS=8,
                 uint NUMBER_ENERGY_SPECTROMETER=2, uint NUMBER_ENERGY_CHANNEL=7,
-                uint N_SPECTROMETER_CALIBRATIONS=3, uint N_WORK_CHANNELS=6
+                uint N_SPECTROMETER_CALIBRATIONS=3, uint N_WORK_CHANNELS=6,
+                Long_t time_ms=10000
     );
 
     void ReadMainFile();
