@@ -1039,7 +1039,7 @@ ThomsonGUI::ThomsonGUI(const TGWindow *p, UInt_t width, UInt_t height, TApplicat
         drawButton->Connect("Clicked()", CLASS_NAME, this, "DrawGraphs()");
         drawButton->Connect("Clicked()", CLASS_NAME, this, "PrintInfo()");
         clockMode->Connect("Clicked)()", CLASS_NAME, this, "ClockClicked()");
-        clockMode->SetToolTipText(TString::Format("update graphs evry %ld s if is new shot", time_ms/1000));
+        clockMode->SetToolTipText(TString::Format("update graphs every %ld s if is new shot", time_ms/1000));
 
 
         drawButton->SetToolTipText("draw selected graphs");
