@@ -2425,8 +2425,6 @@ void ThomsonGUI::ClockClicked()
 
 void ThomsonGUI::Update()
 {
-    std::cout << "запуск!\n";
-
     int shot = shotNumber->GetNumber();
     TString fileName = mainFileTextEntry->GetText();
 
@@ -2467,7 +2465,6 @@ void ThomsonGUI::Update()
         }
         else
         {
-            std::cout << "Расчёт начился!\n";
             ReadMainFile();
             DrawGraphs();
         }
