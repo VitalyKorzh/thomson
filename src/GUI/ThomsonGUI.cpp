@@ -605,24 +605,71 @@ void ThomsonGUI::writeResultTableToFile(const char *file_name) const
 
     if (fout.is_open())
     {
+        fout << "shot: " << shotDiagnostic << "\n";
         darray xPosition(N_SPECTROMETERS);
+        darray timePoints(N_TIME_LIST);
         for (uint i = 0; i < N_SPECTROMETERS; i++)
             xPosition[i] = getThomsonCounter(0, i)->getXPositon();
-        fout << std::scientific;
-        fout.precision(10);
-        fout << "X\tTe\tTeError\tne\tneError\n";
-        fout << "mm\teV\teV\t10^13 cm^-3\t10^13 cm^-3\n";
-        fout << "Radius\tTe\tTe error\tne\t ne error\n";
+        for (uint i = 0; i < N_TIME_LIST; i++)
+            timePoints[i] = getThomsonCounter(i, NUMBER_ENERGY_SPECTROMETER)->getTimePoint();
 
-        for (uint it = 0; it < N_TIME_LIST; it++)
+        fout << "X\tTe\tTeError\tne\tneError\n";
+        for (uint sp = 0; sp < N_SPECTROMETERS; sp++)
         {
+            fout << xPosition[sp] << "\t";
+            for (uint it = N_FIRST_WORK_TIME_PAGE; it < N_TIME_LIST; it++)
+            {
+                ThomsonCounter *counter = getThomsonCounter(it, sp);        
+                fout << counter->getT() << "\t" << counter->getTError() << "\t" << counter->getN() << "\t" << counter->getNError() << "\t";
+            }
+            fout << "\n";
+        }
+
+        fout << "\nt\tTe\tTeError\tne\tneError\n";
+        for (uint it = N_FIRST_WORK_TIME_PAGE; it < N_TIME_LIST; it++)
+        {
+            fout << timePoints[it] << "\t";
             for (uint sp = 0; sp < N_SPECTROMETERS; sp++)
             {
-                ThomsonCounter *counter = getThomsonCounter(it, sp);
-                fout << xPosition[sp] << "\t" << counter->getT() << "\t" << counter->getTError() << "\t" << 
-                counter->getN() << "\t" << counter->getNError() << "\n";
+                ThomsonCounter *counter = getThomsonCounter(it, sp);        
+                fout << counter->getT() << "\t" << counter->getTError() << "\t" << counter->getN() << "\t" << counter->getNError() << "\t";
             }
+            fout << "\n";
         }
+
+        fout << "\nsignal\tsignalError\tsignalSyntch\n";
+        for (uint it = N_FIRST_WORK_TIME_PAGE; it < N_TIME_LIST; it++)
+        {
+            fout << "it=" << it << "\n";
+
+            for (uint ch = 0; ch < N_WORK_CHANNELS; ch++)
+            {
+                for (uint sp = 0; sp < N_SPECTROMETERS; sp++)
+                {
+                    ThomsonCounter *counter = getThomsonCounter(it, sp);
+                    fout << counter->getSignal()[ch] << "\t" << counter->getSignalError()[ch] << "\t" << counter->getSignalResult()[ch] << "\t";
+                }
+                fout << "\n";
+            }
+
+        }
+
+
+        // fout << std::scientific;
+        // fout.precision(10);
+        // fout << "X\tTe\tTeError\tne\tneError\n";
+        // fout << "mm\teV\teV\t10^13 cm^-3\t10^13 cm^-3\n";
+        // fout << "Radius\tTe\tTe error\tne\t ne error\n";
+
+        // for (uint it = 0; it < N_TIME_LIST; it++)
+        // {
+        //     for (uint sp = 0; sp < N_SPECTROMETERS; sp++)
+        //     {
+        //         ThomsonCounter *counter = getThomsonCounter(it, sp);
+        //         fout << xPosition[sp] << "\t" << counter->getT() << "\t" << counter->getTError() << "\t" << 
+        //         counter->getN() << "\t" << counter->getNError() << "\n";
+        //     }
+        // }
 
     }
 
@@ -843,6 +890,7 @@ ThomsonGUI::ThomsonGUI(const TGWindow *p, UInt_t width, UInt_t height, TApplicat
                 uint N_TIME_LIST, uint N_SPECTROMETERS, uint N_CHANNELS,
                 uint NUMBER_ENERGY_SPECTROMETER, uint NUMBER_ENERGY_CHANNEL,
                 uint N_SPECTROMETER_CALIBRATIONS, uint N_WORK_CHANNELS,
+                uint N_FIRST_WORK_TIME_PAGE,
                 Long_t time_ms
 ) : TGMainFrame(p, width, height),
     KUST_NAME(KUST_NAME), CALIBRATION_NAME(CALIBRATION_NAME), LAMBDA_REFERENCE(LAMBDA_REFERENCE),
@@ -850,6 +898,7 @@ ThomsonGUI::ThomsonGUI(const TGWindow *p, UInt_t width, UInt_t height, TApplicat
     N_SPECTROMETERS(N_SPECTROMETERS), N_CHANNELS(N_CHANNELS),
     NUMBER_ENERGY_SPECTROMETER(NUMBER_ENERGY_SPECTROMETER), NUMBER_ENERGY_CHANNEL(NUMBER_ENERGY_CHANNEL),
     N_SPECTROMETER_CALIBRATIONS(N_SPECTROMETER_CALIBRATIONS), N_WORK_CHANNELS(N_WORK_CHANNELS),
+    N_FIRST_WORK_TIME_PAGE(N_FIRST_WORK_TIME_PAGE),
     app(app), N_SHOTS(1),countType(CountType::None), 
     work_mask(N_SPECTROMETERS, barray(N_CHANNELS)), timer(nullptr)
 {
@@ -926,7 +975,7 @@ ThomsonGUI::ThomsonGUI(const TGWindow *p, UInt_t width, UInt_t height, TApplicat
         }
 
         TGLabel *labelTimeList = new TGLabel(vframeTimeList, "time page");
-        timeListNumber = new TGNumberEntry(vframeTimeList, 1, 4, -1, TGNumberFormat::kNESInteger,
+        timeListNumber = new TGNumberEntry(vframeTimeList, N_FIRST_WORK_TIME_PAGE, 4, -1, TGNumberFormat::kNESInteger,
                                             TGNumberFormat::kNEANonNegative, TGNumberEntry::kNELLimitMinMax, 0, N_TIME_LIST-1);
         
         vframeTimeList->AddFrame(labelTimeList, new TGLayoutHints(kLHintsLeft,0,0,5,5));
@@ -947,7 +996,7 @@ ThomsonGUI::ThomsonGUI(const TGWindow *p, UInt_t width, UInt_t height, TApplicat
 
 
         TGLabel *labelTimeInfo = new TGLabel(vframeTimeInfo, "time page");
-        timeListNumberInfo = new TGNumberEntry(vframeTimeInfo, 1, 4, -1, TGNumberFormat::kNESInteger,
+        timeListNumberInfo = new TGNumberEntry(vframeTimeInfo, N_FIRST_WORK_TIME_PAGE, 4, -1, TGNumberFormat::kNESInteger,
                                             TGNumberFormat::kNEANonNegative, TGNumberEntry::kNELLimitMinMax, 0, N_TIME_LIST-1);
 
         vframeTimeInfo->AddFrame(labelTimeInfo, new TGLayoutHints(kLHintsLeft, 0, 0, 5, 5));
@@ -1001,7 +1050,9 @@ ThomsonGUI::ThomsonGUI(const TGWindow *p, UInt_t width, UInt_t height, TApplicat
             checkButtonDrawTime.back()->SetToolTipText(TString::Format("time page %u draw", i));
             hframeTimeButton->AddFrame(checkButtonDrawTime.back(), new TGLayoutHints(kLHintsLeft, 1,1,7,7));
         }
-        checkButtonDrawTime.front()->SetState(kButtonUp);
+
+        for (uint i = 0; i < N_FIRST_WORK_TIME_PAGE; i++)
+            checkButtonDrawTime[i]->SetState(kButtonUp);
 
         drawEnergySignals = new TGCheckButton(vframeTimeDraw, "draw Laser energy signal");
         drawTemperatureRDependenceAll = new TGCheckButton(vframeTimeDraw, "draw Te(r)");
@@ -1761,11 +1812,11 @@ void ThomsonGUI::DrawGraphs()
                 if (!checkButtonDrawSpectrometersFromTime[i]->IsDown())
                     continue;
 
-                for (uint it = 1; it < N_TIME_LIST; it++)
+                for (uint it = N_FIRST_WORK_TIME_PAGE; it < N_TIME_LIST; it++)
                 {
-                    t[it-1] = time_points[it]; 
-                    Te[it-1] = getThomsonCounter(it, i, shot_from_several_shots)->getT();
-                    TeError[it-1] = getThomsonCounter(it, i, shot_from_several_shots)->getTError();
+                    t[it-N_FIRST_WORK_TIME_PAGE] = time_points[it]; 
+                    Te[it-N_FIRST_WORK_TIME_PAGE] = getThomsonCounter(it, i, shot_from_several_shots)->getT();
+                    TeError[it-N_FIRST_WORK_TIME_PAGE] = getThomsonCounter(it, i, shot_from_several_shots)->getTError();
                 }
 
                 ThomsonDraw::draw_result_from_r(c, mg, t, Te, TeError, 21, 1.5, color_map[i+1], 1, 7, color_map[i+1], rLabel(i, xPosition), false);
@@ -1797,11 +1848,11 @@ void ThomsonGUI::DrawGraphs()
                 if (!checkButtonDrawSpectrometersFromTime[i]->IsDown())
                     continue;
 
-                for (uint it = 1; it < N_TIME_LIST; it++)
+                for (uint it = N_FIRST_WORK_TIME_PAGE; it < N_TIME_LIST; it++)
                 {
-                    t[it-1] = time_points[it];
-                    ne[it-1]= getThomsonCounter(it, i, shot_from_several_shots)->getN();
-                    neError[it-1] = getThomsonCounter(it, i, shot_from_several_shots)->getNError();
+                    t[it-N_FIRST_WORK_TIME_PAGE] = time_points[it];
+                    ne[it-N_FIRST_WORK_TIME_PAGE]= getThomsonCounter(it, i, shot_from_several_shots)->getN();
+                    neError[it-N_FIRST_WORK_TIME_PAGE] = getThomsonCounter(it, i, shot_from_several_shots)->getNError();
                 }
 
                 ThomsonDraw::draw_result_from_r(c, mg, t, ne, neError, 21, 1.5, color_map[i+1], 1, 7, color_map[i+1], rLabel(i, xPosition), false);
