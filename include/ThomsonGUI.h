@@ -279,6 +279,7 @@ public:
     void Calibrate();
     void ClockClicked();
     void Update();
+    void LoadRaman();
 
     void run();
     ~ThomsonGUI();

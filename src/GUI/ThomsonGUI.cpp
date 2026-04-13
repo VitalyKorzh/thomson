@@ -29,7 +29,8 @@ ClassImp(ThomsonGUI)
 // калибровка записана X THETA COEFF
 #define ID_X 0 
 #define ID_THETA 1
-#define ID_N_COEFF 2
+#define ID_N_COEFF_CHANNEL_1 2
+#define ID_N_COEFF_CHANNEL_2 3
 
 #define STATUS_ENTRY_TEXT "press count"
 
@@ -112,7 +113,7 @@ darray ThomsonGUI::readCalibration(const char *archive_name, const char *calibra
 
     if (TFile *file=OpenArchive(archive_name)) 
     {
-        
+
         getShot(shot);
 
         TString shot_string = TString::Format("%d", shot);
@@ -138,6 +139,19 @@ darray ThomsonGUI::readCalibration(const char *archive_name, const char *calibra
     }
 
     CloseArchive();
+
+    // for (uint sp = 0; sp < N_SPECTROMETERS; sp++)
+    // {
+    //     for (uint cal = 0; cal < N_SPECTROMETER_CALIBRATIONS; cal++)
+    //     {
+    //         uint index = sp*N_SPECTROMETER_CALIBRATIONS + cal;
+    //         std::cout << calibration[index] << " ";
+    //     }
+    //     std::cout << "\n";
+    // }
+
+    // for (uint i = 0; i < calibration.size(); i++)
+    //     std::cout << calibration[i] << "\n";
 
     return calibration;
 }
@@ -262,7 +276,7 @@ bool ThomsonGUI::countThomson(const std::string &archive_name, const std::string
         std::string srf_file_name = srf_file_folder+"SRF_Spectro-" + std::to_string(sp+1)+".dat";
         std::string convolution_file_name = convolution_file_folder+"Convolution_Spectro-" + std::to_string(sp+1)+".dat";
 
-        darray Ki(N_CHANNELS, calibrations[sp*N_SPECTROMETER_CALIBRATIONS+ID_N_COEFF]);
+        darray Ki(N_CHANNELS, calibrations[sp*N_SPECTROMETER_CALIBRATIONS+ID_N_COEFF_CHANNEL_1]);
         double x_positon = -calibrations[sp*N_SPECTROMETER_CALIBRATIONS+ID_X]/10.;
         for (uint it = 0; it < N_TIME_LIST; it++)
         {
@@ -815,12 +829,27 @@ void ThomsonGUI::calibrateRaman(double P, double T, double theta, const darray &
     const double psi = E0/(kB*T); // безразмерный
     const uint I = 1; // ядерный спин
     const double Q = (2.*I+1)*(2.*I+1)/(2.*psi); // стат сумма
-    const double coeff = P / (kB*T*r0*r0*SNorma(LAMBDA_REFERENCE, theta)*Q); // возможно dsigma/dOmega = r0^2sin2(fi) где fi=90
+    const double Sn = SNorma(LAMBDA_REFERENCE, theta);
+    const double nN2 = P / (kB*T);
+    const double sigmaT = r0*r0;
+    const double POLIRIZATION_FACTOR = 1.75;
+    const double coeff = nN2 / (sigmaT*Sn*Q)*POLIRIZATION_FACTOR; // возможно dsigma/dOmega = r0^2sin2(fi) где fi=90
 
     double Q0 = 0;
 
+
+    std::cout << "########################################################################\n";
+    std::cout << "T = " << T << " К " << kB*T << " эрг\n";
+    std::cout << "nN2 = " << nN2 << " cm^-3\n";
+    std::cout << "E0 = " << E0 << " эрг " << E0 / 1.6e-12 << " эВ\n";
+    std::cout << "psi = " << psi << " отн. ед.\n";
+    std::cout << "Q = " << Q << "\n";
+    std::cout << "Sn = " << Sn << "\n";
+
+
     for (uint i = 0; i < N_WORK_CHANNELS; i++)
     {
+        Q0 = 0.;
         double coeff_i = 1./signalRaman_to_ERaman[i];
 
         uint J = 2;
@@ -840,13 +869,18 @@ void ThomsonGUI::calibrateRaman(double P, double T, double theta, const darray &
 
             double sigma = ls.second;
             double g = J % 2 == 0 ? 6 : 3;
+            double I_J = sigma*(2.*J+1.)*g*exp(-psi*J*(J+1.))/ Q*POLIRIZATION_FACTOR;
             sum += sigma*(2.*J+1.)*g*exp(-psi*J*(J+1.))*SRF_j;
             Q0 += (2.*J+1.)*g*exp(-psi*J*(J+1.));
+            if (i < 2)
+                std::cout << "channel = " << i << " J = " << J << " lambda_J = " << lambda_j << " sigma_J = " << sigma << " нм SRF_J = " << SRF_j << " I_J = " << I_J << " отн. ед. " <<
+                I_J * SRF_j << " SRF*I_J\n";
             J++;
         }
         Ki[i] = coeff*coeff_i*sum;
     }
-
+    std::cout << "Q0: " << Q0 << "\n";
+    std::cout << "########################################################################\n";
 }
 
 bool ThomsonGUI::readFileInput( std::ifstream &fin,
@@ -1236,6 +1270,11 @@ ThomsonGUI::ThomsonGUI(const TGWindow *p, UInt_t width, UInt_t height, TApplicat
         hframeParametersHist->AddFrame(text3, new TGLayoutHints(kLHintsLeft,5,5,10,10));  
         hframeParametersHist->AddFrame(maxSignalEntry, new TGLayoutHints(kLHintsLeft,5,5,5,5));
 
+
+        TGTextButton *loadRaman = new TGTextButton(hframeParametersHist, "Load");
+        hframeParametersHist->AddFrame(loadRaman, new TGLayoutHints(kLHintsRight,5,5,5,5));
+        loadRaman->Connect("Clicked()", CLASS_NAME, this, "LoadRaman()");
+
     }
 
     {
@@ -1464,7 +1503,7 @@ void ThomsonGUI::ReadCalibration()
         {
             xPositionCalibration[i]->SetNumber(calibration[N_SPECTROMETER_CALIBRATIONS*i+ID_X]);
             thetaCalibration[i]->SetNumber(calibration[N_SPECTROMETER_CALIBRATIONS*i+ID_THETA]*180./M_PI);
-            nCalibrationCoeff[i]->SetNumber(calibration[N_SPECTROMETER_CALIBRATIONS*i+ID_N_COEFF]);
+            nCalibrationCoeff[i]->SetNumber(calibration[N_SPECTROMETER_CALIBRATIONS*i+ID_N_COEFF_CHANNEL_1]);
         }
     }
     else {
@@ -1501,7 +1540,7 @@ void ThomsonGUI::WriteCalibration()
     {
         calibration[N_SPECTROMETER_CALIBRATIONS*i+ID_X] = xPositionCalibration[i]->GetNumber();
         calibration[N_SPECTROMETER_CALIBRATIONS*i+ID_THETA] = thetaCalibration[i]->GetNumber()*M_PI/180.;
-        calibration[N_SPECTROMETER_CALIBRATIONS*i+ID_N_COEFF] = nCalibrationCoeff[i]->GetNumber();
+        calibration[N_SPECTROMETER_CALIBRATIONS*i+ID_N_COEFF_CHANNEL_1] = nCalibrationCoeff[i]->GetNumber();
     }
 
     writeCalibration(archive_name.c_str(), CALIBRATION_NAME, calibration);
@@ -2527,6 +2566,80 @@ void ThomsonGUI::Update()
     }
 
 
+}
+
+void ThomsonGUI::LoadRaman()
+{
+    if (countType != CountType::SetOfShots)
+    {
+        std::cerr << "выстрелы не обработаны\n";
+        return;
+    }
+    std::cout << "load start\n";
+
+    darray angle = {96.704, 99.474, 102.158, 104.831, 107.439, 109.687};
+
+    uint nSpectrometer = spectrometerNumberSetofShots->GetNumber();
+    double Emin = minEnergy->GetNumber();
+    double Emax = maxEnergy->GetNumber();
+    double min = minSignalEntry->GetNumber();
+    double max = maxSignalEntry->GetNumber(); 
+    calibration_spectrometer->SetNumber(nSpectrometer);
+    thetaSpectrometer->SetNumber(angle[nSpectrometer]);
+
+    for (uint nChannel = 0; nChannel < 2; nChannel++)
+    {
+            channel_signal[nChannel]->SetNumber(-1);
+            darray signal;
+            signal.reserve(N_TIME_LIST*N_SHOTS);
+            for (uint in = 0; in < N_SHOTS; in++)
+            {
+                uint index = 0;
+                for (uint it = 0; it < N_TIME_LIST; it++)
+                {
+                    double E = getSignalProcessing(it, NUMBER_ENERGY_SPECTROMETER, in)->getSignals()[NUMBER_ENERGY_CHANNEL];
+                    if (checkButtonDrawTimeSetOfShots[index]->IsDown() && (Emax <= Emin || (E >= Emin && E <= Emax)))
+                        signal.push_back(getSignalProcessing(it, nSpectrometer, in)->getSignals()[nChannel] / E);
+                    index++;
+                    if (index == N_TIME_LIST)
+                        index = 0;
+                }
+            }
+
+            double mean = 0.;
+            uint element = 0.;
+            if (signal.size() > 0 && max >= min)
+            {
+
+                for (uint d = 0; d < signal.size(); d++)
+                {
+                    if (max == min || (signal[d] <= max && signal[d] >= min) )
+                    {
+                        mean += signal[d];
+                        element++;
+                    }
+                }
+
+                // uint nBins = nBinsEntry->GetNumber();
+
+                // if (min == max) {
+                //     min = *std::min_element(signal.begin(), signal.end())*1.-0.25;
+                //     max = *std::max_element(signal.begin(), signal.end())*1.+0.25;
+                // }
+
+                // TString canvas_name = TString::Format("signal_to_energy_statistics_sp_%u_ch_%u", nSpectrometer, nChannel);
+                // TCanvas *c = ThomsonDraw::createCanvas(canvas_name, canvas_name);
+                // THStack *hs=  ThomsonDraw::createHStack("hs_"+canvas_name, "");
+
+                // ThomsonDraw::draw_signal_statistics(c, hs, signal, min, max, nBins, true);
+                // hs->SetTitle(";V/E, a.u.;counts");
+                // c->Modified();
+                // c->Update();
+                channel_signal[nChannel]->SetNumber(mean/element);
+            }
+    }
+
+    Calibrate();
 }
 
 void ThomsonGUI::run()
