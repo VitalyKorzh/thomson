@@ -1226,6 +1226,9 @@ ThomsonGUI::ThomsonGUI(const TGWindow *p, UInt_t width, UInt_t height, TApplicat
             hframeBottom->AddFrame(checkButtonDrawTimeSetOfShots.back(), new TGLayoutHints(kLHintsLeft, 1,1,7,7));
         }
 
+        for (uint i = 0; i < N_FIRST_WORK_TIME_PAGE; i++)
+            checkButtonDrawTimeSetOfShots[i]->SetState(kButtonUp);
+
         statusEntrySetOfShots = new TGTextEntry(hframeBottom, STATUS_ENTRY_TEXT);
         statusEntrySetOfShots->SetWidth(130);
         statusEntrySetOfShots->SetEnabled(kFALSE);
