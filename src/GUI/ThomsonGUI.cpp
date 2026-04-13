@@ -1758,6 +1758,7 @@ void ThomsonGUI::DrawGraphs()
             }
 
             {
+                    mg->SetTitle(";t, ns;Ut, V*ns");
                     mg->GetXaxis()->CenterTitle();
                     mg->GetYaxis()->CenterTitle();
                     mg->Draw("A");
