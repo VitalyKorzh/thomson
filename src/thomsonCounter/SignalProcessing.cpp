@@ -82,6 +82,73 @@ double SignalProcessing::findZeroLine(const darray &t, const darray &U, uint cha
     return shift/use_points;
 }
 
+SignalProcessingParameters SignalProcessing::parametersAdaptive(const SignalProcessingParameters &par, const darray &t, const darray &U, uint channel)
+{
+    SignalProcessingParameters parameters = par;
+    uint index = channel*tSize;
+    double tmax=-1.;
+    double Umax = -1e100;
+    double t_minus = parameters.start_point_from_start_zero_line;
+    double t_plus = parameters.start_point_from_end_zero_line;
+
+    for (uint i = 0; i < tSize; i++)
+    {
+        if (Umax < U[index+i])
+        {
+            Umax = U[index+i];
+            tmax = t[index+i];
+        }
+    }
+
+    double t1 = tmax - t_minus;
+    double t2 = tmax + t_plus;
+
+    int i_start = -1;
+    int i_end = -1;
+
+
+    for (uint i = 0; i < tSize; i++)
+    {
+        if (t[index+i] >= t1 && i_start < 0)
+        {
+            i_start = i;
+        }
+        if (t[index+i] >= t2 && i_end < 0)
+        {
+            i_end = i;
+        }
+    }
+
+    //std::cout << t1 << " " << tmax << " " << t2 << " " << i_start << " " << i_end << "\n";
+
+    parameters.start_point_from_end_zero_line = 0;
+    parameters.step_from_end_zero_line = 0;
+    parameters.signal_point_step = 1;
+    parameters.start_point_from_start_zero_line = 0;
+    if (i_start < 0 || i_start >= (int)tSize)
+    {
+        parameters.step_from_start_zero_line = 1;
+        parameters.point_integrate_start = 0;
+    }
+    else
+    {
+        parameters.step_from_end_zero_line = i_start;
+        parameters.point_integrate_start = i_start;
+    }
+    if (i_end < 0 || i_start >= (int)tSize)
+    {
+        parameters.signal_point_start = tSize-1;
+    }
+    else
+    {
+        parameters.signal_point_start = i_end;
+    }
+
+
+    return parameters;
+}
+
+
 bool SignalProcessing::checkSignal(const darray &t, const darray &U, const darray &UTintegral, uint channel, double signal, double sigma, double threshold, int increase_point, int decrease_point, double klim, uint signal_point_start)
 {
     //std::cout << sigma << "\n";
@@ -184,7 +251,13 @@ SignalProcessing::SignalProcessing(const darray &t_full, const darray &U_full, u
 
     for (uint i = 0; i < N_CHANNELS; i++)
     {
-        SignalProcessingParameters parameters = this->parametersArray[i];
+        SignalProcessingParameters &parameters = this->parametersArray[i];
+
+        if (parameters.signal_point_start == (uint)-1)
+        {
+            parameters = parametersAdaptive(parameters, t_full, U_full, i);       
+        }
+
         double shift = findZeroLine(t_full, U_full, i, parameters.step_from_start_zero_line, parameters.step_from_end_zero_line, parameters.start_point_from_start_zero_line, parameters.start_point_from_end_zero_line);
         integrateSignal(t_full, U_full, i, shift, parameters.point_integrate_start);
         shiftSignal(U_full, i, shift);

@@ -71,6 +71,9 @@ private:
     double countChannelSignal(const darray &UTintegrate, uint channel, uint signal_point_start, uint signal_point_step) const;
     double countChannelSignalSigma(double signal, const std::vector <std::pair<double, double>> &sigmaCoeff, uint channel) const;
     double findZeroLine(const darray &t, const darray &U, uint channel, uint step_from_start_zero_line, uint step_from_end_zero_line, uint start_point_from_start_zero_line, uint start_point_from_end_zero_line) const;
+
+
+    SignalProcessingParameters parametersAdaptive(const SignalProcessingParameters &par, const darray &t, const darray &U, uint channel);
     
 public:
     

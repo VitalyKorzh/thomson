@@ -34,6 +34,8 @@ ClassImp(ThomsonGUI)
 
 #define STATUS_ENTRY_TEXT "press count"
 
+#define ENERGY_COEFF 0.287
+
 void ThomsonGUI::readDataFromArchive(const char *archive_name, const char *kust, const char *signal_name, int shot, darray &t, darray &U, int timePoint, int timeList, const uint N_INFORM, const uint N_UNUSEFULL) const
 {
     const uint N_POINT = N_INFORM+N_UNUSEFULL;
@@ -266,6 +268,21 @@ bool ThomsonGUI::countThomson(const std::string &archive_name, const std::string
 
     if (calibrations.size() < N_SPECTROMETERS*N_SPECTROMETER_CALIBRATIONS)
         calibrations.resize(N_SPECTROMETERS*N_SPECTROMETER_CALIBRATIONS, 0);
+
+
+    //darray ne_coeff = {273.587, 292.971, 210.374, 230.068, 203.737, 253.302}; //старые коэфф
+    darray ne_coeff = {184.084, 194.393, 187.19, 196.214, 187.987, 222.298};
+
+    for (uint i = 0; i < N_SPECTROMETERS; i++)
+        calibrations[i*N_SPECTROMETER_CALIBRATIONS+ID_N_COEFF_CHANNEL_1] = ne_coeff[i]; //поменяли энегрию лазера
+
+    // darray calibrations = { 0., 96.704*M_PI/180., 273.587,
+    //                 -32., 99.474*M_PI/180., 292.971,
+    //                 -63.5, 102.158*M_PI/180., 210.374,
+    //                 -95.5, 104.831*M_PI/180., 230.068,
+    //                 -127.5, 107.439*M_PI/180., 203.737,
+    //                 -156, 109.687*M_PI/180., 253.302 
+    // }; // временая запись калибровок
 
     std::vector <ThomsonCounter*> tempCounter(N_TIME_LIST*N_SPECTROMETERS, nullptr);
 
@@ -820,11 +837,11 @@ void ThomsonGUI::calibrateRaman(double P, double T, double theta, const darray &
     for (uint i = 0; i < N_CHANNELS; i++)
         Ki[i] = 0;
 
-    const double kB = 1.38065e-16; // эрг/K
+    const double kB = 1.3807e-16; // эрг/K
     const double r0 = 2.818e-13; // см^-3
-    const double c = 2.99e10; // см/c
-    const double B0 = 1.9896; // см^-1
-    const double h = 6.63e-27; // эрг*с
+    const double c = 2.9979e10; // см/c
+    const double B0 = 1.98973; // см^-1
+    const double h = 6.6261e-27; // эрг*с
     const double E0 = h*c*B0; // эрг
     const double psi = E0/(kB*T); // безразмерный
     const uint I = 1; // ядерный спин
@@ -837,9 +854,11 @@ void ThomsonGUI::calibrateRaman(double P, double T, double theta, const darray &
 
     double Q0 = 0;
 
+    //const double energy_coeff_qlaser = 0.147; 
+    const double enery_coeff_sqr = ENERGY_COEFF;// J/(V*ns) вроде исполизуется эта калибровка
 
     std::cout << "########################################################################\n";
-    std::cout << "T = " << T << " К " << kB*T << " эрг\n";
+    std::cout << "T = " << T << " К " << kB*T << " эрг " << T-273.15 << " C\n";
     std::cout << "nN2 = " << nN2 << " cm^-3\n";
     std::cout << "E0 = " << E0 << " эрг " << E0 / 1.6e-12 << " эВ\n";
     std::cout << "psi = " << psi << " отн. ед.\n";
@@ -847,8 +866,19 @@ void ThomsonGUI::calibrateRaman(double P, double T, double theta, const darray &
     std::cout << "Sn = " << Sn << "\n";
 
 
+
+    // for (uint l = 0; l < lambda.size(); l++)
+    // {
+    //     std::cout << lambda[l] << " ";
+    //     for (uint i = 0; i < N_WORK_CHANNELS; i++)
+    //         std::cout << SRF[lambda.size()*i+l] << " "; 
+    //     std::cout << "\n";
+    // }
+
+
     for (uint i = 0; i < N_WORK_CHANNELS; i++)
     {
+        double gamma_LOS = 0.;
         Q0 = 0.;
         double coeff_i = 1./signalRaman_to_ERaman[i];
 
@@ -858,26 +888,37 @@ void ThomsonGUI::calibrateRaman(double P, double T, double theta, const darray &
         {
             double lambda_j = ls.first;
             double SRF_j = 0;
-            for (uint l = 0; l < lambda.size()-1; l++)
-            {
-                if (lambda_j >= lambda[l] && lambda_j < lambda[l+1])
-                {
-                    SRF_j = (SRF[lambda.size()*i+l]+SRF[lambda.size()*i+l+1])/2.;
-                    break;
-                }
-            }
+            // for (uint l = 0; l < lambda.size(); l++)
+            // {
+            //     if (lambda_j >= lambda[l] && lambda_j < lambda[l+1])
+            //     {
+            //         //SRF_j = (SRF[lambda.size()*i+l]+SRF[lambda.size()*i+l+1])/2.;
+            //         SRF_j = SRF[lambda.size()*i+l];
+            //         break;
+            //     }
+            // }
+
+            double dl = lambda[1]-lambda[0];
+            uint ii = (lambda_j-lambda[0]) / dl;
+            SRF_j = SRF[lambda.size()*i+ii];
 
             double sigma = ls.second;
             double g = J % 2 == 0 ? 6 : 3;
             double I_J = sigma*(2.*J+1.)*g*exp(-psi*J*(J+1.))/ Q*POLIRIZATION_FACTOR;
+            gamma_LOS += I_J*SRF_j;
             sum += sigma*(2.*J+1.)*g*exp(-psi*J*(J+1.))*SRF_j;
             Q0 += (2.*J+1.)*g*exp(-psi*J*(J+1.));
-            if (i < 2)
-                std::cout << "channel = " << i << " J = " << J << " lambda_J = " << lambda_j << " sigma_J = " << sigma << " нм SRF_J = " << SRF_j << " I_J = " << I_J << " отн. ед. " <<
-                I_J * SRF_j << " SRF*I_J\n";
+            //if (i < 2)
+            //    std::cout << lambda_j << " " << I_J << "\n";
+                //std::cout << "channel = " << i << " J = " << J << " lambda_J = " << lambda_j << " sigma_J = " << sigma << " нм SRF_J = " << SRF_j << " I_J = " << I_J << " отн. ед. " <<
+                //I_J * SRF_j << " SRF*I_J\n";
             J++;
         }
+        gamma_LOS *= coeff_i*enery_coeff_sqr*nN2;
         Ki[i] = coeff*coeff_i*sum;
+        if (i < 2)
+            std::cout << "channel = " << i << " gamma_LOS = " << gamma_LOS << " " << Ki[i] << "\n";
+        
     }
     std::cout << "Q0: " << Q0 << "\n";
     std::cout << "########################################################################\n";
@@ -2011,9 +2052,12 @@ void ThomsonGUI::PrintInfo()
     if (checkButton(infoLaserEntry) && thomsonDraw)
     {
         oss << "LASER energy:\n";
+        const double energy_coeff = ENERGY_COEFF;
         for (uint it = 0; it < N_TIME_LIST; it++) {
+            double E = getSignalProcessing(it, NUMBER_ENERGY_SPECTROMETER, shot_from_several_shots)->getSignals()[NUMBER_ENERGY_CHANNEL];
             oss << "\t" <<
-            getSignalProcessing(it, NUMBER_ENERGY_SPECTROMETER, shot_from_several_shots)->getSignals()[NUMBER_ENERGY_CHANNEL]
+            E << " " << E*energy_coeff
+            //getSignalProcessing(it, NUMBER_ENERGY_SPECTROMETER, shot_from_several_shots)->getSignals()[NUMBER_ENERGY_CHANNEL]
             << "\n";
         }
     }
@@ -2614,7 +2658,7 @@ void ThomsonGUI::LoadRaman()
             uint element = 0.;
             if (signal.size() > 0 && max >= min)
             {
-
+                //std::cout << "load!\n";
                 for (uint d = 0; d < signal.size(); d++)
                 {
                     if (max == min || (signal[d] <= max && signal[d] >= min) )
