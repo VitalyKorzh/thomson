@@ -125,14 +125,14 @@ SignalProcessingParameters SignalProcessing::parametersAdaptive(const SignalProc
     parameters.step_from_end_zero_line = 0;
     parameters.signal_point_step = 1;
     parameters.start_point_from_start_zero_line = 0;
-    if (i_start < 0 || i_start >= (int)tSize)
+    if (i_start <= 0 || i_start >= (int)tSize)
     {
         parameters.step_from_start_zero_line = 1;
         parameters.point_integrate_start = 0;
     }
     else
     {
-        parameters.step_from_end_zero_line = i_start;
+        parameters.step_from_start_zero_line = i_start;
         parameters.point_integrate_start = i_start;
     }
     if (i_end < 0 || i_start >= (int)tSize)

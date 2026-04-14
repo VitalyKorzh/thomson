@@ -888,12 +888,12 @@ void ThomsonGUI::calibrateRaman(double P, double T, double theta, const darray &
         {
             double lambda_j = ls.first;
             double SRF_j = 0;
-            // for (uint l = 0; l < lambda.size(); l++)
+            // for (uint l = 0; l < lambda.size()-1; l++)
             // {
             //     if (lambda_j >= lambda[l] && lambda_j < lambda[l+1])
             //     {
-            //         //SRF_j = (SRF[lambda.size()*i+l]+SRF[lambda.size()*i+l+1])/2.;
-            //         SRF_j = SRF[lambda.size()*i+l];
+            //         SRF_j = (SRF[lambda.size()*i+l]+SRF[lambda.size()*i+l+1])/2.;
+            //         //SRF_j = SRF[lambda.size()*i+l];
             //         break;
             //     }
             // }
@@ -2049,7 +2049,7 @@ void ThomsonGUI::PrintInfo()
         for (uint i = 0; i < N_WORK_CHANNELS; i++)
             oss  << "\t" << counter->getSignalResult()[i] << "\n";
     }
-    if (checkButton(infoLaserEntry) && thomsonDraw)
+    if (checkButton(infoLaserEntry) && signalDraw)
     {
         oss << "LASER energy:\n";
         const double energy_coeff = ENERGY_COEFF;
