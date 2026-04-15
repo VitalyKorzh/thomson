@@ -270,8 +270,8 @@ bool ThomsonGUI::countThomson(const std::string &archive_name, const std::string
         calibrations.resize(N_SPECTROMETERS*N_SPECTROMETER_CALIBRATIONS, 0);
 
 
-    //darray ne_coeff = {273.587, 292.971, 210.374, 230.068, 203.737, 253.302}; //старые коэфф
-    darray ne_coeff = {184.084, 194.393, 187.19, 196.214, 187.987, 222.298};
+    //darray ne_coeff = {0.0828586, 0.0683488, 0.0698912, 0.0652062, 0.0558859, 0.0577925};
+    darray ne_coeff = {0.065474, 0.0664481, 0.062434, 0.0649258, 0.0637577, 0.0753984};
 
     for (uint i = 0; i < N_SPECTROMETERS; i++)
         calibrations[i*N_SPECTROMETER_CALIBRATIONS+ID_N_COEFF_CHANNEL_1] = ne_coeff[i]; //поменяли энегрию лазера
@@ -846,7 +846,8 @@ void ThomsonGUI::calibrateRaman(double P, double T, double theta, const darray &
     const double psi = E0/(kB*T); // безразмерный
     const uint I = 1; // ядерный спин
     const double Q = (2.*I+1)*(2.*I+1)/(2.*psi); // стат сумма
-    const double Sn = SNorma(LAMBDA_REFERENCE, theta);
+    //const double Sn = SNorma(LAMBDA_REFERENCE, theta);
+    const double Sn = 1.;
     const double nN2 = P / (kB*T);
     const double sigmaT = r0*r0;
     const double POLIRIZATION_FACTOR = 1.75;
@@ -917,7 +918,7 @@ void ThomsonGUI::calibrateRaman(double P, double T, double theta, const darray &
         gamma_LOS *= coeff_i*enery_coeff_sqr*nN2;
         Ki[i] = coeff*coeff_i*sum;
         if (i < 2)
-            std::cout << "channel = " << i << " gamma_LOS = " << gamma_LOS << " " << Ki[i] << "\n";
+            std::cout << "channel = " << i << " gamma_LOS = " << gamma_LOS << " " << Ki[i]/1e13 << "\n";
         
     }
     std::cout << "Q0: " << Q0 << "\n";
@@ -2625,7 +2626,7 @@ void ThomsonGUI::LoadRaman()
     }
     std::cout << "load start\n";
 
-    darray angle = {96.704, 99.474, 102.158, 104.831, 107.439, 109.687};
+    //darray angle = {96.704, 99.474, 102.158, 104.831, 107.439, 109.687};
 
     uint nSpectrometer = spectrometerNumberSetofShots->GetNumber();
     double Emin = minEnergy->GetNumber();
@@ -2633,7 +2634,7 @@ void ThomsonGUI::LoadRaman()
     double min = minSignalEntry->GetNumber();
     double max = maxSignalEntry->GetNumber(); 
     calibration_spectrometer->SetNumber(nSpectrometer);
-    thetaSpectrometer->SetNumber(angle[nSpectrometer]);
+    //thetaSpectrometer->SetNumber(angle[nSpectrometer]);
 
     for (uint nChannel = 0; nChannel < 2; nChannel++)
     {

@@ -67,8 +67,8 @@ double ThomsonCounter::findTZeroApproximation() const
 double ThomsonCounter::devFij(uint ch1, uint ch2, double Tij) const
 {
     const double deltaT = 1.;
-    darray SArray_1 = countSArray(N_LAMBDA, lMin, dl, countA(Tij), 1., theta, lambda_reference);
-    darray SArray_2 = countSArray(N_LAMBDA, lMin, dl, countA(Tij+deltaT), 1., theta, lambda_reference);
+    darray SArray_1 = countSArray(N_LAMBDA, lMin, dl, countA(Tij), SNorma(lambda_reference, theta), theta, lambda_reference);
+    darray SArray_2 = countSArray(N_LAMBDA, lMin, dl, countA(Tij+deltaT), SNorma(lambda_reference, theta), theta, lambda_reference);
 
 
     double dev_ratio_count = convolution(getSRFch(ch2), SArray_2, lMin, lMax) / convolution(getSRFch(ch1), SArray_2, lMin, lMax);
@@ -452,8 +452,8 @@ bool ThomsonCounter::countConcentration(double Te)
     double TeError  = getTError();
     double dT = 1e-8;
 
-    darray SResult = countSArray(N_LAMBDA, lMin, dl, countA(Te), 1., theta, lambda_reference);
-    darray SResult_dT = countSArray(N_LAMBDA, lMin, dl, countA(Te+dT), 1., theta, lambda_reference);
+    darray SResult = countSArray(N_LAMBDA, lMin, dl, countA(Te), SNorma(lambda_reference, theta), theta, lambda_reference);
+    darray SResult_dT = countSArray(N_LAMBDA, lMin, dl, countA(Te+dT), SNorma(lambda_reference, theta), theta, lambda_reference);
 
     //double max_signal = 0;
 
@@ -615,7 +615,7 @@ bool ThomsonCounter::countSignalResult()
 
 darray ThomsonCounter::countSyntheticSignal(double Te, double ne, bool all) const
 {
-    darray S = countSArray(N_LAMBDA, lMin, dl, countA(Te), ne*energy, theta, lambda_reference);
+    darray S = countSArray(N_LAMBDA, lMin, dl, countA(Te), ne*energy*SNorma(lambda_reference, theta), theta, lambda_reference);
     darray synthcetic_signal(N_CHANNELS, 0.);
 
     for (uint ch = 0; ch < N_CHANNELS; ch++)
