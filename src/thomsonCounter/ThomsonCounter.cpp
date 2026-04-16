@@ -432,6 +432,13 @@ bool ThomsonCounter::count(const double alpha, const uint iter_limit, const doub
         createWeight();
         TResult = countWeightT();
         t_error = countWeightErrorT();
+
+        if (TResult < 0.)
+        {
+            TResult = 0.;
+            t_error = 0.;
+        }
+
     }
 
     return work;
@@ -530,6 +537,14 @@ bool ThomsonCounter::countConcentration(double Te)
         double AError2 = sigmaEnergy*sigmaEnergy*A*A;
         ne_error = A*neResult*sqrt(AError2+ne_error*ne_error/(neResult*neResult));
         neResult *= A;
+    }
+
+    if (neResult < 0. || TResult <= 0.)
+    {
+        neResult = 0.;
+        ne_error = 0.;
+        TResult = 0.;
+        t_error = 0.;
     }
 
     /*uint ch = 0;

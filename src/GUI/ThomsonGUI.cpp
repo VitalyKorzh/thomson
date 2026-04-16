@@ -270,9 +270,10 @@ bool ThomsonGUI::countThomson(const std::string &archive_name, const std::string
         calibrations.resize(N_SPECTROMETERS*N_SPECTROMETER_CALIBRATIONS, 0);
 
 
-    //darray ne_coeff = {0.0828586, 0.0683488, 0.0698912, 0.0652062, 0.0558859, 0.0577925};
+    //darray ne_coeff = {0.0813323, 0.0742564, 0.0688669, 0.0652062, 0.0577925, 0.0681893};
     darray ne_coeff = {0.065474, 0.0664481, 0.062434, 0.0649258, 0.0637577, 0.0753984};
 
+    if (shot <= 58000)
     for (uint i = 0; i < N_SPECTROMETERS; i++)
         calibrations[i*N_SPECTROMETER_CALIBRATIONS+ID_N_COEFF_CHANNEL_1] = ne_coeff[i]; //поменяли энегрию лазера
 
@@ -633,7 +634,7 @@ void ThomsonGUI::writeResultTableToFile(const char *file_name) const
 
     std::ofstream fout;
     fout.open(file_name);
-
+    const double ne_error_coeff = 2.;
     if (fout.is_open())
     {
         fout << "shot: " << shotDiagnostic << "\n";
@@ -651,7 +652,7 @@ void ThomsonGUI::writeResultTableToFile(const char *file_name) const
             for (uint it = N_FIRST_WORK_TIME_PAGE; it < N_TIME_LIST; it++)
             {
                 ThomsonCounter *counter = getThomsonCounter(it, sp);        
-                fout << counter->getT() << "\t" << counter->getTError() << "\t" << counter->getN() << "\t" << counter->getNError() << "\t";
+                fout << counter->getT() << "\t" << counter->getTError() << "\t" << counter->getN() << "\t" << counter->getNError()*ne_error_coeff << "\t";
             }
             fout << "\n";
         }
@@ -2004,7 +2005,7 @@ void ThomsonGUI::PrintInfo()
     }
     if (checkButton(infoUseRatio) && thomsonDraw)
     {
-        ThomsonCounter *counter = getThomsonCounter(nTimePage, nSpectrometer);
+        ThomsonCounter *counter = getThomsonCounter(nTimePage, nSpectrometer, shot_from_several_shots);
         oss << "use ratio:\n";
 
         for (uint i = 0; i < counter->getNRatioUse(); i++)
@@ -2017,12 +2018,12 @@ void ThomsonGUI::PrintInfo()
     }
     if (checkButton(infoTe0) && thomsonDraw)
     {
-        ThomsonCounter *counter = getThomsonCounter(nTimePage, nSpectrometer);
+        ThomsonCounter *counter = getThomsonCounter(nTimePage, nSpectrometer, shot_from_several_shots);
         oss << "Te0=" << counter->getTe0() << "\n";
     }
     if (checkButton(infoTij) && thomsonDraw)
     {
-        ThomsonCounter *counter = getThomsonCounter(nTimePage, nSpectrometer);
+        ThomsonCounter *counter = getThomsonCounter(nTimePage, nSpectrometer, shot_from_several_shots);
         oss << "Teij:\n";
         uint N_RATIO = counter->getNRatioUse();
 
@@ -2035,17 +2036,17 @@ void ThomsonGUI::PrintInfo()
     }
     if (checkButton(infoTe) && thomsonDraw)
     {
-        ThomsonCounter *counter = getThomsonCounter(nTimePage, nSpectrometer);
+        ThomsonCounter *counter = getThomsonCounter(nTimePage, nSpectrometer, shot_from_several_shots);
         oss << "Te=" << counter->getT() << " +/- " << counter->getTError() << "\n";
     }
     if (checkButton(infoNe) && thomsonDraw)
     {
-        ThomsonCounter *counter = getThomsonCounter(nTimePage, nSpectrometer);
+        ThomsonCounter *counter = getThomsonCounter(nTimePage, nSpectrometer, shot_from_several_shots);
         oss << "ne=" << counter->getN() << " +/- " << counter->getNError() << "\n";
     }
     if (checkButton(infoCountSignal) && thomsonDraw)
     {
-        ThomsonCounter *counter = getThomsonCounter(nTimePage, nSpectrometer);
+        ThomsonCounter *counter = getThomsonCounter(nTimePage, nSpectrometer, shot_from_several_shots);
         oss << "count signals:\n";
         for (uint i = 0; i < N_WORK_CHANNELS; i++)
             oss  << "\t" << counter->getSignalResult()[i] << "\n";
@@ -2064,7 +2065,7 @@ void ThomsonGUI::PrintInfo()
     }
     if (checkButton(infoError) && thomsonDraw)
     {
-        ThomsonCounter *counter = getThomsonCounter(nTimePage, nSpectrometer);
+        ThomsonCounter *counter = getThomsonCounter(nTimePage, nSpectrometer, shot_from_several_shots);
 
         oss << "rmse = " << counter->getRMSE() << "\n";
         oss << "rmseMinus = " << counter->getRMSEMinus() << "\n";
