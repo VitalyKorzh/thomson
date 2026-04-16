@@ -1163,6 +1163,7 @@ ThomsonGUI::ThomsonGUI(const TGWindow *p, UInt_t width, UInt_t height, TApplicat
         TGHorizontalFrame *hframe_button = new TGHorizontalFrame(fTTu, width, 80);
         fTTu->AddFrame(hframe_button, new TGLayoutHints(kLHintsExpandX| kLHintsBottom, 5, 5, 5,  10));
         TGButton *drawButton = new TGTextButton(hframe_button, "Draw");
+        operatorMode = new TGCheckButton(hframe_button, "Operator");
         clockMode = new TGCheckButton(hframe_button, "clock");
         drawButton->Connect("Clicked()", CLASS_NAME, this, "DrawGraphs()");
         drawButton->Connect("Clicked()", CLASS_NAME, this, "PrintInfo()");
@@ -1173,6 +1174,7 @@ ThomsonGUI::ThomsonGUI(const TGWindow *p, UInt_t width, UInt_t height, TApplicat
         drawButton->SetToolTipText("draw selected graphs");
         
         hframe_button->AddFrame(drawButton, new TGLayoutHints(kLHintsLeft, 5, 5, 5, 5));
+        hframe_button->AddFrame(operatorMode, new TGLayoutHints(kLHintsLeft, 5, 5, 7, 7));
         hframe_button->AddFrame(clockMode, new TGLayoutHints(kLHintsRight, 5, 5, 5, 5));
 
         statusEntry = new TGTextEntry(hframe_button, STATUS_ENTRY_TEXT);
@@ -1667,6 +1669,120 @@ void ThomsonGUI::DrawGraphs()
     for (uint i = 0; i < N_SPECTROMETERS; i++)
         xPosition[i] = getThomsonCounter(0, i, shot_from_several_shots)->getXPositon();
 
+
+    if (operatorMode->IsDown())
+    {
+        TString canvas_name = "Thomson";
+        TCanvas *c = ThomsonDraw::createCanvas(canvas_name, canvasTitle(canvas_name, shotDiagnostic), 1080, 1920);
+        c->Divide(2, 2);
+
+        {
+            c->cd(1);
+            TMultiGraph *mg = ThomsonDraw::createMultiGraph(groupName(canvas_name+"1"), "");
+            mg->SetTitle(";x, cm;T_{e}, eV");
+            darray Te(N_SPECTROMETERS);
+            darray TeError(N_SPECTROMETERS);
+            for (uint it = N_FIRST_WORK_TIME_PAGE; it < N_TIME_LIST; it++)
+            {
+                for (uint i = 0; i < N_SPECTROMETERS; i++) {
+                    Te[i] = getThomsonCounter(it, i, shot_from_several_shots)->getT();
+                    TeError[i] = getThomsonCounter(it, i, shot_from_several_shots)->getTError();
+                }
+                ThomsonDraw::draw_result_from_r(c, mg, xPosition, Te, TeError, 21, 1.5, color_map[it], 1, 7, color_map[it], timeLabel(it, time_points), false);
+            }
+            mg->GetXaxis()->CenterTitle();
+            mg->GetYaxis()->CenterTitle();
+            mg->Draw("A");
+            gPad->SetGrid();
+            ThomsonDraw::createLegend(mg, 0.72, 0.6, 0.88, 0.88);
+        }
+
+        {
+            c->cd(2);
+            TMultiGraph *mg = ThomsonDraw::createMultiGraph(groupName(canvas_name+"2"), "");
+            mg->SetTitle(";t, ms;T_{e}, eV");
+
+            darray Te(N_TIME_LIST-N_FIRST_WORK_TIME_PAGE);
+            darray TeError(N_TIME_LIST-N_FIRST_WORK_TIME_PAGE);
+            darray t(N_TIME_LIST-N_FIRST_WORK_TIME_PAGE);
+            for (uint i = 0; i < N_SPECTROMETERS; i++)
+            {
+                for (uint it = N_FIRST_WORK_TIME_PAGE; it < N_TIME_LIST; it++)
+                {
+                    t[it-N_FIRST_WORK_TIME_PAGE] = time_points[it]; 
+                    Te[it-N_FIRST_WORK_TIME_PAGE] = getThomsonCounter(it, i, shot_from_several_shots)->getT();
+                    TeError[it-N_FIRST_WORK_TIME_PAGE] = getThomsonCounter(it, i, shot_from_several_shots)->getTError();
+                }
+
+                ThomsonDraw::draw_result_from_r(c, mg, t, Te, TeError, 21, 1.5, color_map[i+1], 1, 7, color_map[i+1], rLabel(i, xPosition), false);
+            }
+
+
+            gPad->SetGrid();
+            mg->GetXaxis()->CenterTitle();
+            mg->GetYaxis()->CenterTitle();
+            mg->Draw("A");
+
+            ThomsonDraw::createLegend(mg);
+        }
+
+        {
+            c->cd(3);
+            TMultiGraph *mg = ThomsonDraw::createMultiGraph(groupName(canvas_name+"3"), "");
+            mg->SetTitle(";x, cm;n_{e}, 10^{13} cm^{-3}");
+            darray ne(N_SPECTROMETERS);
+            darray neError(N_SPECTROMETERS);
+            for (uint it = N_FIRST_WORK_TIME_PAGE; it < N_TIME_LIST; it++)
+            {
+                for (uint i = 0; i < N_SPECTROMETERS; i++) {
+                    ne[i] = getThomsonCounter(it, i, shot_from_several_shots)->getN();
+                    neError[i] = getThomsonCounter(it, i, shot_from_several_shots)->getNError();
+                }
+                ThomsonDraw::draw_result_from_r(c, mg, xPosition, ne, neError, 21, 1.5, color_map[it], 1, 7, color_map[it], timeLabel(it, time_points), false);
+            }
+            mg->GetXaxis()->CenterTitle();
+            mg->GetYaxis()->CenterTitle();
+            mg->Draw("A");
+            gPad->SetGrid();
+            ThomsonDraw::createLegend(mg, 0.72, 0.6, 0.88, 0.88);
+        }
+
+        {
+            c->cd(4);
+            TMultiGraph *mg = ThomsonDraw::createMultiGraph(groupName(canvas_name+"4"), "");
+            mg->SetTitle(";x, cm;n_{e}, 10^{13} cm^{-3}");
+
+            darray ne(N_TIME_LIST-N_FIRST_WORK_TIME_PAGE);
+            darray neError(N_TIME_LIST-N_FIRST_WORK_TIME_PAGE);
+            darray t(N_TIME_LIST-N_FIRST_WORK_TIME_PAGE);
+            for (uint i = 0; i < N_SPECTROMETERS; i++)
+            {
+                for (uint it = N_FIRST_WORK_TIME_PAGE; it < N_TIME_LIST; it++)
+                {
+                    t[it-N_FIRST_WORK_TIME_PAGE] = time_points[it]; 
+                    ne[it-N_FIRST_WORK_TIME_PAGE] = getThomsonCounter(it, i, shot_from_several_shots)->getN();
+                    neError[it-N_FIRST_WORK_TIME_PAGE] = getThomsonCounter(it, i, shot_from_several_shots)->getNError();
+                }
+
+                ThomsonDraw::draw_result_from_r(c, mg, t, ne, neError, 21, 1.5, color_map[i+1], 1, 7, color_map[i+1], rLabel(i, xPosition), false);
+            }
+
+
+            gPad->SetGrid();
+            mg->GetXaxis()->CenterTitle();
+            mg->GetYaxis()->CenterTitle();
+            mg->Draw("A");
+
+            ThomsonDraw::createLegend(mg);
+        }
+
+        c->Modified();
+        c->Update();
+
+        return;
+    }
+
+
     if (getNumberActiveCheck(checkButtonDrawSpectrometers) != 0)
     {
         if (checkButton(drawSRF) && thomsonDraw)
@@ -1890,9 +2006,9 @@ void ThomsonGUI::DrawGraphs()
             TMultiGraph *mg = ThomsonDraw::createMultiGraph(groupName(canvas_name), "");
             mg->SetTitle(";t, ms;T_{e}, eV");
 
-            darray Te(N_TIME_LIST-1);
-            darray TeError(N_TIME_LIST-1);
-            darray t(N_TIME_LIST-1);
+            darray Te(N_TIME_LIST-N_FIRST_WORK_TIME_PAGE);
+            darray TeError(N_TIME_LIST-N_FIRST_WORK_TIME_PAGE);
+            darray t(N_TIME_LIST-N_FIRST_WORK_TIME_PAGE);
             for (uint i = 0; i < N_SPECTROMETERS; i++)
             {
                 if (!checkButtonDrawSpectrometersFromTime[i]->IsDown())
@@ -1925,9 +2041,9 @@ void ThomsonGUI::DrawGraphs()
             TMultiGraph *mg = ThomsonDraw::createMultiGraph(groupName(canvas_name), "");
             mg->SetTitle(";t, ms;n_{e}, 10^{13} cm^{-3}");
 
-            darray ne(N_TIME_LIST-1);
-            darray neError(N_TIME_LIST-1);
-            darray t(N_TIME_LIST-1);
+            darray ne(N_TIME_LIST-N_FIRST_WORK_TIME_PAGE);
+            darray neError(N_TIME_LIST-N_FIRST_WORK_TIME_PAGE);
+            darray t(N_TIME_LIST-N_FIRST_WORK_TIME_PAGE);
 
             for (uint i = 0; i < N_SPECTROMETERS; i++)
             {
@@ -2043,6 +2159,22 @@ void ThomsonGUI::PrintInfo()
     {
         ThomsonCounter *counter = getThomsonCounter(nTimePage, nSpectrometer, shot_from_several_shots);
         oss << "ne=" << counter->getN() << " +/- " << counter->getNError() << "\n";
+
+        double ne_l = 0;
+        for (uint i = 0; i < N_SPECTROMETERS-1; i++)
+        {
+            ThomsonCounter *c1 = getThomsonCounter(nTimePage, i, shot_from_several_shots);
+            ThomsonCounter *c2 = getThomsonCounter(nTimePage, i+1, shot_from_several_shots);
+            double n1 = c1->getN();
+            double n2 = c2->getN();
+            double r1 = c1->getXPositon();
+            double r2 = c2->getXPositon();
+            std::cout << r1 << " " << r2 << "\n";
+            ne_l += (n1+n2) / 2. * (r2- r1);
+        }
+
+        oss << "ne_l=" << 2*ne_l/10 << " 10^14 cm^-2\n";
+
     }
     if (checkButton(infoCountSignal) && thomsonDraw)
     {

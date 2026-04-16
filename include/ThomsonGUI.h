@@ -160,6 +160,7 @@ private:
 
     std::vector <std::pair<double, double>> sigmaCoeff;
 
+    TGCheckButton *operatorMode;
 
     TGCheckButton *clockMode;
     TTimer *timer;
