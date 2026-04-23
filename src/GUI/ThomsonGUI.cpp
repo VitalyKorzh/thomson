@@ -273,7 +273,7 @@ bool ThomsonGUI::countThomson(const std::string &archive_name, const std::string
     //darray ne_coeff = {0.0813323, 0.0742564, 0.0688669, 0.0652062, 0.0577925, 0.0681893};
     darray ne_coeff = {0.065474, 0.0664481, 0.062434, 0.0649258, 0.0637577, 0.0753984};
 
-    if (shot <= 58000)
+    if (shot <= 59000)
     for (uint i = 0; i < N_SPECTROMETERS; i++)
         calibrations[i*N_SPECTROMETER_CALIBRATIONS+ID_N_COEFF_CHANNEL_1] = ne_coeff[i]; //поменяли энегрию лазера
 
@@ -832,7 +832,7 @@ darray ThomsonGUI::createTimePointsArray(const std::string &archive_name, int sh
     return time_points;
 }
 
-void ThomsonGUI::calibrateRaman(double P, double T, double theta, const darray &signalRaman_to_ERaman, const darray &lambda, const darray &SRF, darray &Ki) const
+void ThomsonGUI::calibrateRaman(double P, double T, const darray &signalRaman_to_ERaman, const darray &lambda, const darray &SRF, darray &Ki) const
 {
     Ki.resize(N_CHANNELS, 0);
     for (uint i = 0; i < N_CHANNELS; i++)
@@ -1361,20 +1361,20 @@ ThomsonGUI::ThomsonGUI(const TGWindow *p, UInt_t width, UInt_t height, TApplicat
 
         pressure = new TGNumberEntryField(hframe, -1, 0);
         temperature = new TGNumberEntryField(hframe, -1, 300);
-        thetaSpectrometer = new TGNumberEntryField(hframe, -1, 90);
+        //thetaSpectrometer = new TGNumberEntryField(hframe, -1, 90);
 
         pressure->SetToolTipText("pressure, Pa");
         pressure->SetDefaultSize(60, 20);
         temperature->SetToolTipText("temperature, K");
         temperature->SetDefaultSize(60, 20);
         calibration_spectrometer->GetNumberEntry()->SetToolTipText("spectromer number");
-        thetaSpectrometer->SetToolTipText("theta,°");
-        thetaSpectrometer->SetDefaultSize(60, 20);
+        //thetaSpectrometer->SetToolTipText("theta,°");
+        //thetaSpectrometer->SetDefaultSize(60, 20);
 
         hframe->AddFrame(calibration_spectrometer, new TGLayoutHints(kLHintsLeft,5,5,0,5));
         hframe->AddFrame(pressure, new TGLayoutHints(kLHintsLeft,5,5,0,5));
         hframe->AddFrame(temperature, new TGLayoutHints(kLHintsLeft,5,5,0,5));
-        hframe->AddFrame(thetaSpectrometer, new TGLayoutHints(kLHintsLeft,5,5,0,5));
+        //hframe->AddFrame(thetaSpectrometer, new TGLayoutHints(kLHintsLeft,5,5,0,5));
     }
 
     {
@@ -2671,11 +2671,11 @@ void ThomsonGUI::Calibrate()
         signal[i] = channel_signal[i]->GetNumber();
 
 
-    double theta = thetaSpectrometer->GetNumber()/180.*M_PI;
+    //double theta = thetaSpectrometer->GetNumber()/180.*M_PI;
 
     darray Ki(N_CHANNELS, 0);
 
-    calibrateRaman(pressure, T, theta, signal, lambda, srf, Ki);
+    calibrateRaman(pressure, T, signal, lambda, srf, Ki);
 
     for (uint i = 0; i < N_WORK_CHANNELS; i++)
         channel_result[i]->SetNumber(Ki[i]*1e-13);

@@ -594,7 +594,7 @@ bool ThomsonCounter::countSignalResult()
         return true;
 
 
-    signalResult = countSyntheticSignal(Te, ne);
+    signalResult = countSyntheticSignal(Te, ne, true);
     signalResultMinus = countSyntheticSignal(Te-dTe, neMinus);
     signalResultPlus = countSyntheticSignal(Te+dTe, nePlus);
 

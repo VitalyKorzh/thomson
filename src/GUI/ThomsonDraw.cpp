@@ -1,6 +1,7 @@
 #include "ThomsonDraw.h"
 #include "thomsonCounter/Spectrum.h"
 #include <TROOT.h>
+#include <TStyle.h>
 #include <iostream>
 
 uint &ThomsonDraw::Color(uint &color)
@@ -379,7 +380,9 @@ void ThomsonDraw::draw_result_from_r(TCanvas *c, TMultiGraph *mg, const darray &
     g->SetMarkerColor(marker_color);
     g->SetBit(kCannotPick);
 
-    TGraphErrors *gErrors = (TGraphErrors*) createGraph(xPosition.size(), xPosition.data(), result.data(), 1, 1, 1, "", nullptr, result_error.data());
+    TGraphErrors *gErrors = (TGraphErrors*) createGraph(xPosition.size(), xPosition.data(), result.data(), 1, 1, 1.5, "", nullptr, result_error.data());
+
+    gStyle->SetEndErrorSize(4); //установить длину засечки
 
     mg->Add(gErrors, "E");
     mg->Add(g, "PL");
@@ -408,8 +411,8 @@ void ThomsonDraw::draw_compare_signals(TCanvas *c, THStack *hs, uint NChannel, c
         {
             signalN[i] = signal[i];
             signalNE[i] = signal_error[i];
-            signalNCount[i] = countSignal[i];
         }
+        signalNCount[i] = countSignal[i];
     }
 
     hs->Add(createHist(NChannel, 0., NChannel, signalN.data(), 1, 1, 2, "", signalNE.data()));

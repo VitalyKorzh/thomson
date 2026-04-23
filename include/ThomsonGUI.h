@@ -50,7 +50,7 @@ private:
     const uint N_FIRST_WORK_TIME_PAGE;
 
 
-    const uiarray color_map = {8,1,2,3,4,5,6,7, 209, 46, 11};
+    const uiarray color_map = {8,1,2,3,4, kOrange, 6,7, 209, 46, 11};
     const uint width = 700;
     const uint height = 800; // обшие настройки графиков
     const uint Nx = 3;
@@ -154,7 +154,7 @@ private:
 
     TGNumberEntryField *pressure;
     TGNumberEntryField *temperature;
-    TGNumberEntryField *thetaSpectrometer;
+    //TGNumberEntryField *thetaSpectrometer;
 
     TGNumberEntry *calibration_spectrometer;
 
@@ -243,7 +243,7 @@ private:
 
     darray createTimePointsArray(const std::string &archive_name, int shot) const;
 
-    void calibrateRaman(double P, double T, double theta, const darray &signalRaman_to_ERaman, const darray &lambda, const darray &SRF, darray &Ki) const;
+    void calibrateRaman(double P, double T, const darray &signalRaman_to_ERaman, const darray &lambda, const darray &SRF, darray &Ki) const;
 
     bool readFileInput( std::ifstream &fin,
                         std::string &srf_file_folder, std::string &convolution_file_folder,
