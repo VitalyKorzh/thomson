@@ -11,6 +11,7 @@
 #include <TH1D.h>
 #include <TH1F.h>
 #include <THStack.h>
+#include "TSCanvas.h"
 
 class ThomsonDraw
 {
