@@ -336,7 +336,10 @@ void ThomsonDraw::thomson_draw(TMultiGraph *mg, const SignalProcessing &sp, uint
     for (uint p = p0; p < p1; p++) 
     {
         if (p < work_mask.size() && !work_mask[p])
+        {
+            Color(color); //каждый канал определеного цвета
             continue;
+        }
 
         TString title = p < gTitle.size() ? gTitle[p] : "";
 

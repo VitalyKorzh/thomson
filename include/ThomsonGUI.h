@@ -50,7 +50,7 @@ private:
     const uint N_FIRST_WORK_TIME_PAGE;
 
 
-    const uiarray color_map = {8,1,2,3,4, kOrange, 6,7, 209, 46, 11};
+    const uiarray color_map = {kYellow, 1,2,3,4, kOrange, 6,7, 209, 46, 11};
     const uint width = 700;
     const uint height = 800; // обшие настройки графиков
     const uint Nx = 3;
