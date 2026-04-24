@@ -1398,30 +1398,34 @@ ThomsonGUI::ThomsonGUI(const TGWindow *p, UInt_t width, UInt_t height, TApplicat
         vframe->AddFrame(hframeLabel, new TGLayoutHints(kLHintsTop, 5, 5, 5, 5));
         TGLabel *labelXPosition = new TGLabel(hframeLabel, "x-position");
         TGLabel *labelTheta = new TGLabel(hframeLabel, "theta");
-        TGLabel *labelNCoeff = new TGLabel(hframeLabel, "n coefficient");
+        TGLabel *labelNCoeff = new TGLabel(hframeLabel, "Ki");
 
-        hframeLabel->AddFrame(labelXPosition, new TGLayoutHints(kLHintsLeft, 125, 5, 0, 0));
-        hframeLabel->AddFrame(labelTheta, new TGLayoutHints(kLHintsLeft, 100, 5, 0, 0));
-        hframeLabel->AddFrame(labelNCoeff, new TGLayoutHints(kLHintsLeft, 100, 5, 0, 0));
+        hframeLabel->AddFrame(labelXPosition, new TGLayoutHints(kLHintsLeft, 110, 5, 0, 0));
+        hframeLabel->AddFrame(labelTheta, new TGLayoutHints(kLHintsLeft, 70, 5, 0, 0));
+        hframeLabel->AddFrame(labelNCoeff, new TGLayoutHints(kLHintsLeft, 70, 5, 0, 0));
 
 
         for (uint i = 0; i < N_SPECTROMETERS; i++)
         {
             TGHorizontalFrame *hframeI = new TGHorizontalFrame(vframe, 200, 40);
-            vframe->AddFrame(hframeI, new TGLayoutHints(kLHintsTop, 0, 0, 1, 1));
-            TGLabel *label = new TGLabel(hframeI, TString::Format("Spectrometer%u", i+1));
-            hframeI->AddFrame(label, new TGLayoutHints(kLHintsLeft, 0, 0, 4, 3));
+            vframe->AddFrame(hframeI, new TGLayoutHints(kLHintsTop | kLHintsExpandX, 0, 0, 2, 2));
+            TGLabel *label = new TGLabel(hframeI, TString::Format("spectrometer%u", i));
 
             xPositionCalibration[i] = new TGNumberEntryField(hframeI, -1, 0);
-            hframeI->AddFrame(xPositionCalibration[i], new TGLayoutHints(kLHintsLeft, 10, 5, 0, 0));
+            xPositionCalibration[i]->SetWidth(100);
 
             thetaCalibration[i] = new TGNumberEntryField(hframeI, -1, 0);
             thetaCalibration[i]->SetLimits(TGNumberFormat::kNELLimitMinMax, 0., 180.);
-            hframeI->AddFrame(thetaCalibration[i], new TGLayoutHints(kLHintsLeft, 5, 5, 0, 0));
+            thetaCalibration[i]->SetWidth(100);
 
             nCalibrationCoeff[i] = new TGNumberEntryField(hframeI, -1, 0);
             nCalibrationCoeff[i]->SetLimits(TGNumberFormat::kNELLimitMin, 0.);
-            hframeI->AddFrame(nCalibrationCoeff[i], new TGLayoutHints(kLHintsLeft, 5, 5, 0, 0));      
+            nCalibrationCoeff[i]->SetWidth(100);
+
+            hframeI->AddFrame(label, new TGLayoutHints(kLHintsLeft, 0, 0, 4, 3));
+            hframeI->AddFrame(xPositionCalibration[i] , new TGLayoutHints(kLHintsLeft | kLHintsExpandX, 10, 5, 0, 0));
+            hframeI->AddFrame(thetaCalibration[i], new TGLayoutHints(kLHintsLeft | kLHintsExpandX, 5, 5, 0, 0));
+            hframeI->AddFrame(nCalibrationCoeff[i], new TGLayoutHints(kLHintsLeft | kLHintsExpandX, 5, 5, 0, 0));      
         }
 
 
@@ -1673,7 +1677,7 @@ void ThomsonGUI::DrawGraphs()
     if (operatorMode->IsDown())
     {
         TString canvas_name = "Thomson";
-        TCanvas *c = ThomsonDraw::createCanvas(canvas_name, canvasTitle(canvas_name, shotDiagnostic), 1080, 1920);
+        TCanvas *c = ThomsonDraw::createCanvas(canvas_name, canvasTitle(canvas_name, shotDiagnostic), 1000, 850);
         c->Divide(2, 2);
 
         {
