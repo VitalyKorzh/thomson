@@ -630,6 +630,9 @@ bool ThomsonCounter::countSignalResult()
 
 darray ThomsonCounter::countSyntheticSignal(double Te, double ne, bool all) const
 {
+    if (Te == 0 || std::isnan(Te) || ne == 0 || std::isnan(ne))
+        return darray(N_CHANNELS, 0.);
+
     darray S = countSArray(N_LAMBDA, lMin, dl, countA(Te), ne*energy*SNorma(lambda_reference, theta), theta, lambda_reference);
     darray synthcetic_signal(N_CHANNELS, 0.);
 

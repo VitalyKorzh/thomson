@@ -2693,27 +2693,60 @@ void ThomsonGUI::DrawSetOfShots()
         {
             uint NxUpdate = Nx;
             uint NyUpdate = Ny;
-            uint nTimePage = 0;
-            for (uint it = 0; it < N_TIME_LIST; it++)
-                if (checkButtonDrawTimeSetOfShots[it]->IsDown())
-                    nTimePage = it;
-
             TString canvas_name = "synthetic_signal_set_of_shots";
-            TCanvas *c = ThomsonDraw::createCanvas(canvas_name, canvasTitle(canvas_name, 0, nTimePage), width, height, NxUpdate, NyUpdate);
+            TSCanvas *c = ThomsonDraw::createSCanvas(canvas_name, canvasTitle(canvas_name, 0, N_FIRST_WORK_TIME_PAGE), N_TIME_LIST, N_FIRST_WORK_TIME_PAGE, width, height, NxUpdate, NyUpdate);
+            std::vector <std::string> titleArray(N_TIME_LIST);
+            for (uint i = 0; i < N_TIME_LIST; i++)
+                titleArray[i] = canvasTitle(canvas_name, 0, i);
+            c->setTitleArray(titleArray);
+            std::vector <THStack*> hsArray;
+            hsArray.reserve(NxUpdate*NyUpdate*N_TIME_LIST);
+
+            for (uint it = 0; it < N_TIME_LIST; it++)
+            {
+                uint index = 1;
+                darray signal(N_CHANNELS, 0.);
+                darray signal_error(N_CHANNELS, 0.);
+                for (uint i = 0; i < N_SPECTROMETERS; i++)
+                {
+                    c->cd(index);
+                    index++;
+                    ThomsonCounter *counter = getThomsonCounter(it, i);
+                    darray syntchetic = counter->countSyntheticSignal(TeFull[i+it*N_SPECTROMETERS], neFull[i+it*N_SPECTROMETERS], true);
+                    THStack *hs = ThomsonDraw::createHStack(groupName(canvas_name, i, "hs_"), spectrometerName(i, counter->countRMSE(syntchetic, signal, signal_error, true)));
+                    hs->ResetBit(kCanDelete);
+                    ThomsonDraw::draw_compare_signals(c, hs, N_WORK_CHANNELS, signal, signal_error, syntchetic, work_mask[i], false);
+                    hsArray.push_back(hs);
+                }
+            }
+            c->setHStack(hsArray);
             uint index = 1;
-            darray signal(N_CHANNELS, 0.);
-            darray signal_error(N_CHANNELS, 0.);
             for (uint i = 0; i < N_SPECTROMETERS; i++)
             {
-                // if (!checkButtonDrawSpectrometers[i]->IsDown())
-                //     continue;
                 c->cd(index);
+                hsArray[N_FIRST_WORK_TIME_PAGE*NxUpdate*NyUpdate + index-1]->Draw("nostack HIST E1");
                 index++;
-                ThomsonCounter *counter = getThomsonCounter(nTimePage, i);
-                darray syntchetic = counter->countSyntheticSignal(TeFull[i+nTimePage*N_SPECTROMETERS], neFull[i+nTimePage*N_SPECTROMETERS], true);
-                THStack *hs = ThomsonDraw::createHStack(groupName(canvas_name, i, "hs_"), spectrometerName(i, counter->countRMSE(syntchetic, signal, signal_error, true))); //нужно посчитать правильное rmse
-                ThomsonDraw::draw_compare_signals(c, hs, N_WORK_CHANNELS, signal, signal_error, syntchetic, work_mask[i], true); //нужно поставить правильный сигнал
             }
+            // uint nTimePage = 0;
+            // for (uint it = 0; it < N_TIME_LIST; it++)
+            //     if (checkButtonDrawTimeSetOfShots[it]->IsDown())
+            //         nTimePage = it;
+
+            // TCanvas *c = ThomsonDraw::createCanvas(canvas_name, canvasTitle(canvas_name, 0, nTimePage), width, height, NxUpdate, NyUpdate);
+            // uint index = 1;
+            // darray signal(N_CHANNELS, 0.);
+            // darray signal_error(N_CHANNELS, 0.);
+            // for (uint i = 0; i < N_SPECTROMETERS; i++)
+            // {
+            //     // if (!checkButtonDrawSpectrometers[i]->IsDown())
+            //     //     continue;
+            //     c->cd(index);
+            //     index++;
+            //     ThomsonCounter *counter = getThomsonCounter(nTimePage, i);
+            //     darray syntchetic = counter->countSyntheticSignal(TeFull[i+nTimePage*N_SPECTROMETERS], neFull[i+nTimePage*N_SPECTROMETERS], true);
+            //     THStack *hs = ThomsonDraw::createHStack(groupName(canvas_name, i, "hs_"), spectrometerName(i, counter->countRMSE(syntchetic, signal, signal_error, true))); //нужно посчитать правильное rmse
+            //     ThomsonDraw::draw_compare_signals(c, hs, N_WORK_CHANNELS, signal, signal_error, syntchetic, work_mask[i], true); //нужно поставить правильный сигнал
+            // }
             c->Modified();
             c->Update();
         }
@@ -2907,13 +2940,13 @@ void ThomsonGUI::Calibrate()
 void ThomsonGUI::ClockClicked()
 {
     if (!clockMode->IsDown() || (std::string) mainFileTextEntry->GetText() == "" || countType == CountType::SetOfShots) {
-        std::cout << "timer stop\n";
+        //std::cout << "timer stop\n";
         clockMode->SetState(kButtonUp);
         timer->Stop();
     }
     else
     {
-        std::cout << "timer start\n"; 
+        //std::cout << "timer start\n"; 
         timer->Start();
     }
 }
