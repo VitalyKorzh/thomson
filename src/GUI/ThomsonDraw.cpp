@@ -56,7 +56,7 @@ TCanvas *ThomsonDraw::createCanvas(const char *canvas_name, const char *title, u
 	return c;
 }
 
-TSCanvas *ThomsonDraw::createSCanvas(const char *canvas_name, const char *title, uint nSlider, uint width, uint height, uint divideX, uint divideY)
+TSCanvas *ThomsonDraw::createSCanvas(const char *canvas_name, const char *title, uint nSlider, uint start_point, uint width, uint height, uint divideX, uint divideY)
 {
 	TSCanvas* c;
 	TString cName(canvas_name);
@@ -68,10 +68,11 @@ TSCanvas *ThomsonDraw::createSCanvas(const char *canvas_name, const char *title,
 		c = (TSCanvas*)o;
 		c->Clear();
 		c->GetListOfPrimitives()->Delete();
+        c->clearArrays(); //возможно вызовить ошибку!!!!
 		c->SetTitle(cTitle);
 	}
 	else
-		c=new TSCanvas(cName, cTitle,width, height, divideX, divideY, nSlider);
+		c=new TSCanvas(cName, cTitle,width, height, divideX, divideY, nSlider, start_point);
 
 	c->SetBit(kCanDelete);
 	c->cd();
@@ -476,6 +477,7 @@ void ThomsonDraw::draw_signal_statistics(TCanvas *c, THStack *hs, const darray &
 
     if (draw)
     {
+        gStyle->SetEndErrorSize(4);
         hs->Draw("nostack");
     }
 

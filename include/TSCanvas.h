@@ -34,8 +34,8 @@ private:
 
 public:
     TSCanvas(TString name, TString title="", Int_t width=400, Int_t height=800, Int_t nx=1, Int_t ny=1,
-            Int_t slider_points=11, bool grid=true, bool clear=true) : TCanvas(name, title, 1, 1, width, height),
-                                                                        slider_points(slider_points), last_slider_point(0), 
+            Int_t slider_points=11, Int_t start_slider_point=0, bool grid=true, bool clear=true) : TCanvas(name, title, 1, 1, width, height),
+                                                                        slider_points(slider_points), last_slider_point(start_slider_point), 
                                                                         nx(nx), ny(ny), grid(grid), clear(clear)
     
     {
@@ -47,8 +47,8 @@ public:
         TSliderBox *sbox = (TSliderBox*)slider->FindObject("TSliderBox");
         if (sbox)
         {
-            sbox->SetX1(0);
-            sbox->SetX2(1./slider_points);
+            sbox->SetX1(start_slider_point/slider_points);
+            sbox->SetX2((start_slider_point+1)/slider_points);
             sbox->SetY1(0);
             sbox->SetY2(1);
         }
@@ -71,6 +71,20 @@ public:
     void setTitleArray(const std::vector <std::string> &titleArray)
     {
         this->titleArray = titleArray;
+    }
+
+    void clearArrays()
+    {
+        titleArray.clear();
+        for (TMultiGraph *mg : mgArray)
+            if (mg)
+                delete mg;
+        for (THStack *hs : hsArray)
+            if (hs)
+                delete hs;
+
+        mgArray.clear();
+        hsArray.clear();
     }
 
     void ExecuteEvent(Int_t event, Int_t px, Int_t py) override
@@ -124,12 +138,7 @@ public:
 
     ~TSCanvas() {
         delete slider;
-        for (TMultiGraph *mg : mgArray)
-            if (mg)
-                delete mg;
-        for (THStack *hs : hsArray)
-            if (hs)
-                delete hs;
+        clearArrays();
     }
 
 };
