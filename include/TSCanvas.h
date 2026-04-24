@@ -28,10 +28,13 @@ private:
     int start_slider_point;
     int nx;
     int ny;
-    bool legend;
     bool grid;
     bool clear;
     double size;
+    Option_t *opt_mg;
+    Option_t *opt_hs;
+    Option_t *opt_leg;
+    Option_t *opt_text;
     std::vector <TMultiGraph*> mgArray;
     std::vector <THStack*> hsArray;
     std::vector <TLegend*> legendArray;
@@ -42,14 +45,21 @@ public:
             Int_t slider_points=11, Int_t start_slider_point=0, bool legend=true, bool grid=true, bool clear=true) : TCanvas(name, title, 1, 1, width, height),
                                                                         slider_points(slider_points), last_slider_point(start_slider_point),
                                                                         start_slider_point(start_slider_point),
-                                                                        nx(nx), ny(ny), legend(legend), grid(grid), clear(clear)
-    
+                                                                        nx(nx), ny(ny), grid(grid), clear(clear)
     {
         this->Divide(nx, ny);
         this->SetBit(kCanDelete);
 
-
+        setDrawOption();
         createSlider();
+    }
+
+    void setDrawOption(Option_t *opt_mg="A", Option_t *opt_hs="nostack HIST E1", Option_t *opt_leg="", Option_t *opt_text="")
+    {
+        this->opt_mg = opt_mg;
+        this->opt_hs = opt_hs;
+        this->opt_leg = opt_leg;
+        this->opt_text = opt_text;
     }
 
     void setPosition(int n)
@@ -123,7 +133,7 @@ public:
             if (hs)
                 delete hs;
         for (TLegend *leg : legendArray)
-            if (legend)
+            if (leg)
                 delete leg;
 
         mgArray.clear();

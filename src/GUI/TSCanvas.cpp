@@ -1,5 +1,4 @@
 #include "TSCanvas.h"
-// #include "ThomsonDraw.h"
 
 void TSCanvas::ExecuteEvent(Int_t event, Int_t px, Int_t py)
 {
@@ -32,7 +31,7 @@ void TSCanvas::ExecuteEvent(Int_t event, Int_t px, Int_t py)
     last_slider_point  = nPoint;
 
     int N = nx*ny;
-    //std::cout << nPoint << " " << N << "\n";
+    
     for (int i = 0; i < N; i++)
     {
         int index = N*nPoint+i;
@@ -43,17 +42,18 @@ void TSCanvas::ExecuteEvent(Int_t event, Int_t px, Int_t py)
         if (index < (int)mgArray.size() && mgArray[index] != nullptr)
         {
             TMultiGraph *mg = mgArray[index];
-            mg->Draw("A");
-            if (legend && index < (int) legendArray.size() && legendArray[index])
-                legendArray[index]->Draw("");
-            //     ThomsonDraw::createLegend(mg);
+            mg->Draw(opt_mg);
         }
         if (index < (int)hsArray.size() && hsArray[index] != nullptr)
         {
             THStack *hs = hsArray[index];
-            hs->Draw("nostack HIST E1");
+            hs->Draw(opt_hs);
         }
-
+        if (index < (int) legendArray.size() && legendArray[index] != nullptr) 
+        {
+            TLegend *leg = legendArray[index];
+            leg->Draw(opt_leg);
+        }
         if (grid)
             gPad->SetGrid();
     }        
