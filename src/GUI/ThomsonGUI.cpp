@@ -1051,15 +1051,15 @@ ThomsonGUI::ThomsonGUI(const TGWindow *p, UInt_t width, UInt_t height, TApplicat
             hframeDrawSpectrometers->AddFrame(checkButtonDrawSpectrometers.back(), new TGLayoutHints(kLHintsLeft, 1,1,1,1));
         }
 
-        TGLabel *labelTimeList = new TGLabel(vframeTimeList, "time page");
-        timeListNumber = new TGNumberEntry(vframeTimeList, N_FIRST_WORK_TIME_PAGE, 4, -1, TGNumberFormat::kNESInteger,
-                                            TGNumberFormat::kNEANonNegative, TGNumberEntry::kNELLimitMinMax, 0, N_TIME_LIST-1);
+        //TGLabel *labelTimeList = new TGLabel(vframeTimeList, "time page");
+        //timeListNumber = new TGNumberEntry(vframeTimeList, N_FIRST_WORK_TIME_PAGE, 4, -1, TGNumberFormat::kNESInteger,
+        //                                    TGNumberFormat::kNEANonNegative, TGNumberEntry::kNELLimitMinMax, 0, N_TIME_LIST-1);
         
-        vframeTimeList->AddFrame(labelTimeList, new TGLayoutHints(kLHintsLeft,0,0,5,5));
-        vframeTimeList->AddFrame(timeListNumber, new TGLayoutHints(kLHintsLeft,0,0,0,0));
+        //vframeTimeList->AddFrame(labelTimeList, new TGLayoutHints(kLHintsLeft,0,0,5,5));
+        //vframeTimeList->AddFrame(timeListNumber, new TGLayoutHints(kLHintsLeft,0,0,0,0));
 
         hframeDrawPoints->AddFrame(vframeTimeList, new TGLayoutHints(kLHintsLeft, 5, 5, 5, 5));
-        timeListNumber->GetNumberEntry()->SetToolTipText("time page number");
+        //timeListNumber->GetNumberEntry()->SetToolTipText("time page number");
 
         for (uint i = 0; i < checkButtonDraw.size(); i++)
         {
@@ -1622,7 +1622,7 @@ void ThomsonGUI::DrawGraphs()
     if (countType == CountType::None)
         return;
 
-    uint nTimePage = timeListNumber->GetNumber();
+    //uint nTimePage = timeListNumber->GetNumber();
 
     uint nActiveSpectrometers = 0;
     for (uint i = 0; i < N_SPECTROMETERS; i++)
@@ -1788,18 +1788,62 @@ void ThomsonGUI::DrawGraphs()
         if (checkButton(drawSRF) && thomsonDraw)
         {
             TString canvas_name = "SRF";
-            TCanvas *c = ThomsonDraw::createCanvas(canvas_name, canvasTitle(canvas_name), width, height, NxUpdate, NyUpdate);
+            // TCanvas *c = ThomsonDraw::createCanvas(canvas_name, canvasTitle(canvas_name), width, height, NxUpdate, NyUpdate);
+            // uint index = 1;
+            // for (uint i = 0; i < N_SPECTROMETERS; i++)
+            // {
+            //     if (!checkButtonDrawSpectrometers[i]->IsDown())
+            //         continue;
+            //     c->cd(index);
+            //     index++;
+            //     ThomsonCounter *counter = getThomsonCounter(nTimePage, i, shot_from_several_shots);
+            //     TMultiGraph *mg = ThomsonDraw::createMultiGraph(groupName(canvas_name, i), spectrometerName(i));
+            //     ThomsonDraw::srf_draw(c, mg,counter->getSRF(), N_WORK_CHANNELS, counter->getLMin(), counter->getLMax(),
+            //                             counter->getNLambda(), LAMBDA_REFERENCE, {counter->getT()}, {counter->getTheta()}, true, false);
+            // }
+
+            TSCanvas *c = ThomsonDraw::createSCanvas(canvas_name, canvasTitle(canvas_name, shotDiagnostic, N_FIRST_WORK_TIME_PAGE), N_TIME_LIST, N_FIRST_WORK_TIME_PAGE, width, height, NxUpdate, NyUpdate);
+
+            std::vector <std::string> titleArray(N_TIME_LIST);
+            for (uint i = 0; i < N_TIME_LIST; i++)
+                titleArray[i] = canvasTitle(canvas_name, shotDiagnostic, i);
+            c->setTitleArray(titleArray);
+
+            std::vector <TMultiGraph*> mgArray;
+            //std::vector <TLegend*> legArray;
+            mgArray.reserve(NxUpdate*NyUpdate*N_TIME_LIST);
+            //legArray.reserve(NxUpdate*NyUpdate*N_TIME_LIST);
+            for (uint it = 0; it < N_TIME_LIST; it++)
+            {
+                uint index = 1;
+                for (uint i = 0; i < N_SPECTROMETERS; i++)
+                {
+                    if (!checkButtonDrawSpectrometers[i]->IsDown())
+                        continue;
+                    c->cd(index);
+                    index++;
+                    ThomsonCounter *counter = getThomsonCounter(it, i, shot_from_several_shots);
+                    TMultiGraph *mg = ThomsonDraw::createMultiGraph(groupName(canvas_name, i), spectrometerName(i));
+                    mg->ResetBit(kCanDelete);
+                    ThomsonDraw::srf_draw(c, mg,counter->getSRF(), N_WORK_CHANNELS, counter->getLMin(), counter->getLMax(),
+                                         counter->getNLambda(), LAMBDA_REFERENCE, {counter->getT()}, {counter->getTheta()}, false, false);
+                    mgArray.push_back(mg);
+                    //legArray.push_back(ThomsonDraw::createLegend(mg, 0.18, 0.6, 0.35, 0.88, false));
+                    //legArray.back()->ResetBit(kCanDelete);
+                }
+            }
+            c->setMultigraph(mgArray);
+            //c->setLegendArray(legArray);
             uint index = 1;
             for (uint i = 0; i < N_SPECTROMETERS; i++)
             {
                 if (!checkButtonDrawSpectrometers[i]->IsDown())
-                    continue;
+                        continue;
                 c->cd(index);
+                mgArray[N_FIRST_WORK_TIME_PAGE*NxUpdate*NyUpdate + index-1]->Draw("A");
+                //legArray[N_FIRST_WORK_TIME_PAGE*NxUpdate*NyUpdate + index-1]->Draw("");
+                //ThomsonDraw::createLegend(mgArray[N_FIRST_WORK_TIME_PAGE*NxUpdate*NyUpdate + index-1]);
                 index++;
-                ThomsonCounter *counter = getThomsonCounter(nTimePage, i, shot_from_several_shots);
-                TMultiGraph *mg = ThomsonDraw::createMultiGraph(groupName(canvas_name, i), spectrometerName(i));
-                ThomsonDraw::srf_draw(c, mg,counter->getSRF(), N_WORK_CHANNELS, counter->getLMin(), counter->getLMax(),
-                                        counter->getNLambda(), LAMBDA_REFERENCE, {counter->getT()}, {counter->getTheta()}, true, false);
             }
 
             c->Modified();
@@ -1816,7 +1860,7 @@ void ThomsonGUI::DrawGraphs()
                     continue;
                 c->cd(index);
                 index++;
-                ThomsonCounter *counter = getThomsonCounter(nTimePage, i, shot_from_several_shots);
+                ThomsonCounter *counter = getThomsonCounter(0, i, shot_from_several_shots);
                 TMultiGraph *mg = ThomsonDraw::createMultiGraph(groupName(canvas_name, i), spectrometerName(i));
                 ThomsonDraw::convolution_draw(c, mg, counter->getConvolution(), N_WORK_CHANNELS, counter->getTMin(), counter->getDT(), counter->getNTemperature(), true, true);
             }
@@ -1841,7 +1885,7 @@ void ThomsonGUI::DrawGraphs()
 
             //TSCanvas *c = new TSCanvas("signal", "", width, height, NxUpdate, NyUpdate, N_TIME_LIST, N_FIRST_WORK_TIME_PAGE);
 
-            TSCanvas *c = ThomsonDraw::createSCanvas(canvas_name, canvasTitle(canvas_name, shotDiagnostic, nTimePage), N_TIME_LIST, N_FIRST_WORK_TIME_PAGE, width, height, NxUpdate, NyUpdate);
+            TSCanvas *c = ThomsonDraw::createSCanvas(canvas_name, canvasTitle(canvas_name, shotDiagnostic, N_FIRST_WORK_TIME_PAGE), N_TIME_LIST, N_FIRST_WORK_TIME_PAGE, width, height, NxUpdate, NyUpdate);
 
             std::vector <std::string> titleArray(N_TIME_LIST);
             for (uint i = 0; i < N_TIME_LIST; i++)
@@ -1901,7 +1945,7 @@ void ThomsonGUI::DrawGraphs()
             //     ThomsonDraw::thomson_signal_draw(c, mg, getSignalProcessing(nTimePage, i, shot_from_several_shots), 1, true, true, false, N_WORK_CHANNELS, work_mask[i]);
             // }
 
-            TSCanvas *c = ThomsonDraw::createSCanvas(canvas_name, canvasTitle(canvas_name, shotDiagnostic, nTimePage), N_TIME_LIST, N_FIRST_WORK_TIME_PAGE, width, height, NxUpdate, NyUpdate);
+            TSCanvas *c = ThomsonDraw::createSCanvas(canvas_name, canvasTitle(canvas_name, shotDiagnostic, N_FIRST_WORK_TIME_PAGE), N_TIME_LIST, N_FIRST_WORK_TIME_PAGE, width, height, NxUpdate, NyUpdate);
 
             std::vector <std::string> titleArray(N_TIME_LIST);
             for (uint i = 0; i < N_TIME_LIST; i++)
@@ -1964,7 +2008,7 @@ void ThomsonGUI::DrawGraphs()
             //     ThomsonDraw::thomson_signal_draw(c, mg, getSignalProcessing(nTimePage, i, shot_from_several_shots), 1, true, true, false, N_WORK_CHANNELS, work_mask[i]);
             // }
 
-            TSCanvas *c = ThomsonDraw::createSCanvas(canvas_name, canvasTitle(canvas_name, shotDiagnostic, nTimePage), N_TIME_LIST, N_FIRST_WORK_TIME_PAGE, width, height, NxUpdate, NyUpdate);
+            TSCanvas *c = ThomsonDraw::createSCanvas(canvas_name, canvasTitle(canvas_name, shotDiagnostic, N_FIRST_WORK_TIME_PAGE), N_TIME_LIST, N_FIRST_WORK_TIME_PAGE, width, height, NxUpdate, NyUpdate);
 
             std::vector <std::string> titleArray(N_TIME_LIST);
             for (uint i = 0; i < N_TIME_LIST; i++)
@@ -2015,18 +2059,64 @@ void ThomsonGUI::DrawGraphs()
         if (checkButton(drawCompareSignalAndResult)  && thomsonDraw)
         {
             TString canvas_name = "synthetic_signal";
-            TCanvas *c = ThomsonDraw::createCanvas(canvas_name, canvasTitle(canvas_name, shotDiagnostic, nTimePage), width, height, NxUpdate, NyUpdate);
+            // TCanvas *c = ThomsonDraw::createCanvas(canvas_name, canvasTitle(canvas_name, shotDiagnostic, nTimePage), width, height, NxUpdate, NyUpdate);
+            // uint index = 1;
+            // for (uint i = 0; i < N_SPECTROMETERS; i++)
+            // {
+            //     if (!checkButtonDrawSpectrometers[i]->IsDown())
+            //         continue;
+            //     c->cd(index);
+            //     index++;
+            //     ThomsonCounter *counter = getThomsonCounter(nTimePage, i, shot_from_several_shots);
+            //     THStack *hs = ThomsonDraw::createHStack(groupName(canvas_name, i, "hs_"), spectrometerName(i, counter->getRMSE()));
+            //     ThomsonDraw::draw_compare_signals(c, hs, N_WORK_CHANNELS, counter->getSignal(), counter->getSignalError(), counter->getSignalResult(), counter->getWorkSignal(), true);
+            // }
+
+            TSCanvas *c = ThomsonDraw::createSCanvas(canvas_name, canvasTitle(canvas_name, shotDiagnostic, N_FIRST_WORK_TIME_PAGE), N_TIME_LIST, N_FIRST_WORK_TIME_PAGE, width, height, NxUpdate, NyUpdate);
+
+            std::vector <std::string> titleArray(N_TIME_LIST);
+            for (uint i = 0; i < N_TIME_LIST; i++)
+                titleArray[i] = canvasTitle(canvas_name, shotDiagnostic, i);
+            c->setTitleArray(titleArray);
+
+            std::vector <THStack*> hsArray;
+            //std::vector <TLegend*> legArray;
+            hsArray.reserve(NxUpdate*NyUpdate*N_TIME_LIST);
+            //legArray.reserve(NxUpdate*NyUpdate*N_TIME_LIST);
+            for (uint it = 0; it < N_TIME_LIST; it++)
+            {
+                uint index = 1;
+                for (uint i = 0; i < N_SPECTROMETERS; i++)
+                {
+                    if (!checkButtonDrawSpectrometers[i]->IsDown())
+                        continue;
+                    c->cd(index);
+                    index++;
+                    ThomsonCounter *counter = getThomsonCounter(it, i, shot_from_several_shots);
+                    //TMultiGraph *mg = ThomsonDraw::createMultiGraph(groupName(canvas_name, i), spectrometerName(i));
+                    THStack *hs = ThomsonDraw::createHStack(groupName(canvas_name, i, "hs_"), spectrometerName(i, counter->getRMSE()));
+                    hs->ResetBit(kCanDelete);
+                    //mg->ResetBit(kCanDelete);
+                    ThomsonDraw::draw_compare_signals(c, hs, N_WORK_CHANNELS, counter->getSignal(), counter->getSignalError(), counter->getSignalResult(), counter->getWorkSignal(), false);
+                    hsArray.push_back(hs);
+                    //legArray.push_back(ThomsonDraw::createLegend(mg, 0.18, 0.6, 0.35, 0.88, false));
+                    //legArray.back()->ResetBit(kCanDelete);
+                }
+            }
+            c->setHStack(hsArray);
+            //c->setLegendArray(legArray);
             uint index = 1;
             for (uint i = 0; i < N_SPECTROMETERS; i++)
             {
                 if (!checkButtonDrawSpectrometers[i]->IsDown())
-                    continue;
+                        continue;
                 c->cd(index);
+                hsArray[N_FIRST_WORK_TIME_PAGE*NxUpdate*NyUpdate + index-1]->Draw("nostack HIST E1");
+                //legArray[N_FIRST_WORK_TIME_PAGE*NxUpdate*NyUpdate + index-1]->Draw("");
+                //ThomsonDraw::createLegend(mgArray[N_FIRST_WORK_TIME_PAGE*NxUpdate*NyUpdate + index-1]);
                 index++;
-                ThomsonCounter *counter = getThomsonCounter(nTimePage, i, shot_from_several_shots);
-                THStack *hs = ThomsonDraw::createHStack(groupName(canvas_name, i, "hs_"), spectrometerName(i, counter->getRMSE()));
-                ThomsonDraw::draw_compare_signals(c, hs, N_WORK_CHANNELS, counter->getSignal(), counter->getSignalError(), counter->getSignalResult(), counter->getWorkSignal(), true);
             }
+
             c->Modified();
             c->Update();
         }

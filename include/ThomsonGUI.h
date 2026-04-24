@@ -59,7 +59,7 @@ private:
     TApplication *app;
 
     TGTextEntry *mainFileTextEntry;
-    TGNumberEntry *timeListNumber;
+    //TGNumberEntry *timeListNumber;
     TGCheckButton *writeResultTable;
 
     TGNumberEntry *shotNumber;

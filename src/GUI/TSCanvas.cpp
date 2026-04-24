@@ -43,7 +43,7 @@ void TSCanvas::ExecuteEvent(Int_t event, Int_t px, Int_t py)
         if (index < (int)hsArray.size() && hsArray[index] != nullptr)
         {
             THStack *hs = hsArray[index];
-            hs->Draw("nostack");
+            hs->Draw("nostack HIST E1");
         }
 
         if (grid)
