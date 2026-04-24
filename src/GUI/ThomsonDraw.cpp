@@ -69,7 +69,7 @@ TSCanvas *ThomsonDraw::createSCanvas(const char *canvas_name, const char *title,
 		c = (TSCanvas*)o;
         c->getSlider()->SetObject(nullptr);
         c->Clear();
-        c->divide(divideX, divideY);
+        c->Divide(divideX, divideY);
 		// c->GetListOfPrimitives()->Delete();
         c->createSlider();
         c->clearArrays(); //возможно вызовить ошибку!!!!

@@ -81,20 +81,24 @@ public:
         this->Update();
     }
 
-    void divide(Int_t nx, Int_t ny) {
+    void Divide(Int_t nx=1, Int_t ny=1, Float_t xmargin = (0.00999999977648258209F), Float_t ymargin = (0.00999999977648258209F), Int_t color = 0) override {
         this->nx = nx;
         this->ny = ny;
-        this->Divide(nx, ny);
+        TCanvas::Divide(nx, ny, xmargin, ymargin, color);
     }
 
     void setMultigraph(const std::vector <TMultiGraph*> &mgArray)
     {
         this->mgArray = mgArray;
+        for (TMultiGraph *mg : mgArray)
+            mg->ResetBit(kCanDelete);
     }
 
     void setHStack(const std::vector <THStack*> &hsArray)
     {
         this->hsArray = hsArray;
+        for (THStack * hs : hsArray)
+            hs->ResetBit(kCanDelete);
     }
 
     void setTitleArray(const std::vector <std::string> &titleArray)
@@ -105,6 +109,8 @@ public:
     void setLegendArray(const std::vector <TLegend*> &legendArray)
     {
         this->legendArray = legendArray;
+        for (TLegend *leg : legendArray)
+            leg->ResetBit(kCanDelete);
     }
 
     void clearArrays()
