@@ -9,8 +9,16 @@ void TSCanvas::ExecuteEvent(Int_t event, Int_t px, Int_t py)
     TSliderBox *sbox = (TSliderBox*)slider->FindObject("TSliderBox");
     if (!sbox) return;
 
+
     double x1 = sbox->GetX1();
     double x2 = sbox->GetX2();
+
+    if ((x2 - x1) != size) // запретить менять размер бегунка
+    {
+        x2 = x1+size;
+        sbox->SetX2(x2);
+    }
+
     double x = (x1+x2) / 2;
     int nPoint = x*slider_points;
     if (last_slider_point == nPoint)

@@ -31,6 +31,7 @@ private:
     bool legend;
     bool grid;
     bool clear;
+    double size;
     std::vector <TMultiGraph*> mgArray;
     std::vector <THStack*> hsArray;
     std::vector <TLegend*> legendArray;
@@ -60,6 +61,7 @@ public:
             sbox->SetX2((n + 1.)/slider_points);
             sbox->SetY1(0);
             sbox->SetY2(1.);
+            size = sbox->GetX2() - sbox->GetX1();
         }
         slider->Update();
         slider->Modified();
@@ -68,11 +70,12 @@ public:
     void createSlider()
     {
         TString name = this->GetName();
-        slider = new TSlider(name+"_slider", "x", 0.01, 0., 0.99, 0.03);
+        slider = new TSlider(name+"_slider", "x", 0.01, 0., 0.99, 0.025);
         slider->SetBit(kCanDelete);
         setPosition(start_slider_point);
         slider->SetObject(this);
         slider->SetEditable(kFALSE);
+        slider->SetFillColor(19);
 
         this->Modified();
         this->Update();
