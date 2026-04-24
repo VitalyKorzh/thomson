@@ -56,6 +56,49 @@ TCanvas *ThomsonDraw::createCanvas(const char *canvas_name, const char *title, u
 	return c;
 }
 
+TSCanvas *ThomsonDraw::createSCanvas(const char *canvas_name, const char *title, uint nSlider, uint width, uint height, uint divideX, uint divideY)
+{
+	TSCanvas* c;
+	TString cName(canvas_name);
+    TString cTitle(title);
+
+	TObject* const o = gROOT->FindObject(canvas_name);
+	if( o && o->InheritsFrom(TCanvas::Class()) )
+	{
+		c = (TSCanvas*)o;
+		c->Clear();
+		c->GetListOfPrimitives()->Delete();
+		c->SetTitle(cTitle);
+	}
+	else
+		c=new TSCanvas(cName, cTitle,width, height, divideX, divideY, nSlider);
+
+	c->SetBit(kCanDelete);
+	c->cd();
+    if (divideX*divideY > 1) {
+        c->Divide(divideX, divideY);
+        for (uint i = 0; i < divideX*divideY; i++)
+        {
+            c->cd(i+1);
+            gPad->SetBit(kCanDelete);
+            gPad->SetGrid();
+            gPad->SetLeftMargin(0.15);
+            gPad->SetRightMargin(0.01);
+            gPad->SetTopMargin(0.1);
+            gPad->SetBottomMargin(0.1);
+            //gPad->SetBit(kCannotPick);
+        }
+    }
+    else
+    {
+        gPad->SetLeftMargin(0.15);
+	    c->SetGrid();
+    }
+    c->Modified();
+    c->Update();
+	return c;
+}
+
 TMultiGraph *ThomsonDraw::createMultiGraph(const char *mg_name, const char *mg_title)
 {
     TMultiGraph *mg;

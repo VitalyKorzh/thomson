@@ -34,7 +34,7 @@ private:
 
 public:
     TSCanvas(TString name, TString title="", Int_t width=400, Int_t height=800, Int_t nx=1, Int_t ny=1,
-            Int_t slider_points=11, bool grid=true, bool clear=true) : TCanvas(name, title, width, height),
+            Int_t slider_points=11, bool grid=true, bool clear=true) : TCanvas(name, title, 1, 1, width, height),
                                                                         slider_points(slider_points), last_slider_point(0), 
                                                                         nx(nx), ny(ny), grid(grid), clear(clear)
     
@@ -42,7 +42,7 @@ public:
         this->Divide(nx, ny);
         this->SetBit(kCanDelete);
 
-        slider = new TSlider(name+"_slider", "y", 0.01, 0.01, 0.99, 0.04);
+        slider = new TSlider(name+"_slider", "x", 0.01, 0.01, 0.99, 0.04);
         slider->SetBit(kCanDelete);
         TSliderBox *sbox = (TSliderBox*)slider->FindObject("TSliderBox");
         if (sbox)
