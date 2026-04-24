@@ -1889,36 +1889,125 @@ void ThomsonGUI::DrawGraphs()
         if (checkButton(drawIntegralInChannels) && signalDraw)
         {
             TString canvas_name = "integral";
-            TCanvas *c = ThomsonDraw::createCanvas(canvas_name, canvasTitle(canvas_name, shotDiagnostic, nTimePage), width, height, NxUpdate, NyUpdate);
+            // TCanvas *c = ThomsonDraw::createCanvas(canvas_name, canvasTitle(canvas_name, shotDiagnostic, nTimePage), width, height, NxUpdate, NyUpdate);
+            // uint index = 1;
+            // for (uint i = 0; i < N_SPECTROMETERS; i++)
+            // {
+            //     if (!checkButtonDrawSpectrometers[i]->IsDown())
+            //         continue;
+            //     c->cd(index);
+            //     index++;
+            //     TMultiGraph *mg = ThomsonDraw::createMultiGraph(groupName(canvas_name, i), spectrometerName(i));
+            //     ThomsonDraw::thomson_signal_draw(c, mg, getSignalProcessing(nTimePage, i, shot_from_several_shots), 1, true, true, false, N_WORK_CHANNELS, work_mask[i]);
+            // }
+
+            TSCanvas *c = ThomsonDraw::createSCanvas(canvas_name, canvasTitle(canvas_name, shotDiagnostic, nTimePage), N_TIME_LIST, N_FIRST_WORK_TIME_PAGE, width, height, NxUpdate, NyUpdate);
+
+            std::vector <std::string> titleArray(N_TIME_LIST);
+            for (uint i = 0; i < N_TIME_LIST; i++)
+                titleArray[i] = canvasTitle(canvas_name, shotDiagnostic, i);
+            c->setTitleArray(titleArray);
+
+            std::vector <TMultiGraph*> mgArray;
+            std::vector <TLegend*> legArray;
+            mgArray.reserve(NxUpdate*NyUpdate*N_TIME_LIST);
+            legArray.reserve(NxUpdate*NyUpdate*N_TIME_LIST);
+            for (uint it = 0; it < N_TIME_LIST; it++)
+            {
+                uint index = 1;
+                for (uint i = 0; i < N_SPECTROMETERS; i++)
+                {
+                    if (!checkButtonDrawSpectrometers[i]->IsDown())
+                        continue;
+                    c->cd(index);
+                    index++;
+                    TMultiGraph *mg = ThomsonDraw::createMultiGraph(groupName(canvas_name, i), spectrometerName(i));
+                    mg->ResetBit(kCanDelete);
+                    ThomsonDraw::thomson_signal_draw(c, mg, getSignalProcessing(it, i, shot_from_several_shots), 1, false, true, false, N_WORK_CHANNELS, work_mask[i]);
+                    mgArray.push_back(mg);
+                    legArray.push_back(ThomsonDraw::createLegend(mg, 0.18, 0.6, 0.35, 0.88, false));
+                    legArray.back()->ResetBit(kCanDelete);
+                }
+            }
+            c->setMultigraph(mgArray);
+            c->setLegendArray(legArray);
             uint index = 1;
             for (uint i = 0; i < N_SPECTROMETERS; i++)
             {
                 if (!checkButtonDrawSpectrometers[i]->IsDown())
-                    continue;
+                        continue;
                 c->cd(index);
+                mgArray[N_FIRST_WORK_TIME_PAGE*NxUpdate*NyUpdate + index-1]->Draw("A");
+                legArray[N_FIRST_WORK_TIME_PAGE*NxUpdate*NyUpdate + index-1]->Draw("");
+                //ThomsonDraw::createLegend(mgArray[N_FIRST_WORK_TIME_PAGE*NxUpdate*NyUpdate + index-1]);
                 index++;
-                TMultiGraph *mg = ThomsonDraw::createMultiGraph(groupName(canvas_name, i), spectrometerName(i));
-                ThomsonDraw::thomson_signal_draw(c, mg, getSignalProcessing(nTimePage, i, shot_from_several_shots), 1, true, true, false, N_WORK_CHANNELS, work_mask[i]);
             }
+
+
             c->Modified();
             c->Update();
         }
         if (checkButton(drawSignalsAndIntegralsInChannels) && signalDraw)
         {
             TString canvas_name = "signal_integral";
-            TCanvas *c = ThomsonDraw::createCanvas(canvas_name, canvasTitle(canvas_name, shotDiagnostic, nTimePage), width, height, NxUpdate, NyUpdate);
+            // TCanvas *c = ThomsonDraw::createCanvas(canvas_name, canvasTitle(canvas_name, shotDiagnostic, nTimePage), width, height, NxUpdate, NyUpdate);
+            // uint index = 1;
+            // for (uint i = 0; i < N_SPECTROMETERS; i++)
+            // {
+            //     if (!checkButtonDrawSpectrometers[i]->IsDown())
+            //         continue;
+            //     c->cd(index);
+            //     index++;
+            //     TMultiGraph *mg = ThomsonDraw::createMultiGraph(groupName(canvas_name), "");
+            //     ThomsonDraw::thomson_signal_draw(c, mg, getSignalProcessing(nTimePage, i, shot_from_several_shots), 0, false, false, false, N_WORK_CHANNELS, work_mask[i], 10., false);
+            //     mg->SetTitle(spectrometerName(i)); // чтобы использовать title для интеграла
+            //     ThomsonDraw::thomson_signal_draw(c, mg, getSignalProcessing(nTimePage, i, shot_from_several_shots), 1, true, true, false, N_WORK_CHANNELS, work_mask[i]);
+            // }
+
+            TSCanvas *c = ThomsonDraw::createSCanvas(canvas_name, canvasTitle(canvas_name, shotDiagnostic, nTimePage), N_TIME_LIST, N_FIRST_WORK_TIME_PAGE, width, height, NxUpdate, NyUpdate);
+
+            std::vector <std::string> titleArray(N_TIME_LIST);
+            for (uint i = 0; i < N_TIME_LIST; i++)
+                titleArray[i] = canvasTitle(canvas_name, shotDiagnostic, i);
+            c->setTitleArray(titleArray);
+
+            std::vector <TMultiGraph*> mgArray;
+            std::vector <TLegend*> legArray;
+            mgArray.reserve(NxUpdate*NyUpdate*N_TIME_LIST);
+            legArray.reserve(NxUpdate*NyUpdate*N_TIME_LIST);
+            for (uint it = 0; it < N_TIME_LIST; it++)
+            {
+                uint index = 1;
+                for (uint i = 0; i < N_SPECTROMETERS; i++)
+                {
+                    if (!checkButtonDrawSpectrometers[i]->IsDown())
+                        continue;
+                    c->cd(index);
+                    index++;
+                    TMultiGraph *mg = ThomsonDraw::createMultiGraph(groupName(canvas_name, i), spectrometerName(i));
+                    mg->ResetBit(kCanDelete);
+                    ThomsonDraw::thomson_signal_draw(c, mg, getSignalProcessing(it, i, shot_from_several_shots), 0, false, false, false, N_WORK_CHANNELS, work_mask[i], 10., false);
+                    mg->SetTitle(spectrometerName(i)); // чтобы использовать title для интеграла
+                    ThomsonDraw::thomson_signal_draw(c, mg, getSignalProcessing(it, i, shot_from_several_shots), 1, false, true, false, N_WORK_CHANNELS, work_mask[i]);
+                    mgArray.push_back(mg);
+                    legArray.push_back(ThomsonDraw::createLegend(mg, 0.18, 0.6, 0.35, 0.88, false));
+                    legArray.back()->ResetBit(kCanDelete);
+                }
+            }
+            c->setMultigraph(mgArray);
+            c->setLegendArray(legArray);
             uint index = 1;
             for (uint i = 0; i < N_SPECTROMETERS; i++)
             {
                 if (!checkButtonDrawSpectrometers[i]->IsDown())
-                    continue;
+                        continue;
                 c->cd(index);
+                mgArray[N_FIRST_WORK_TIME_PAGE*NxUpdate*NyUpdate + index-1]->Draw("A");
+                legArray[N_FIRST_WORK_TIME_PAGE*NxUpdate*NyUpdate + index-1]->Draw("");
+                //ThomsonDraw::createLegend(mgArray[N_FIRST_WORK_TIME_PAGE*NxUpdate*NyUpdate + index-1]);
                 index++;
-                TMultiGraph *mg = ThomsonDraw::createMultiGraph(groupName(canvas_name), "");
-                ThomsonDraw::thomson_signal_draw(c, mg, getSignalProcessing(nTimePage, i, shot_from_several_shots), 0, false, false, false, N_WORK_CHANNELS, work_mask[i], 10., false);
-                mg->SetTitle(spectrometerName(i)); // чтобы использовать title для интеграла
-                ThomsonDraw::thomson_signal_draw(c, mg, getSignalProcessing(nTimePage, i, shot_from_several_shots), 1, true, true, false, N_WORK_CHANNELS, work_mask[i]);
             }
+
 
             c->Modified();
             c->Update();

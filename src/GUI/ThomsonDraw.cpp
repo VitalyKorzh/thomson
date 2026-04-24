@@ -67,12 +67,13 @@ TSCanvas *ThomsonDraw::createSCanvas(const char *canvas_name, const char *title,
 	if( o && o->InheritsFrom(TCanvas::Class()) )
 	{
 		c = (TSCanvas*)o;
-        //c->getSlider()->SetObject(nullptr);
-        //c->Clear();
+        c->getSlider()->SetObject(nullptr);
+        c->Clear();
+        c->divide(divideX, divideY);
 		// c->GetListOfPrimitives()->Delete();
-        //c->createSlider();
+        c->createSlider();
         c->clearArrays(); //возможно вызовить ошибку!!!!
-        c->setPosition(start_point);
+        //c->setPosition(start_point);
 		c->SetTitle(cTitle);
 	}
 	else
@@ -96,8 +97,10 @@ TSCanvas *ThomsonDraw::createSCanvas(const char *canvas_name, const char *title,
     }
     else
     {
+        c->cd(1);
         gPad->SetLeftMargin(0.15);
-	    c->SetGrid();
+        gPad->SetGrid();
+	    //c->SetGrid();
     }
     c->Modified();
     c->Update();

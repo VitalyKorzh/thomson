@@ -78,6 +78,12 @@ public:
         this->Update();
     }
 
+    void divide(Int_t nx, Int_t ny) {
+        this->nx = nx;
+        this->ny = ny;
+        this->Divide(nx, ny);
+    }
+
     void setMultigraph(const std::vector <TMultiGraph*> &mgArray)
     {
         this->mgArray = mgArray;
@@ -87,7 +93,7 @@ public:
     {
         this->hsArray = hsArray;
     }
-    
+
     void setTitleArray(const std::vector <std::string> &titleArray)
     {
         this->titleArray = titleArray;
