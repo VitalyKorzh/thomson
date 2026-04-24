@@ -14,6 +14,7 @@
 #include <TQObject.h>
 #include <TSlider.h>
 #include <TSliderBox.h>
+#include <TLegend.h>
 #include <TPad.h>
 #include <vector>
 #include <string>
@@ -24,36 +25,54 @@ private:
     TSlider *slider;
     int slider_points;
     int last_slider_point;
+    int start_slider_point;
     int nx;
     int ny;
+    bool legend;
     bool grid;
     bool clear;
     std::vector <TMultiGraph*> mgArray;
     std::vector <THStack*> hsArray;
+    std::vector <TLegend*> legendArray;
     std::vector <std::string> titleArray;
 
 public:
     TSCanvas(TString name, TString title="", Int_t width=400, Int_t height=800, Int_t nx=1, Int_t ny=1,
-            Int_t slider_points=11, Int_t start_slider_point=0, bool grid=true, bool clear=true) : TCanvas(name, title, 1, 1, width, height),
-                                                                        slider_points(slider_points), last_slider_point(start_slider_point), 
-                                                                        nx(nx), ny(ny), grid(grid), clear(clear)
+            Int_t slider_points=11, Int_t start_slider_point=0, bool legend=true, bool grid=true, bool clear=true) : TCanvas(name, title, 1, 1, width, height),
+                                                                        slider_points(slider_points), last_slider_point(start_slider_point),
+                                                                        start_slider_point(start_slider_point),
+                                                                        nx(nx), ny(ny), legend(legend), grid(grid), clear(clear)
     
     {
         this->Divide(nx, ny);
         this->SetBit(kCanDelete);
 
-        slider = new TSlider(name+"_slider", "x", 0.01, 0.01, 0.99, 0.04);
-        slider->SetBit(kCanDelete);
+
+        createSlider();
+    }
+
+    void setPosition(int n)
+    {
         TSliderBox *sbox = (TSliderBox*)slider->FindObject("TSliderBox");
         if (sbox)
         {
-            sbox->SetX1(start_slider_point/slider_points);
-            sbox->SetX2((start_slider_point+1)/slider_points);
+            sbox->SetX1((double)n / slider_points);
+            sbox->SetX2((n + 1.)/slider_points);
             sbox->SetY1(0);
-            sbox->SetY2(1);
+            sbox->SetY2(1.);
         }
+        slider->Update();
+        slider->Modified();
+    }
 
+    void createSlider()
+    {
+        TString name = this->GetName();
+        slider = new TSlider(name+"_slider", "x", 0.01, 0., 0.99, 0.03);
+        slider->SetBit(kCanDelete);
+        setPosition(start_slider_point);
         slider->SetObject(this);
+        slider->SetEditable(kFALSE);
 
         this->Modified();
         this->Update();
@@ -68,9 +87,15 @@ public:
     {
         this->hsArray = hsArray;
     }
+    
     void setTitleArray(const std::vector <std::string> &titleArray)
     {
         this->titleArray = titleArray;
+    }
+
+    void setLegendArray(const std::vector <TLegend*> &legendArray)
+    {
+        this->legendArray = legendArray;
     }
 
     void clearArrays()
@@ -82,62 +107,22 @@ public:
         for (THStack *hs : hsArray)
             if (hs)
                 delete hs;
+        for (TLegend *leg : legendArray)
+            if (legend)
+                delete leg;
 
         mgArray.clear();
         hsArray.clear();
+        legendArray.clear();
     }
 
-    void ExecuteEvent(Int_t event, Int_t px, Int_t py) override
-    {
-        if (event == kMouseEnter || event == kMouseLeave) {
-            return;
-        }
-        TSliderBox *sbox = (TSliderBox*)slider->FindObject("TSliderBox");
-        if (!sbox) return;
+    TSlider * getSlider() const { return slider; }
 
-        double x1 = sbox->GetX1();
-        double x2 = sbox->GetX2();
-        double x = (x1+x2) / 2;
-        int nPoint = x*slider_points;
-        if (last_slider_point == nPoint)
-            return;
-
-        if (nPoint < (int)titleArray.size())
-        {
-            this->SetTitle(titleArray[nPoint].c_str());
-        }
-
-        last_slider_point  = nPoint;
-
-        int N = nx*ny;
-        for (int i = 0; i < N; i++)
-        {
-            int index = N*nPoint+i;
-            this->cd(i+1);
-            if (clear)
-                gPad->Clear();
-
-            if (index < (int)mgArray.size() && mgArray[index] != nullptr)
-            {
-                TMultiGraph *mg = mgArray[index];
-                mg->Draw("A");
-            }
-            if (index < (int)hsArray.size() && hsArray[index] != nullptr)
-            {
-                THStack *hs = hsArray[index];
-                hs->Draw("nostack");
-            }
-
-            if (grid)
-                gPad->SetGrid();
-        }        
-
-        this->Modified();
-        this->Update();
-    }
+    void ExecuteEvent(Int_t event, Int_t px, Int_t py) override;
 
     ~TSCanvas() {
-        delete slider;
+        //std::cout << "dist\n";
+        //delete slider;
         clearArrays();
     }
 

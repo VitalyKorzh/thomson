@@ -1,5 +1,6 @@
 #include "ThomsonDraw.h"
 #include "thomsonCounter/Spectrum.h"
+//#include "TSCanvas.h"
 #include <TROOT.h>
 #include <TStyle.h>
 #include <iostream>
@@ -66,9 +67,12 @@ TSCanvas *ThomsonDraw::createSCanvas(const char *canvas_name, const char *title,
 	if( o && o->InheritsFrom(TCanvas::Class()) )
 	{
 		c = (TSCanvas*)o;
-		c->Clear();
-		c->GetListOfPrimitives()->Delete();
+        //c->getSlider()->SetObject(nullptr);
+        //c->Clear();
+		// c->GetListOfPrimitives()->Delete();
+        //c->createSlider();
         c->clearArrays(); //возможно вызовить ошибку!!!!
+        c->setPosition(start_point);
 		c->SetTitle(cTitle);
 	}
 	else
@@ -77,7 +81,7 @@ TSCanvas *ThomsonDraw::createSCanvas(const char *canvas_name, const char *title,
 	c->SetBit(kCanDelete);
 	c->cd();
     if (divideX*divideY > 1) {
-        c->Divide(divideX, divideY);
+        //c->Divide(divideX, divideY);
         for (uint i = 0; i < divideX*divideY; i++)
         {
             c->cd(i+1);
@@ -85,8 +89,8 @@ TSCanvas *ThomsonDraw::createSCanvas(const char *canvas_name, const char *title,
             gPad->SetGrid();
             gPad->SetLeftMargin(0.15);
             gPad->SetRightMargin(0.01);
-            gPad->SetTopMargin(0.1);
-            gPad->SetBottomMargin(0.1);
+            gPad->SetTopMargin(0.08);
+            gPad->SetBottomMargin(0.15);
             //gPad->SetBit(kCannotPick);
         }
     }

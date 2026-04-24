@@ -1,4 +1,5 @@
 #ifndef __THOMSON_DRAW_H__
+#define __THONSON_DRAW_H__
 
 #include "thomsonCounter/SignalProcessing.h"
 #include <TCanvas.h>
