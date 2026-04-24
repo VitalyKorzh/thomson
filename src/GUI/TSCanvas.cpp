@@ -54,6 +54,11 @@ void TSCanvas::ExecuteEvent(Int_t event, Int_t px, Int_t py)
             TLegend *leg = legendArray[index];
             leg->Draw(opt_leg);
         }
+        if (index < (int) textArray.size() && textArray[index] != nullptr) 
+        {
+            TLatex *tex = textArray[index];
+            tex->Draw(opt_text);
+        }
         if (grid)
             gPad->SetGrid();
     }        

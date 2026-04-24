@@ -15,6 +15,7 @@
 #include <TSlider.h>
 #include <TSliderBox.h>
 #include <TLegend.h>
+#include <TLatex.h>
 #include <TPad.h>
 #include <vector>
 #include <string>
@@ -38,6 +39,7 @@ private:
     std::vector <TMultiGraph*> mgArray;
     std::vector <THStack*> hsArray;
     std::vector <TLegend*> legendArray;
+    std::vector <TLatex*> textArray;
     std::vector <std::string> titleArray;
 
 public:
@@ -123,6 +125,13 @@ public:
             leg->ResetBit(kCanDelete);
     }
 
+    void setTextArray(const std::vector <TLatex*> &textArray)
+    {
+        this->textArray = textArray;
+        for (TLatex *tex : textArray)
+            tex->ResetBit(kCanDelete);        
+    }
+
     void clearArrays()
     {
         titleArray.clear();
@@ -135,10 +144,14 @@ public:
         for (TLegend *leg : legendArray)
             if (leg)
                 delete leg;
+        for (TLatex *tex : textArray)
+            if (tex)
+                delete tex;
 
         mgArray.clear();
         hsArray.clear();
         legendArray.clear();
+        textArray.clear();
     }
 
     TSlider * getSlider() const { return slider; }
