@@ -1479,6 +1479,14 @@ ThomsonGUI::ThomsonGUI(const TGWindow *p, UInt_t width, UInt_t height, TApplicat
             hframeI->AddFrame(nCalibrationCoeff1[i], new TGLayoutHints(kLHintsLeft | kLHintsExpandX, 5, 5, 0, 0));   
         }
 
+        TGHorizontalFrame *hframeEnergy = new TGHorizontalFrame(fTTu, width, 40);
+        fTTu->AddFrame(hframeEnergy, new TGLayoutHints(kLHintsLeft, 5, 5, 5, 5));
+        TGLabel *labelEnergy = new TGLabel(hframeEnergy, "energy coeff");
+        hframeEnergy->AddFrame(labelEnergy, new TGLayoutHints(kLHintsLeft, 5, 5, 10, 5));
+        energyCalibration = new TGNumberEntryField(hframeEnergy, -1, 0);
+        energyCalibration->SetLimits(TGNumberFormat::kNELLimitMin, 0.);
+        energyCalibration->SetWidth(size);
+        hframeEnergy->AddFrame(energyCalibration, new TGLayoutHints(kLHintsLeft, 5, 5, 5, 5));
 
         TGHorizontalFrame *hframeBottom = new TGHorizontalFrame(fTTu, width, 40);
         fTTu->AddFrame(hframeBottom, new TGLayoutHints(kLHintsLeft|kLHintsExpandX|kLHintsBottom, 5, 5, 5, 5));
@@ -1609,9 +1617,10 @@ void ThomsonGUI::ReadCalibration()
             nCalibrationCoeff0[i]->SetNumber(calibration[N_SPECTROMETER_CALIBRATIONS*i+ID_N_COEFF_CHANNEL_0]);
             nCalibrationCoeff1[i]->SetNumber(calibration[N_SPECTROMETER_CALIBRATIONS*i+ID_N_COEFF_CHANNEL_0]);
         }
+        energyCalibration->SetNumber(calibration[N_SPECTROMETER_CALIBRATIONS*N_SPECTROMETERS+ID_N_ADD_ENERGY]);
     }
     else {
-        calibration.resize(N_SPECTROMETERS*N_SPECTROMETER_CALIBRATIONS, 0.);
+        calibration.resize(N_SPECTROMETERS*N_SPECTROMETER_CALIBRATIONS+ID_N_ADD_ENERGY, 0.);
         std::cout << "калибровка дополнена нулями\n";
     }
 
@@ -1638,7 +1647,7 @@ void ThomsonGUI::WriteCalibration()
         return;
 
 
-    darray calibration(N_SPECTROMETERS*N_SPECTROMETER_CALIBRATIONS);
+    darray calibration(N_SPECTROMETERS*N_SPECTROMETER_CALIBRATIONS+N_ADD_CALIBRATIONS);
 
     for (uint i = 0; i < N_SPECTROMETERS; i++)
     {
@@ -1647,6 +1656,7 @@ void ThomsonGUI::WriteCalibration()
         calibration[N_SPECTROMETER_CALIBRATIONS*i+ID_N_COEFF_CHANNEL_0] = nCalibrationCoeff0[i]->GetNumber();
         calibration[N_SPECTROMETER_CALIBRATIONS*i+ID_N_COEFF_CHANNEL_1] = nCalibrationCoeff1[i]->GetNumber();
     }
+    calibration[N_SPECTROMETERS*N_SPECTROMETER_CALIBRATIONS+N_ADD_CALIBRATIONS] = energyCalibration->GetNumber();
 
     writeCalibration(archive_name.c_str(), CALIBRATION_NAME, calibration);
 }

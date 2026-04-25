@@ -118,6 +118,7 @@ private:
                         **thetaCalibration,
                         **nCalibrationCoeff0,
                         **nCalibrationCoeff1;
+    TGNumberEntryField *energyCalibration;
 
 
     uint nrow;
