@@ -29,8 +29,9 @@ ClassImp(ThomsonGUI)
 // калибровка записана X THETA COEFF
 #define ID_X 0 
 #define ID_THETA 1
-#define ID_N_COEFF_CHANNEL_1 2
-#define ID_N_COEFF_CHANNEL_2 3
+#define ID_N_COEFF_CHANNEL_0 2
+#define ID_N_COEFF_CHANNEL_1 3
+#define ID_N_ADD_ENERGY 1
 
 #define STATUS_ENTRY_TEXT "press count"
 
@@ -252,8 +253,8 @@ bool ThomsonGUI::countThomson(const std::string &archive_name, const std::string
     if (clearArray) clearCounterArray();
     counterArray.reserve(counterArray.size()+N_SPECTROMETERS*N_TIME_LIST);
 
-
-    darray calibrations = readCalibration(archive_name.c_str(), CALIBRATION_NAME, shot);
+    darray calibrations = getCalibration(archive_name.c_str(), shot, true);
+    /*darray calibrations = readCalibration(archive_name.c_str(), CALIBRATION_NAME, shot);
 
     if (calibrations.size() == 0)
     {
@@ -269,21 +270,12 @@ bool ThomsonGUI::countThomson(const std::string &archive_name, const std::string
     if (calibrations.size() < N_SPECTROMETERS*N_SPECTROMETER_CALIBRATIONS)
         calibrations.resize(N_SPECTROMETERS*N_SPECTROMETER_CALIBRATIONS, 0);
 
-
     //darray ne_coeff = {0.0813323, 0.0742564, 0.0688669, 0.0652062, 0.0577925, 0.0681893};
     darray ne_coeff = {0.065474, 0.0664481, 0.062434, 0.0649258, 0.0637577, 0.0753984};
 
     if (shot <= 59000)
     for (uint i = 0; i < N_SPECTROMETERS; i++)
-        calibrations[i*N_SPECTROMETER_CALIBRATIONS+ID_N_COEFF_CHANNEL_1] = ne_coeff[i]; //поменяли энегрию лазера
-
-    // darray calibrations = { 0., 96.704*M_PI/180., 273.587,
-    //                 -32., 99.474*M_PI/180., 292.971,
-    //                 -63.5, 102.158*M_PI/180., 210.374,
-    //                 -95.5, 104.831*M_PI/180., 230.068,
-    //                 -127.5, 107.439*M_PI/180., 203.737,
-    //                 -156, 109.687*M_PI/180., 253.302 
-    // }; // временая запись калибровок
+        calibrations[i*N_SPECTROMETER_CALIBRATIONS+ID_N_COEFF_CHANNEL_0] = ne_coeff[i]; //поменяли энегрию лазера*/
 
     std::vector <ThomsonCounter*> tempCounter(N_TIME_LIST*N_SPECTROMETERS, nullptr);
 
@@ -361,6 +353,57 @@ void ThomsonGUI::clearCounterArray()
 
     counterArray.clear();
     counterArray.shrink_to_fit();
+}
+
+darray ThomsonGUI::getCalibration(const char *archive_name, uint shot, bool extra)
+{
+    darray calibration;
+    if (shot < 57845) // перешли на новые калибровки
+    {
+        calibration = {
+            0., 96.704*M_PI/180., 0.0813323, 0.0813323,
+            -32., 99.474*M_PI/180., 0.0742564, 0.0742564,
+            -63.5, 102.158*M_PI/180., 0.0688669, 0.0688669,
+            -95.5, 104.831*M_PI/180., 0.0652062, 0.0652062,
+            -127.5, 107.439*M_PI/180., 0.0577925, 0.0577925,
+            -156, 109.687*M_PI/180., 0.0681893, 0.0681893,
+            0.287
+        };
+
+    }
+    else if (shot < 57986)
+    {
+        calibration = {
+            0., 96.704*M_PI/180., 0.065474, 0.065474,
+            -32., 99.474*M_PI/180., 0.0664481, 0.0664481,
+            -63.5, 102.158*M_PI/180., 0.062434, 0.062434,
+            -95.5, 104.831*M_PI/180., 0.0649258, 0.0649258,
+            -127.5, 107.439*M_PI/180., 0.0637577, 0.0637577,
+            -156, 109.687*M_PI/180., 0.0753984, 0.0753984,
+            0.287
+        };
+    }
+    else 
+    {
+        calibration = readCalibration(archive_name, CALIBRATION_NAME, shot);
+
+        if (calibration.empty() && extra)
+        {
+            OpenArchive(archive_name);
+            int lastShotCal = GetLastShot()+1;
+            CloseArchive();
+            calibration = readCalibration(archive_name, CALIBRATION_NAME, lastShotCal);
+
+            if (calibration.empty())
+                calibration = readCalibration(archive_name, CALIBRATION_NAME, lastShotCal-1);
+        }
+    }
+
+
+    if (calibration.size() < N_SPECTROMETER_CALIBRATIONS*N_SPECTROMETERS+N_ADD_CALIBRATIONS)
+        calibration.resize(N_SPECTROMETERS*N_SPECTROMETER_CALIBRATIONS+N_ADD_CALIBRATIONS, 0);
+
+    return calibration;
 }
 
 void ThomsonGUI::meanThomsonData(uint N_SHOTS, darray &Te, darray &TeError, darray &ne, darray &neError, darray &xPositon, darray &time_points) const
@@ -1393,18 +1436,21 @@ ThomsonGUI::ThomsonGUI(const TGWindow *p, UInt_t width, UInt_t height, TApplicat
 
         thetaCalibration = new TGNumberEntryField*[N_SPECTROMETERS];
         xPositionCalibration = new TGNumberEntryField*[N_SPECTROMETERS];
-        nCalibrationCoeff = new TGNumberEntryField*[N_SPECTROMETERS];
+        nCalibrationCoeff0 = new TGNumberEntryField*[N_SPECTROMETERS];
+        nCalibrationCoeff1 = new TGNumberEntryField*[N_SPECTROMETERS];
         TGHorizontalFrame *hframeLabel= new TGHorizontalFrame(vframe, 200, 40);
         vframe->AddFrame(hframeLabel, new TGLayoutHints(kLHintsTop, 5, 5, 5, 5));
         TGLabel *labelXPosition = new TGLabel(hframeLabel, "x-position");
         TGLabel *labelTheta = new TGLabel(hframeLabel, "theta");
-        TGLabel *labelNCoeff = new TGLabel(hframeLabel, "Ki");
+        TGLabel *labelNCoeff0 = new TGLabel(hframeLabel, "K0");
+        TGLabel *labelNCoeff1 = new TGLabel(hframeLabel, "K1");
 
-        hframeLabel->AddFrame(labelXPosition, new TGLayoutHints(kLHintsLeft, 110, 5, 0, 0));
-        hframeLabel->AddFrame(labelTheta, new TGLayoutHints(kLHintsLeft, 70, 5, 0, 0));
-        hframeLabel->AddFrame(labelNCoeff, new TGLayoutHints(kLHintsLeft, 70, 5, 0, 0));
+        hframeLabel->AddFrame(labelXPosition, new TGLayoutHints(kLHintsLeft, 100, 5, 0, 0));
+        hframeLabel->AddFrame(labelTheta, new TGLayoutHints(kLHintsLeft, 50, 5, 0, 0));
+        hframeLabel->AddFrame(labelNCoeff0, new TGLayoutHints(kLHintsLeft, 60, 5, 0, 0));
+        hframeLabel->AddFrame(labelNCoeff1, new TGLayoutHints(kLHintsLeft, 60, 5, 0, 0));
 
-
+        const uint size = 80;
         for (uint i = 0; i < N_SPECTROMETERS; i++)
         {
             TGHorizontalFrame *hframeI = new TGHorizontalFrame(vframe, 200, 40);
@@ -1412,20 +1458,25 @@ ThomsonGUI::ThomsonGUI(const TGWindow *p, UInt_t width, UInt_t height, TApplicat
             TGLabel *label = new TGLabel(hframeI, TString::Format("spectrometer%u", i));
 
             xPositionCalibration[i] = new TGNumberEntryField(hframeI, -1, 0);
-            xPositionCalibration[i]->SetWidth(100);
+            xPositionCalibration[i]->SetWidth(size);
 
             thetaCalibration[i] = new TGNumberEntryField(hframeI, -1, 0);
             thetaCalibration[i]->SetLimits(TGNumberFormat::kNELLimitMinMax, 0., 180.);
-            thetaCalibration[i]->SetWidth(100);
+            thetaCalibration[i]->SetWidth(size);
 
-            nCalibrationCoeff[i] = new TGNumberEntryField(hframeI, -1, 0);
-            nCalibrationCoeff[i]->SetLimits(TGNumberFormat::kNELLimitMin, 0.);
-            nCalibrationCoeff[i]->SetWidth(100);
+            nCalibrationCoeff0[i] = new TGNumberEntryField(hframeI, -1, 0);
+            nCalibrationCoeff0[i]->SetLimits(TGNumberFormat::kNELLimitMin, 0.);
+            nCalibrationCoeff0[i]->SetWidth(size);
+
+            nCalibrationCoeff1[i] = new TGNumberEntryField(hframeI, -1, 0);
+            nCalibrationCoeff1[i]->SetLimits(TGNumberFormat::kNELLimitMin, 0.);
+            nCalibrationCoeff1[i]->SetWidth(size);
 
             hframeI->AddFrame(label, new TGLayoutHints(kLHintsLeft, 0, 0, 4, 3));
             hframeI->AddFrame(xPositionCalibration[i] , new TGLayoutHints(kLHintsLeft | kLHintsExpandX, 10, 5, 0, 0));
             hframeI->AddFrame(thetaCalibration[i], new TGLayoutHints(kLHintsLeft | kLHintsExpandX, 5, 5, 0, 0));
-            hframeI->AddFrame(nCalibrationCoeff[i], new TGLayoutHints(kLHintsLeft | kLHintsExpandX, 5, 5, 0, 0));      
+            hframeI->AddFrame(nCalibrationCoeff0[i], new TGLayoutHints(kLHintsLeft | kLHintsExpandX, 5, 5, 0, 0));   
+            hframeI->AddFrame(nCalibrationCoeff1[i], new TGLayoutHints(kLHintsLeft | kLHintsExpandX, 5, 5, 0, 0));   
         }
 
 
@@ -1555,7 +1606,8 @@ void ThomsonGUI::ReadCalibration()
         {
             xPositionCalibration[i]->SetNumber(calibration[N_SPECTROMETER_CALIBRATIONS*i+ID_X]);
             thetaCalibration[i]->SetNumber(calibration[N_SPECTROMETER_CALIBRATIONS*i+ID_THETA]*180./M_PI);
-            nCalibrationCoeff[i]->SetNumber(calibration[N_SPECTROMETER_CALIBRATIONS*i+ID_N_COEFF_CHANNEL_1]);
+            nCalibrationCoeff0[i]->SetNumber(calibration[N_SPECTROMETER_CALIBRATIONS*i+ID_N_COEFF_CHANNEL_0]);
+            nCalibrationCoeff1[i]->SetNumber(calibration[N_SPECTROMETER_CALIBRATIONS*i+ID_N_COEFF_CHANNEL_0]);
         }
     }
     else {
@@ -1592,7 +1644,8 @@ void ThomsonGUI::WriteCalibration()
     {
         calibration[N_SPECTROMETER_CALIBRATIONS*i+ID_X] = xPositionCalibration[i]->GetNumber();
         calibration[N_SPECTROMETER_CALIBRATIONS*i+ID_THETA] = thetaCalibration[i]->GetNumber()*M_PI/180.;
-        calibration[N_SPECTROMETER_CALIBRATIONS*i+ID_N_COEFF_CHANNEL_1] = nCalibrationCoeff[i]->GetNumber();
+        calibration[N_SPECTROMETER_CALIBRATIONS*i+ID_N_COEFF_CHANNEL_0] = nCalibrationCoeff0[i]->GetNumber();
+        calibration[N_SPECTROMETER_CALIBRATIONS*i+ID_N_COEFF_CHANNEL_1] = nCalibrationCoeff1[i]->GetNumber();
     }
 
     writeCalibration(archive_name.c_str(), CALIBRATION_NAME, calibration);
@@ -3122,7 +3175,8 @@ ThomsonGUI::~ThomsonGUI()
 
     delete[] thetaCalibration;
     delete[] xPositionCalibration;
-    delete[] nCalibrationCoeff;
+    delete[] nCalibrationCoeff0;
+    delete[] nCalibrationCoeff1;
 
     timer->Stop();
     delete timer;

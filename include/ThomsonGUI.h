@@ -46,6 +46,7 @@ private:
     const uint NUMBER_ENERGY_SPECTROMETER;
     const uint NUMBER_ENERGY_CHANNEL;
     const uint N_SPECTROMETER_CALIBRATIONS;
+    const uint N_ADD_CALIBRATIONS=1;
     const uint N_WORK_CHANNELS;
     const uint N_FIRST_WORK_TIME_PAGE;
 
@@ -115,7 +116,8 @@ private:
     TGNumberEntry *calibrationShot;
     TGNumberEntryField **xPositionCalibration,
                         **thetaCalibration,
-                        **nCalibrationCoeff;
+                        **nCalibrationCoeff0,
+                        **nCalibrationCoeff1;
 
 
     uint nrow;
@@ -165,6 +167,8 @@ private:
     TGCheckButton *clockMode;
     TTimer *timer;
 
+
+    darray getCalibration(const char *archive_name, uint shot, bool extra=false);
 
     TString spectrometerName(uint sp, double rmse=-1.) {
         if (rmse < 0)
