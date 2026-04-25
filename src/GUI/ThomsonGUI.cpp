@@ -254,6 +254,11 @@ bool ThomsonGUI::countThomson(const std::string &archive_name, const std::string
     counterArray.reserve(counterArray.size()+N_SPECTROMETERS*N_TIME_LIST);
 
     darray calibrations = getCalibration(archive_name.c_str(), shot, true);
+    double coeff_to_energy = calibrations[N_SPECTROMETER_CALIBRATIONS*N_SPECTROMETERS-1+ID_N_ADD_ENERGY];
+    for (uint it = 0; it < N_TIME_LIST; it++)
+    {
+        getSignalProcessing(it, NUMBER_ENERGY_SPECTROMETER, shot_index)->setCoeffToEnergy(coeff_to_energy);
+    }
     /*darray calibrations = readCalibration(archive_name.c_str(), CALIBRATION_NAME, shot);
 
     if (calibrations.size() == 0)
@@ -2504,8 +2509,8 @@ void ThomsonGUI::PrintInfo()
     if (checkButton(infoLaserEntry) && signalDraw)
     {
         oss << "LASER energy:\n";
-        const double energy_coeff = ENERGY_COEFF;
         for (uint it = 0; it < N_TIME_LIST; it++) {
+            const double energy_coeff = getSignalProcessing(it, NUMBER_ENERGY_SPECTROMETER, shot_from_several_shots)->getCoeffToEnergy();
             double E = getSignalProcessing(it, NUMBER_ENERGY_SPECTROMETER, shot_from_several_shots)->getSignals()[NUMBER_ENERGY_CHANNEL];
             oss << "\t" <<
             E << " " << E*energy_coeff

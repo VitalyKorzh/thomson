@@ -64,6 +64,8 @@ private:
     darray signal_box;
     parray parametersArray;
 
+    double coeff_to_energy;
+
 
     bool checkSignal(const darray &t, const darray &U, const darray &UTintegral, uint channel, double signal, double sigma, double threshold=0., int increase_point=0, int decrease_point=0, double klim=-1., uint signal_points_start=1); // проверить был ли импульс в канале
     void integrateSignal(const darray &t, const darray &U, uint channel, double UZero, uint point_integrate_start);    
@@ -77,8 +79,8 @@ private:
     
 public:
     
-    SignalProcessing(const darray &t_full, const darray &U_full, uint N_CHANNELS, const parray &parametersArray, const std::vector<std::pair<double, double>> &sigmaCoeff, const barray &work_mask={});
-    SignalProcessing(const darray &signals, const darray &signals_sigma, const barray &work_signal={});
+    SignalProcessing(const darray &t_full, const darray &U_full, uint N_CHANNELS, const parray &parametersArray, const std::vector<std::pair<double, double>> &sigmaCoeff, const barray &work_mask={}, double coeff_to_energy=1.);
+    SignalProcessing(const darray &signals, const darray &signals_sigma, const barray &work_signal={}, double coeff_to_energy=1.);
 
     const darray &getSignals() const { return signals; }
     const darray &getSignalsSigma() const { return signals_sigma; }
@@ -91,6 +93,8 @@ public:
     const parray &getParameters() const { return parametersArray; }
     uint getNChannels() const { return N_CHANNELS; }
     uint getTSize() const { return tSize; }
+    double getCoeffToEnergy() const { return coeff_to_energy; }
+    void setCoeffToEnergy(double coeff_to_energy) { this->coeff_to_energy = coeff_to_energy; }
 };
 
 #endif

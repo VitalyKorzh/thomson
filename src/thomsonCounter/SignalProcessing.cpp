@@ -242,8 +242,9 @@ bool SignalProcessing::checkSignal(const darray &t, const darray &U, const darra
         return false;
 }
 
-SignalProcessing::SignalProcessing(const darray &t_full, const darray &U_full, uint N_CHANNELS, const parray &parametersArray, const std::vector<std::pair<double, double>> &sigmaCoeff, const barray &work_mask) : N_CHANNELS(N_CHANNELS),
-                                    signals(N_CHANNELS, 0), signals_sigma(N_CHANNELS, 0.), work_signal(N_CHANNELS, true), shifts(N_CHANNELS, 0.), UTintegrate_full(t_full.size()), t(t_full), UShift(t_full.size()), signal_box(3*N_CHANNELS), parametersArray(parametersArray)
+SignalProcessing::SignalProcessing(const darray &t_full, const darray &U_full, uint N_CHANNELS, const parray &parametersArray, const std::vector<std::pair<double, double>> &sigmaCoeff, const barray &work_mask, double coeff_to_energy) : N_CHANNELS(N_CHANNELS),
+                                    signals(N_CHANNELS, 0), signals_sigma(N_CHANNELS, 0.), work_signal(N_CHANNELS, true), shifts(N_CHANNELS, 0.), UTintegrate_full(t_full.size()), t(t_full), UShift(t_full.size()), signal_box(3*N_CHANNELS), parametersArray(parametersArray),
+                                    coeff_to_energy(coeff_to_energy)
 {
     tSize = t_full.size() / N_CHANNELS;
 
@@ -277,8 +278,8 @@ SignalProcessing::SignalProcessing(const darray &t_full, const darray &U_full, u
 
 }
 
-SignalProcessing::SignalProcessing(const darray &signals, const darray &signals_sigma, const barray &work_signal) : N_CHANNELS(signals.size()), signals(signals), 
-signals_sigma(signals_sigma), work_signal(work_signal)
+SignalProcessing::SignalProcessing(const darray &signals, const darray &signals_sigma, const barray &work_signal, double coeff_to_energy) : N_CHANNELS(signals.size()), signals(signals), 
+signals_sigma(signals_sigma), work_signal(work_signal), coeff_to_energy(coeff_to_energy)
 {
     this->work_signal.resize(N_CHANNELS, true);
     this->signals_sigma.resize(N_CHANNELS, 0);
