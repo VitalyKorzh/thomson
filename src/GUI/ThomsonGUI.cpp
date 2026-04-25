@@ -371,7 +371,7 @@ darray ThomsonGUI::getCalibration(const char *archive_name, uint shot, bool extr
         };
 
     }
-    else if (shot < 57986)
+    else if (shot <= 57986)
     {
         calibration = {
             0., 96.704*M_PI/180., 0.065474, 0.065474,
@@ -1598,9 +1598,9 @@ void ThomsonGUI::ReadCalibration()
         return;
 
     int shot = calibrationShot->GetNumber();
-    darray calibration = readCalibration(archive_name.c_str(), CALIBRATION_NAME, shot);
+    darray calibration = getCalibration(archive_name.c_str(), shot, false);
 
-    if (calibration.size() >= N_SPECTROMETERS*N_SPECTROMETER_CALIBRATIONS)
+    if (calibration.size() >= N_SPECTROMETERS*N_SPECTROMETER_CALIBRATIONS+N_ADD_CALIBRATIONS)
     {
         for (uint i = 0; i < N_SPECTROMETERS; i++)
         {
