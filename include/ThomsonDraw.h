@@ -12,6 +12,8 @@
 #include <TH1D.h>
 #include <TH1F.h>
 #include <THStack.h>
+#include <TLatex.h>
+#include <TText.h>
 #include "TSCanvas.h"
 
 class ThomsonDraw
@@ -26,6 +28,7 @@ private:
 public:
     static TLegend *createLegend(const TMultiGraph * const mg, double x1=0.18, double y1=0.6, double x2=0.35, double y2=0.88, bool draw=true);
     static uint & Color(uint &color);
+    static TLatex * createLatexText(TString text, double x, double y, uint color=1, double text_size=0.04, double text_align=22, bool draw=true);
     static TCanvas *createCanvas(const char *canvas_name, const char *title="", uint width=700, uint height=800, uint divideX=1, uint divideY=1);
     static TSCanvas *createSCanvas(const char *canvas_name, const char *title="", uint nSlider=11, uint start_point=0, uint width=700, uint height=800, uint divideX=1, uint divideY=1);
     static TMultiGraph *createMultiGraph(const char *mg_name, const char *mg_title);

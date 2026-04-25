@@ -14,6 +14,23 @@ uint &ThomsonDraw::Color(uint &color)
     return color;
 }
 
+TLatex *ThomsonDraw::createLatexText(TString text, double x, double y, uint color, double text_size, double text_align, bool draw)
+{
+    TLatex * latex = new TLatex();
+    latex->SetBit(kCanDelete);
+    latex->SetBit(kCannotPick);
+    latex->SetTextColor(color);
+    latex->SetTextSize(text_size);
+    latex->SetTextAlign(text_align);
+    latex->SetX(x);
+    latex->SetY(y);
+
+    if (draw)
+        latex->DrawLatexNDC(x, y, text);
+
+    return latex;
+}
+
 TCanvas *ThomsonDraw::createCanvas(const char *canvas_name, const char *title, uint width, uint height, uint divideX, uint divideY)
 {
 	TCanvas* c;

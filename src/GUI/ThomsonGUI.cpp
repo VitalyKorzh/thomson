@@ -1681,6 +1681,8 @@ void ThomsonGUI::DrawGraphs()
         c->Divide(2, 2);
 
         {
+            double Te_max = 0.;
+            double t_max = 0.;
             c->cd(1);
             TMultiGraph *mg = ThomsonDraw::createMultiGraph(groupName(canvas_name+"1"), "");
             mg->SetTitle(";x, cm;T_{e}, eV");
@@ -1691,6 +1693,11 @@ void ThomsonGUI::DrawGraphs()
                 for (uint i = 0; i < N_SPECTROMETERS; i++) {
                     Te[i] = getThomsonCounter(it, i, shot_from_several_shots)->getT();
                     TeError[i] = getThomsonCounter(it, i, shot_from_several_shots)->getTError();
+
+                    if (Te[i] > Te_max) {
+                        Te_max = Te[i];
+                        t_max = time_points[it];
+                    }
                 }
                 ThomsonDraw::draw_result_from_r(c, mg, xPosition, Te, TeError, 21, 1.5, color_map[it], 1, 7, color_map[it], timeLabel(it, time_points), false);
             }
@@ -1699,6 +1706,7 @@ void ThomsonGUI::DrawGraphs()
             mg->Draw("A");
             gPad->SetGrid();
             ThomsonDraw::createLegend(mg, 0.72, 0.6, 0.88, 0.88);
+            ThomsonDraw::createLatexText(TString::Format("T_{e}_{max} = %.0f eV in t = %.1f ms", Te_max, t_max), 0.5, 0.96, 1, 0.05);
         }
 
         {
@@ -1736,11 +1744,19 @@ void ThomsonGUI::DrawGraphs()
             mg->SetTitle(";x, cm;n_{e}, 10^{13} cm^{-3}");
             darray ne(N_SPECTROMETERS);
             darray neError(N_SPECTROMETERS);
+            double ne_max = 0.;
+            double t_max = 0.;
             for (uint it = N_FIRST_WORK_TIME_PAGE; it < N_TIME_LIST; it++)
             {
                 for (uint i = 0; i < N_SPECTROMETERS; i++) {
                     ne[i] = getThomsonCounter(it, i, shot_from_several_shots)->getN();
                     neError[i] = getThomsonCounter(it, i, shot_from_several_shots)->getNError();
+
+                    if (ne[i] > ne_max) {
+                        ne_max = ne[i];
+                        t_max = time_points[it];
+                    }
+
                 }
                 ThomsonDraw::draw_result_from_r(c, mg, xPosition, ne, neError, 21, 1.5, color_map[it], 1, 7, color_map[it], timeLabel(it, time_points), false);
             }
@@ -1748,7 +1764,12 @@ void ThomsonGUI::DrawGraphs()
             mg->GetYaxis()->CenterTitle();
             mg->Draw("A");
             gPad->SetGrid();
+
+            double mantissa = ne_max / pow(10, floor(log10(ne_max)));
+            int exponenta = (int) floor(log10(ne_max));
+
             ThomsonDraw::createLegend(mg, 0.72, 0.6, 0.88, 0.88);
+            ThomsonDraw::createLatexText(TString::Format("n_{e}_{max} = %.2f #times 10^{%d} cm^{-3}  in t = %.1f ms", mantissa, 13+exponenta, t_max), 0.5, 0.96, 1, 0.05);
         }
 
         {
