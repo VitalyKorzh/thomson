@@ -355,8 +355,15 @@ void ThomsonGUI::clearCounterArray()
     counterArray.shrink_to_fit();
 }
 
-darray ThomsonGUI::getCalibration(const char *archive_name, uint shot, bool extra)
+darray ThomsonGUI::getCalibration(const char *archive_name, int shot, bool extra)
 {
+    if (shot <= 0)
+    {
+        OpenArchive(archive_name);
+        shot = getShot(shot);
+        CloseArchive();
+    }
+
     darray calibration;
     if (shot < 57845) // перешли на новые калибровки
     {
@@ -1617,7 +1624,7 @@ void ThomsonGUI::ReadCalibration()
             nCalibrationCoeff0[i]->SetNumber(calibration[N_SPECTROMETER_CALIBRATIONS*i+ID_N_COEFF_CHANNEL_0]);
             nCalibrationCoeff1[i]->SetNumber(calibration[N_SPECTROMETER_CALIBRATIONS*i+ID_N_COEFF_CHANNEL_0]);
         }
-        energyCalibration->SetNumber(calibration[N_SPECTROMETER_CALIBRATIONS*N_SPECTROMETERS+ID_N_ADD_ENERGY]);
+        energyCalibration->SetNumber(calibration[N_SPECTROMETER_CALIBRATIONS*N_SPECTROMETERS-1+ID_N_ADD_ENERGY]);
     }
     else {
         calibration.resize(N_SPECTROMETERS*N_SPECTROMETER_CALIBRATIONS+ID_N_ADD_ENERGY, 0.);
@@ -1656,7 +1663,7 @@ void ThomsonGUI::WriteCalibration()
         calibration[N_SPECTROMETER_CALIBRATIONS*i+ID_N_COEFF_CHANNEL_0] = nCalibrationCoeff0[i]->GetNumber();
         calibration[N_SPECTROMETER_CALIBRATIONS*i+ID_N_COEFF_CHANNEL_1] = nCalibrationCoeff1[i]->GetNumber();
     }
-    calibration[N_SPECTROMETERS*N_SPECTROMETER_CALIBRATIONS+N_ADD_CALIBRATIONS] = energyCalibration->GetNumber();
+    calibration[N_SPECTROMETERS*N_SPECTROMETER_CALIBRATIONS-1+ID_N_ADD_ENERGY] = energyCalibration->GetNumber();
 
     writeCalibration(archive_name.c_str(), CALIBRATION_NAME, calibration);
 }
