@@ -253,7 +253,7 @@ bool ThomsonGUI::countThomson(const std::string &archive_name, const std::string
     if (clearArray) clearCounterArray();
     counterArray.reserve(counterArray.size()+N_SPECTROMETERS*N_TIME_LIST);
 
-    darray calibrations = getCalibration(archive_name.c_str(), shot, true);
+    darray calibrations = getCalibration(archive_name.c_str(), shot, true, useCalibrations->IsDown());
     double coeff_to_energy = calibrations[N_SPECTROMETER_CALIBRATIONS*N_SPECTROMETERS-1+ID_N_ADD_ENERGY];
     for (uint it = 0; it < N_TIME_LIST; it++)
     {
@@ -360,8 +360,27 @@ void ThomsonGUI::clearCounterArray()
     counterArray.shrink_to_fit();
 }
 
-darray ThomsonGUI::getCalibration(const char *archive_name, int shot, bool extra)
+darray ThomsonGUI::getCalibration(const char *archive_name, int shot, bool extra, bool set)
 {
+
+    darray calibration;
+    if (set)
+    {
+        calibration.resize(N_SPECTROMETER_CALIBRATIONS*N_SPECTROMETERS+N_ADD_CALIBRATIONS, 0.);
+
+        for (uint i = 0; i < N_SPECTROMETERS; i++)
+        {
+            calibration[i*N_SPECTROMETER_CALIBRATIONS+ID_X] = xPositionCalibration[i]->GetNumber();
+            calibration[i*N_SPECTROMETER_CALIBRATIONS+ID_THETA] = thetaCalibration[i]->GetNumber()/180.*M_PI;
+            calibration[i*N_SPECTROMETER_CALIBRATIONS+ID_N_COEFF_CHANNEL_0] = nCalibrationCoeff0[i]->GetNumber();
+            calibration[i*N_SPECTROMETER_CALIBRATIONS+ID_N_COEFF_CHANNEL_1] = nCalibrationCoeff1[i]->GetNumber();
+        }
+
+        calibration[N_SPECTROMETERS*N_SPECTROMETER_CALIBRATIONS-1+ID_N_ADD_ENERGY] = energyCalibration->GetNumber();
+        return calibration;
+    }
+
+
     if (shot <= 0)
     {
         OpenArchive(archive_name);
@@ -369,8 +388,7 @@ darray ThomsonGUI::getCalibration(const char *archive_name, int shot, bool extra
         CloseArchive();
     }
 
-    darray calibration;
-    if (shot < 57845) // перешли на новые калибровки
+    if (shot < 57845) // новый формат
     {
         calibration = {
             0., 96.704*M_PI/180., 0.0813323, 0.0813323,
@@ -383,7 +401,7 @@ darray ThomsonGUI::getCalibration(const char *archive_name, int shot, bool extra
         };
 
     }
-    else if (shot <= 57986)
+    else if (shot <= 57986) // перешли на новые калибровки
     {
         calibration = {
             0., 96.704*M_PI/180., 0.065474, 0.065474,
@@ -1441,6 +1459,9 @@ ThomsonGUI::ThomsonGUI(const TGWindow *p, UInt_t width, UInt_t height, TApplicat
         calibrationShot = new TGNumberEntry(hframe, 0, 12, -1, TGNumberFormat::kNESInteger, TGNumberFormat::kNEAAnyNumber, TGNumberFormat::kNELNoLimits);
         hframe->AddFrame(calibrationShotLabel, new TGLayoutHints(kLHintsLeft, 5, 5, 10, 5));
         hframe->AddFrame(calibrationShot, new TGLayoutHints(kLHintsLeft, 5, 5, 5, 5));
+
+        useCalibrations = new TGCheckButton(hframe, "use calibrations");
+        hframe->AddFrame(useCalibrations, new TGLayoutHints(kLHintsLeft, 5, 5, 5, 5));
 
 
         TGVerticalFrame *vframe = new TGVerticalFrame(fTTu, 200, height);

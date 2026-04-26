@@ -120,6 +120,8 @@ private:
                         **nCalibrationCoeff1;
     TGNumberEntryField *energyCalibration;
 
+    TGCheckButton *useCalibrations;
+
 
     uint nrow;
     TGCanvas *fCanvas;
@@ -169,7 +171,7 @@ private:
     TTimer *timer;
 
 
-    darray getCalibration(const char *archive_name, int shot, bool extra=false);
+    darray getCalibration(const char *archive_name, int shot, bool extra=false, bool set=false);
 
     TString spectrometerName(uint sp, double rmse=-1.) {
         if (rmse < 0)
