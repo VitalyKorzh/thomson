@@ -1802,7 +1802,7 @@ void ThomsonGUI::DrawGraphs()
             mg->Draw("A");
             gPad->SetGrid();
             ThomsonDraw::createLegend(mg, 0.72, 0.6, 0.88, 0.88);
-            ThomsonDraw::createLatexText(TString::Format("T_{e}_{max} = %.0f eV in t = %.1f ms", Te_max, t_max), 0.5, 0.96, 1, 0.05);
+            ThomsonDraw::createLatexText(TString::Format("T_{e}_{max} = %.1f eV at t = %.1f ms", Te_max, t_max), 0.5, 0.96, 1, 0.05);
         }
 
         {
@@ -1865,7 +1865,7 @@ void ThomsonGUI::DrawGraphs()
             int exponenta = (int) floor(log10(ne_max));
 
             ThomsonDraw::createLegend(mg, 0.72, 0.6, 0.88, 0.88);
-            ThomsonDraw::createLatexText(TString::Format("n_{e}_{max} = %.2f #times 10^{%d} cm^{-3}  in t = %.1f ms", mantissa, 13+exponenta, t_max), 0.5, 0.96, 1, 0.05);
+            ThomsonDraw::createLatexText(TString::Format("n_{e}_{max} = %.2f #times 10^{%d} cm^{-3} at t = %.1f ms", mantissa, 13+exponenta, t_max), 0.5, 0.96, 1, 0.05);
         }
 
         {
